@@ -1,6 +1,16 @@
 import { TResult } from "@/types";
 import { generateUniqueId } from "../utils";
 
+export const RMW_SELECTIONS = [
+  "RMW_IMPLEMENTATION",
+  "rmw_connextdds",
+  "rmw_cyclonedds_cpp",
+  "rmw_fastrtps_cpp",
+  "rmw_zenoh_cpp",
+] as const;
+
+export type RmwSelection = (typeof RMW_SELECTIONS)[number];
+
 export type TProviderLaunchParams = {
   id: string;
 
@@ -27,9 +37,12 @@ export type TProviderLaunchParams = {
 
   networkId: number;
 
-  rmwImplementation: string | undefined;
-
-  currentRmwImpl: string | undefined;
+  rmw: {
+    current: RmwSelection;
+    selected: RmwSelection;
+    forceUse: boolean;
+    overrideZeno: boolean;
+  };
 
   daemon: {
     enable: boolean;
@@ -92,8 +105,12 @@ export default class ProviderLaunchConfiguration {
       type: "websocket",
       useSSL: false,
       rosVersion: "2",
-      rmwImplementation: undefined,
-      currentRmwImpl: undefined,
+      rmw: {
+        current: "RMW_IMPLEMENTATION",
+        selected: "RMW_IMPLEMENTATION",
+        forceUse: false,
+        overrideZeno: true,
+      },
       daemon: { enable: true },
       discovery: { enable: true, robotHosts: [], heartbeatHz: 0.5, respawn: true },
       sync: { enable: false, doNotSync: [], syncTopics: [] },
@@ -274,14 +291,14 @@ export default class ProviderLaunchConfiguration {
   }
 
   public rmwPrefix(): string {
-    if (this.params.rmwImplementation) {
-      return ` RMW_IMPLEMENTATION=${this.params.rmwImplementation} `;
+    if (this.params.rmw.forceUse &&  this.params.rmw.selected !== "RMW_IMPLEMENTATION") {
+      return ` RMW_IMPLEMENTATION=${this.params.rmw.selected} `;
     }
     return "";
   }
 
   public getZenohPrefix(): string {
-    if (this.params.currentRmwImpl !== "rmw_zenoh_cpp") return "";
+    if (!this.params.rmw.overrideZeno || this.params.rmw.current !== "rmw_zenoh_cpp") return "";
 
     const zenohPort = 7448 + this.params.networkId || 0;
     const zenohMcastGroup = "224.0.0.224";

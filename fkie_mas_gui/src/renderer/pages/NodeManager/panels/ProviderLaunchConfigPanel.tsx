@@ -7,6 +7,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import {
   Autocomplete,
+  Box,
   Button,
   Checkbox,
   Divider,
@@ -34,6 +35,7 @@ import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
+import { RMW_SELECTIONS, RmwSelection } from "@/renderer/models/ProviderLaunchConfiguration";
 import { EVENT_CLOSE_COMPONENT, eventCloseComponent } from "../layout/events";
 
 const AccordionAdv = styled((props: AccordionProps) => <MuiAccordion disableGutters elevation={0} square {...props} />)(
@@ -100,11 +102,14 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   const [startCmdTtyd, setStartCmdTtyd] = useState<string>("");
   const [tsList, setTSList] = useState<string[]>([]);
   const [topicList, setTopicList] = useState<string[]>([]);
-  const [forceRmwImplementation, setForceRmwImplementation] = useState<string>("");
   const [forceRestart, setForceRestart] = useState(false);
 
   const defaultHost: string = hostArg ? hostArg : config?.params.host || "localhost";
   const [selectedHost, setSelectedHost] = useState<THostIp | null>({ host: defaultHost });
+  const [selectedRmw, setSelectedRmw] = useState<RmwSelection>(launchCfg.params.rmw.selected || "RMW_IMPLEMENTATION");
+  const [optionForceUseRmwImplementation, setOptionForceUseRmwImplementation] = useState<boolean>(
+    launchCfg.params.rmw.forceUse
+  );
   const [hostList, setHostList] = useState<THostIp[]>([{ ip: "127.0.0.1", host: "localhost" }]);
   const [robotHostInputValue, setRobotHostInputValue] = useState("");
 
@@ -216,7 +221,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   }
 
   function updateStartParameter(): void {
-    launchCfg.params.currentRmwImpl = optionOverrideZenohConfig ? rosCtx.rosInfo?.rmwImplementation || "" : "";
     setStartCmdDaemon(launchCfg.daemonStartCmd().message);
     setStartCmdDiscovery(launchCfg.masterDiscoveryStartCmd().message);
     setStartCmdTtyd(launchCfg.terminalStartCmd().message);
@@ -276,6 +280,19 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     updateStartParameter();
   }
 
+  useEffect(() => {
+    launchCfg.params.rmw.forceUse = optionForceUseRmwImplementation;
+    const fromEnv = selectedRmw === "RMW_IMPLEMENTATION";
+    if (!optionForceUseRmwImplementation || fromEnv) {
+      launchCfg.params.rmw.current = rosCtx.rosInfo?.rmwImplementation as RmwSelection;
+      launchCfg.params.rmw.selected = selectedRmw;
+    } else {
+      launchCfg.params.rmw.current = selectedRmw;
+      launchCfg.params.rmw.selected = selectedRmw;
+    }
+    updateStartParameter();
+  }, [selectedRmw, optionForceUseRmwImplementation]);
+
   const createHostSelector = useMemo(() => {
     return (
       <Autocomplete
@@ -325,6 +342,39 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
       />
     );
   }, [hostList, selectedHost]);
+
+  const createRMWSelector = useMemo(() => {
+    return (
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+        sx={{ flexGrow: 1 }} // optional: horizontales Scrollen erlauben
+      >
+        <Autocomplete
+          id="autocomplete-rmw"
+          size="small"
+          autoHighlight
+          handleHomeEndKeys={false}
+          options={RMW_SELECTIONS}
+          value={selectedRmw}
+          sx={{ minWidth: 250 }} // optional: horizontales Scrollen erlauben
+          renderInput={(params) => <TextField {...params} variant="standard" label="RMW_IMPLEMENTATION" />}
+          onInputChange={(_event, newInputValue) => {
+            setSelectedRmw(newInputValue as RmwSelection);
+          }}
+        />
+
+        <Typography sx={{ whiteSpace: "nowrap", flexGrow: 1 }}>
+          {selectedRmw === "RMW_IMPLEMENTATION"
+            ? rosCtx.rosInfo?.rmwImplementation
+              ? `from environment: ${rosCtx.rosInfo?.rmwImplementation}`
+              : " RMW_IMPLEMENTATION (environment variable not set)"
+            : ""}
+        </Typography>
+      </Stack>
+    );
+  }, [selectedRmw, rosCtx.rosInfo]);
 
   return (
     <Stack
@@ -949,26 +999,29 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
             <FormGroup
               aria-label="position"
               row
-              sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
+              sx={{
+                "&:hover": { backgroundColor: (theme) => theme.palette.action.hover },
+                flexGrow: 1,
+                flexWrap: "nowrap",
+                overflowX: "auto",
+              }}
             >
               <FormControlLabel
                 disabled={!rosCtx.rosInfo?.rmwImplementation}
                 control={
                   <Checkbox
                     size="small"
-                    checked={!!forceRmwImplementation}
+                    checked={optionForceUseRmwImplementation}
                     onChange={(event) => {
-                      launchCfg.params.rmwImplementation = event.target.checked
-                        ? rosCtx.rosInfo?.rmwImplementation
-                        : undefined;
-                      setForceRmwImplementation(launchCfg.params.rmwImplementation || "");
+                      setOptionForceUseRmwImplementation(event.target.checked);
                       updateStartParameter();
                     }}
                   />
                 }
-                label={`force use ${rosCtx.rosInfo?.rmwImplementation || " RMW_IMPLEMENTATION (environment variable not set)"}`}
+                label="force use"
                 labelPlacement="end"
               />
+              <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createRMWSelector}</Box>
             </FormGroup>
 
             <Tooltip
@@ -988,12 +1041,10 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                   control={
                     <Checkbox
                       size="small"
-                      checked={!!optionOverrideZenohConfig}
+                      checked={!!launchCfg.params.rmw.overrideZeno}
                       onChange={(event) => {
-                        launchCfg.params.currentRmwImpl = event.target.checked
-                          ? rosCtx.rosInfo?.rmwImplementation || ""
-                          : "";
-                        setOptionOverrideZenohConfig(event.target.checked);
+                        launchCfg.params.rmw.overrideZeno = event.target.checked;
+                        // setOptionOverrideZenohConfig(event.target.checked);
                         updateStartParameter();
                       }}
                     />
