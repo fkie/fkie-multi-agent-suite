@@ -120,10 +120,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     "http://{HOST}:11311",
   ]);
 
-  const [optionOverrideZenohConfig, setOptionOverrideZenohConfig] = useLocalStorage(
-    "ConnectToProviderModal:optionOverrideZenohConfig",
-    true
-  );
   const [startCmdInfoExpanded, setStartCmdInfoExpanded] = useLocalStorage(
     "ConnectToProviderModal:startCmdInfoExpanded",
     true

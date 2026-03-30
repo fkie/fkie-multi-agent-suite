@@ -45,7 +45,7 @@ import { TResult, TRosInfo, TSystemInfo } from "@/types";
 import { useAlwaysCurrentRef } from "../hooks/useAlwaysCurrentRef";
 import { useLoggingContext } from "../hooks/useLoggingContext";
 import { useSettingsContext } from "../hooks/useSettingsContext";
-import { TProviderLaunchParams } from "../models/ProviderLaunchConfiguration";
+import { RmwSelection, TProviderLaunchParams } from "../models/ProviderLaunchConfiguration";
 import { LAUNCH_FILE_EXTENSIONS, getDefaultPortFromRos } from "./SettingsContext";
 
 // ─────────────────────────────────────────────
@@ -789,7 +789,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       defaultCfg.params.terminal.enable = true;
       defaultCfg.params.autoConnect = true;
       defaultCfg.params.autostart = false;
-      defaultCfg.params.currentRmwImpl = provider.rosState?.rmw_implementation || "";
+      defaultCfg.params.rmw.current = (provider.rosState?.rmw_implementation || "") as RmwSelection;
       return startConfig(defaultCfg, null);
     },
     [startConfig]

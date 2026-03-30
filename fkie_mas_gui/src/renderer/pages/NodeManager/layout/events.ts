@@ -6,7 +6,6 @@ import LayoutTabConfig from "./LayoutTabConfig";
 export const EVENT_CLOSE_COMPONENT = "EVENT_CLOSE_COMPONENT" as const;
 export const EVENT_OPEN_COMPONENT = "EVENT_OPEN_COMPONENT" as const;
 export const EVENT_OPEN_SETTINGS = "EVENT_OPEN_SETTINGS" as const;
-export const EVENT_OPEN_CONNECT = "EVENT_OPEN_CONNECT" as const;
 export const EVENT_EDITOR_SELECT_RANGE = "EVENT_EDITOR_SELECT_RANGE" as const;
 export const EVENT_FILTER_NODES = "EVENT_FILTER_NODES" as const;
 export const EVENT_FILTER_TOPICS = "EVENT_FILTER_TOPICS" as const;
