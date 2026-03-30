@@ -405,7 +405,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    * Function to get all the IDs belonging to a list of parent IDs
    */
   const getParentAndChildrenIds = useCallback(
-    (parentIds: string[]): string[] => {
+    (parentIds: string[], addParents: boolean = false): string[] => {
       const selected = new Set<string>();
       const groups = new Set<string>();
 
@@ -438,7 +438,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
 
         if (!selected.has(group) && allChildrenSelected(group, selected)) {
           groups.add(group);
-          selected.add(group);
+          if (addParents) selected.add(group);
         }
       }
 
@@ -697,7 +697,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           return kNode.idGlobal && treeNodes.includes(kNode.idGlobal);
         })
         .map((kNode) => kNode.key);
-      setSelectedItems(getParentAndChildrenIds(newSelItems));
+      setSelectedItems(getParentAndChildrenIds(newSelItems, true));
     },
     [keyNodeList, rosCtx.mapProviderRosNodes, getParentAndChildrenIds]
   );
