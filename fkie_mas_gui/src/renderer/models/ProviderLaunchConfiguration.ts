@@ -283,7 +283,7 @@ export default class ProviderLaunchConfiguration {
   public getZenohPrefix(): string {
     if (this.params.currentRmwImpl !== "rmw_zenoh_cpp") return "";
 
-    const zenohPort = 7447 + this.params.networkId || 0;
+    const zenohPort = 7448 + this.params.networkId || 0;
     const zenohMcastGroup = "224.0.0.224";
     return ` ZENOH_ROUTER_CHECK_ATTEMPTS=-1 ZENOH_CONFIG_OVERRIDE='listen/endpoints=["tcp/0.0.0.0:0"];scouting/multicast/enabled=true;scouting/multicast/address="${zenohMcastGroup}:${zenohPort}";scouting/multicast/listen=true;scouting/multicast/ttl=16' `;
   }

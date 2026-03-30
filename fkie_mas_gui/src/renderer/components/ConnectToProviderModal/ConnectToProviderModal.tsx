@@ -1426,7 +1426,7 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                   <Tooltip
                     title={
                       <Typography variant="body2">
-                        Prepend zenoh multicast configuration with new port (7447 + ROS_DOMAIN_ID)
+                        Prepend zenoh multicast configuration with new port (7448 + ROS_DOMAIN_ID)
                       </Typography>
                     }
                     disableInteractive
