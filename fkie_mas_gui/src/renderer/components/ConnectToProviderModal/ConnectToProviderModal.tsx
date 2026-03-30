@@ -54,7 +54,7 @@ import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
-import ProviderLaunchConfiguration from "@/renderer/models/ProviderLaunchConfiguration";
+import ProviderLaunchConfiguration, { TProviderLaunchParams } from "@/renderer/models/ProviderLaunchConfiguration";
 import Provider from "@/renderer/providers/Provider";
 import { EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
 import { generateUniqueId } from "@/renderer/utils";
@@ -101,11 +101,11 @@ type THostIp = { host: string; ip?: string };
 export type TSavedStartConfiguration = {
   id: string;
   hosts: THostIp[];
-  params: ProviderLaunchConfiguration;
+  params: TProviderLaunchParams;
 };
 const icon = <CheckBoxOutlineBlankIcon fontSize="small" />;
 const checkedIcon = <CheckBoxIcon fontSize="small" />;
-const DEFAULT_PARAMETER: ProviderLaunchConfiguration = new ProviderLaunchConfiguration("localhost", "2");
+const DEFAULT_PARAMETER: TProviderLaunchParams = new ProviderLaunchConfiguration().params;
 
 /**
  * Simple is object check.
@@ -118,10 +118,10 @@ function isObject(item: object | unknown[] | undefined): boolean | undefined {
  * Deep merge modifier into org and returns new object
  */
 function mergeDeepConfig(
-  org: ProviderLaunchConfiguration,
-  modifier: ProviderLaunchConfiguration
-): ProviderLaunchConfiguration {
-  const result: ProviderLaunchConfiguration = {} as ProviderLaunchConfiguration;
+  org: TProviderLaunchParams,
+  modifier: TProviderLaunchParams
+): TProviderLaunchParams {
+  const result: TProviderLaunchParams = {} as TProviderLaunchParams;
   if (isObject(org)) {
     for (const key in org) {
       if (isObject(org[key])) {
@@ -180,12 +180,12 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
     DEFAULT_PARAMETER.networkId
   );
 
-  const [startParameterDefault, setStartConfigurationsDefault] = useLocalStorage<ProviderLaunchConfiguration>(
+  const [startParameterDefault, setStartConfigurationsDefault] = useLocalStorage<TProviderLaunchParams>(
     "ConnectToProviderModal:startParameter",
     DEFAULT_PARAMETER
   );
-  const [startParameter, setStartParameter] = useState<ProviderLaunchConfiguration>(
-    mergeDeepConfig(DEFAULT_PARAMETER, startParameterDefault) as ProviderLaunchConfiguration
+  const [startParameter, setStartParameter] = useState<TProviderLaunchParams>(
+    mergeDeepConfig(DEFAULT_PARAMETER, startParameterDefault)
   );
 
   const [startConfigurations, setStartConfigurations] = useLocalStorage<TSavedStartConfiguration[]>(
@@ -429,48 +429,49 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
   }
 
   function createLaunchConfigFor(host: string): ProviderLaunchConfiguration {
-    const launchCfg = new ProviderLaunchConfiguration(host, startParameter.rosVersion);
-    launchCfg.daemon.enable = startParameter.daemon.enable;
-    launchCfg.discovery.enable = startParameter.discovery.enable;
-    launchCfg.networkId =
+    const launchCfg = new ProviderLaunchConfiguration();
+    launchCfg.params.rosVersion = startParameter.rosVersion;
+    launchCfg.params.daemon.enable = startParameter.daemon.enable;
+    launchCfg.params.discovery.enable = startParameter.discovery.enable;
+    launchCfg.params.networkId =
       startParameter.networkId === -1
         ? Number.parseInt(`${rosCtx.rosInfo?.domainId || "0"}`)
         : startParameter.networkId;
-    launchCfg.rmwImplementation = forceRmwImplementation ? startParameter.rmwImplementation : "";
-    launchCfg.discovery.heartbeatHz = startParameter.discovery.heartbeatHz;
+    launchCfg.params.rmwImplementation = forceRmwImplementation ? startParameter.rmwImplementation : "";
+    launchCfg.params.discovery.heartbeatHz = startParameter.discovery.heartbeatHz;
     if (startParameter.discovery.robotHosts && startParameter.discovery.robotHosts.length > 0)
-      launchCfg.discovery.robotHosts = startParameter.discovery.robotHosts;
-    launchCfg.sync.enable = startParameter.sync.enable;
-    launchCfg.sync.doNotSync = startParameter.sync.doNotSync;
-    launchCfg.sync.syncTopics = startParameter.sync.syncTopics;
-    launchCfg.terminal.enable = startParameter.terminal.enable;
-    launchCfg.terminal.port = startParameter.terminal.port;
-    launchCfg.terminal.path = startParameter.terminal.path;
-    launchCfg.autoConnect = true;
-    launchCfg.autostart = rosCtx.isLocalHost(host);
-    launchCfg.force.stop = startParameter.force.stop;
-    launchCfg.force.start = startParameter.force.start;
+      launchCfg.params.discovery.robotHosts = startParameter.discovery.robotHosts;
+    launchCfg.params.sync.enable = startParameter.sync.enable;
+    launchCfg.params.sync.doNotSync = startParameter.sync.doNotSync;
+    launchCfg.params.sync.syncTopics = startParameter.sync.syncTopics;
+    launchCfg.params.terminal.enable = startParameter.terminal.enable;
+    launchCfg.params.terminal.port = startParameter.terminal.port;
+    launchCfg.params.terminal.path = startParameter.terminal.path;
+    launchCfg.params.autoConnect = true;
+    launchCfg.params.autostart = rosCtx.isLocalHost(host);
+    launchCfg.params.force.stop = startParameter.force.stop;
+    launchCfg.params.force.start = startParameter.force.start;
     if (startParameter.ros1MasterUri.enable && startParameter.ros1MasterUri.uri !== "default") {
-      launchCfg.ros1MasterUri.enable = startParameter.ros1MasterUri.enable;
-      launchCfg.ros1MasterUri.uri = startParameter.ros1MasterUri.uri.replace("{HOST}", host);
+      launchCfg.params.ros1MasterUri.enable = startParameter.ros1MasterUri.enable;
+      launchCfg.params.ros1MasterUri.uri = startParameter.ros1MasterUri.uri.replace("{HOST}", host);
     }
-    launchCfg.currentRmwImpl = startParameter.currentRmwImpl;
+    launchCfg.params.currentRmwImpl = startParameter.currentRmwImpl;
 
     return launchCfg;
   }
 
   function createCommandsFor(launchCfg: ProviderLaunchConfiguration): string[] {
     const commands: string[] = [];
-    if (launchCfg.daemon.enable) {
+    if (launchCfg.params.daemon.enable) {
       commands.push(launchCfg.daemonStartCmd().message);
     }
-    if (launchCfg.discovery.enable) {
+    if (launchCfg.params.discovery.enable) {
       commands.push(launchCfg.masterDiscoveryStartCmd().message);
     }
-    if (launchCfg.sync.enable) {
+    if (launchCfg.params.sync.enable) {
       commands.push(launchCfg.masterSyncStartCmd().message);
     }
-    if (launchCfg.terminal.enable) {
+    if (launchCfg.params.terminal.enable) {
       commands.push(launchCfg.terminalStartCmd().message);
     }
     return commands;
@@ -621,7 +622,7 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                     hover
                     key={cfg.id}
                     onClick={() => {
-                      setStartParameter(mergeDeepConfig(DEFAULT_PARAMETER, cfg.params) as ProviderLaunchConfiguration);
+                      setStartParameter(mergeDeepConfig(DEFAULT_PARAMETER, cfg.params));
                       setHostValues(cfg.hosts);
                       setHostInputValue("");
                       setSelectedHistory(cfg.id);
@@ -1508,7 +1509,7 @@ export default function ConnectToProviderModal(props: ConnectToProviderModalProp
                       color="info"
                       onClick={(event) => {
                         setStartConfigurationsDefault(
-                          mergeDeepConfig(DEFAULT_PARAMETER, startParameter) as ProviderLaunchConfiguration
+                          mergeDeepConfig(DEFAULT_PARAMETER, startParameter)
                         );
                         event.stopPropagation();
                       }}

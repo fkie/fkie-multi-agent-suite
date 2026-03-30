@@ -30,7 +30,6 @@ import { HTMLAttributes, useCallback, useEffect, useMemo, useReducer, useRef, us
 import { emitCustomEvent } from "react-custom-events";
 
 import { CopyButton } from "@/renderer/components/UI";
-import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -104,13 +103,13 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   const [forceRmwImplementation, setForceRmwImplementation] = useState<string>("");
   const [forceRestart, setForceRestart] = useState(false);
 
-  const defaultHost: string = hostArg ? hostArg : config?.host || "localhost";
+  const defaultHost: string = hostArg ? hostArg : config?.params.host || "localhost";
   const [selectedHost, setSelectedHost] = useState<THostIp | null>({ host: defaultHost });
   const [hostList, setHostList] = useState<THostIp[]>([{ ip: "127.0.0.1", host: "localhost" }]);
   const [robotHostInputValue, setRobotHostInputValue] = useState("");
 
   const [inputMasterUri, setInputMasterUri] = useState(
-    launchCfg?.ros1MasterUri.uri ? launchCfg?.ros1MasterUri.uri : "default"
+    launchCfg?.params.ros1MasterUri.uri ? launchCfg?.params.ros1MasterUri.uri : "default"
   );
   const [optionsMasterUri, setOptionsMasterUri] = useLocalStorage("ConnectToProviderModal:optionsMasterUri", [
     "http://{HOST}:11311",
@@ -131,7 +130,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   }, []);
 
   useEffect(() => {
-    launchCfg.host = selectedHost?.host || selectedHost?.ip || "";
+    launchCfg.params.host = selectedHost?.host || selectedHost?.ip || "";
     forceValuesUpdate();
   }, [selectedHost]);
 
@@ -182,13 +181,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     return host as string;
   }
 
-  function host2host(host: string | THostIp): THostIp {
-    if (Object.keys(host).includes("host")) {
-      return host as THostIp;
-    }
-    return { host: host } as THostIp;
-  }
-
   useEffect(() => {
     if (!rosCtx.systemInfo) return;
     if (!rosCtx.systemInfo.hosts) return;
@@ -213,25 +205,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     setHostList(hostListLocal);
   }, [rosCtx.systemInfo]);
 
-  const getHostStyle = useCallback(
-    function getHostStyle(providerName: string): object {
-      if (settingsCtx.get("colorizeHosts")) {
-        // borderLeft: `3px dashed`,
-        // borderColor: colorFromHostname(provider.name()),
-        return {
-          borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(providerName),
-          borderLeftWidth: "0.6em",
-        };
-      }
-      return {};
-    },
-    [settingsCtx.changed]
-  );
-
   function getRobotHosts(): string[] {
     const robotHosts: string[] = [];
-    for (const h of launchCfg.discovery.robotHosts || []) {
+    for (const h of launchCfg.params.discovery.robotHosts || []) {
       robotHosts.push(h);
     }
     // add temporal values to the list as well
@@ -240,6 +216,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   }
 
   function updateStartParameter(): void {
+    launchCfg.params.currentRmwImpl = optionOverrideZenohConfig ? rosCtx.rosInfo?.rmwImplementation || "" : "";
     setStartCmdDaemon(launchCfg.daemonStartCmd().message);
     setStartCmdDiscovery(launchCfg.masterDiscoveryStartCmd().message);
     setStartCmdTtyd(launchCfg.terminalStartCmd().message);
@@ -248,49 +225,54 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
 
   const setRosVersion = useCallback(
     (rosVersion: string): void => {
-      launchCfg.rosVersion = rosVersion;
+      launchCfg.params.rosVersion = rosVersion;
       updateStartParameter();
     },
     [launchCfg]
   );
 
   function setMasterUri(masterUri: string): void {
-    launchCfg.ros1MasterUri.uri = masterUri === "http://{HOST}:11311" ? "default" : masterUri;
+    launchCfg.params.ros1MasterUri.uri = masterUri === "http://{HOST}:11311" ? "default" : masterUri;
+    updateStartParameter();
+  }
+
+  function setName(name: string): void {
+    launchCfg.params.name = name;
     updateStartParameter();
   }
 
   function setNetworkId(networkId: number): void {
-    launchCfg.networkId = networkId;
+    launchCfg.params.networkId = networkId;
     updateStartParameter();
   }
 
   function setHeartbeatHz(hz: number): void {
-    launchCfg.discovery.heartbeatHz = hz;
+    launchCfg.params.discovery.heartbeatHz = hz;
     updateStartParameter();
   }
 
   function setRobotHostValues(robotHosts: string[]): void {
-    launchCfg.discovery.robotHosts = robotHosts;
+    launchCfg.params.discovery.robotHosts = robotHosts;
     updateStartParameter();
   }
 
   function setDoNotSync(doNotSync: string[]): void {
-    launchCfg.sync.doNotSync = doNotSync;
+    launchCfg.params.sync.doNotSync = doNotSync;
     updateStartParameter();
   }
 
   function setSyncTopics(syncTopics: string[]): void {
-    launchCfg.sync.syncTopics = syncTopics;
+    launchCfg.params.sync.syncTopics = syncTopics;
     updateStartParameter();
   }
 
   function setTerminalPath(path: string): void {
-    launchCfg.terminal.path = path;
+    launchCfg.params.terminal.path = path;
     updateStartParameter();
   }
 
   function setTerminalPort(port: number): void {
-    launchCfg.terminal.port = port;
+    launchCfg.params.terminal.port = port;
     updateStartParameter();
   }
 
@@ -362,11 +344,11 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
           color="success"
           onClick={() => {
             onSave(launchCfg);
-            emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(launchCfg.id));
+            emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(launchCfg.params.id));
           }}
           style={{ height: "3em", textAlign: "center" }}
           endIcon={<SaveIcon />}
-          disabled={!launchCfg.host}
+          disabled={!launchCfg.params.host}
         >
           Save
         </Button>
@@ -377,14 +359,28 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
           // display="flex"
           color="error"
           onClick={() => {
-            onDelete(launchCfg.id);
-            emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(launchCfg.id));
+            onDelete(launchCfg.params.id);
+            emitCustomEvent(EVENT_CLOSE_COMPONENT, eventCloseComponent(launchCfg.params.id));
           }}
           style={{ height: "3em", textAlign: "center" }}
           endIcon={<DeleteIcon />}
         >
           Delete
         </Button>
+      </Stack>
+      <Stack>
+        <TextField
+          id="name"
+          // min={0}
+          // max={99}
+          label="Name"
+          size="small"
+          variant="outlined"
+          style={{ minWidth: "9em" }}
+          // fullWidth
+          onChange={(e) => setName(`${e.target.value}`)}
+          value={launchCfg.params.name || ""}
+        />
       </Stack>
       {createHostSelector}
       <Stack direction="row" spacing="0.5em">
@@ -395,7 +391,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               row
               aria-labelledby="ros-version-select-group-label"
               name="ros-version-select-group"
-              value={launchCfg.rosVersion}
+              value={launchCfg.params.rosVersion}
               onChange={(event) => {
                 setRosVersion(event.target.value);
               }}
@@ -416,9 +412,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               InputProps={{ inputProps: { min: -1, max: 99 } }}
               // fullWidth
               onChange={(e) => setNetworkId(Number(`${e.target.value}`))}
-              value={launchCfg.networkId}
+              value={launchCfg.params.networkId}
             />
-            {launchCfg.networkId === -1 && <Typography>Use default domain ID</Typography>}
+            {launchCfg.params.networkId === -1 && <Typography>Use default domain ID</Typography>}
           </Stack>
 
           <Stack
@@ -433,9 +429,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={launchCfg.daemon.enable}
+                    checked={launchCfg.params.daemon.enable}
                     onChange={(event) => {
-                      launchCfg.daemon.enable = event.target.checked;
+                      launchCfg.params.daemon.enable = event.target.checked;
                       updateStartParameter();
                     }}
                   />
@@ -444,14 +440,14 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                 labelPlacement="end"
               />
             </FormGroup>
-            {launchCfg.rosVersion === "2" && (
+            {launchCfg.params.rosVersion === "2" && (
               <FormGroup aria-label="position" row>
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={launchCfg.discovery.enable}
+                      checked={launchCfg.params.discovery.enable}
                       onChange={(event) => {
-                        launchCfg.discovery.enable = event.target.checked;
+                        launchCfg.params.discovery.enable = event.target.checked;
                         updateStartParameter();
                       }}
                     />
@@ -461,7 +457,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                 />
               </FormGroup>
             )}
-            {launchCfg.rosVersion === "1" && (
+            {launchCfg.params.rosVersion === "1" && (
               <Accordion
                 disableGutters
                 elevation={0}
@@ -489,9 +485,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                         <FormControlLabel
                           control={
                             <Checkbox
-                              checked={launchCfg.discovery.enable}
+                              checked={launchCfg.params.discovery.enable}
                               onChange={(event) => {
-                                launchCfg.discovery.enable = event.target.checked;
+                                launchCfg.params.discovery.enable = event.target.checked;
                                 updateStartParameter();
                               }}
                             />
@@ -513,7 +509,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                             ml: 0.5,
                           }}
                         >
-                          {`Heartbeat Hz: ${launchCfg.discovery.heartbeatHz}`}
+                          {`Heartbeat Hz: ${launchCfg.params.discovery.heartbeatHz}`}
                         </Typography>
                         <Typography
                           noWrap
@@ -541,12 +537,12 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                       variant="outlined"
                       fullWidth
                       onChange={(e) => setHeartbeatHz(Number(`${e.target.value}`))}
-                      value={launchCfg.discovery.heartbeatHz}
-                      disabled={!launchCfg.discovery.enable}
+                      value={launchCfg.params.discovery.heartbeatHz}
+                      disabled={!launchCfg.params.discovery.enable}
                     />
                     <Autocomplete
                       handleHomeEndKeys={false}
-                      disabled={!launchCfg.discovery.enable}
+                      disabled={!launchCfg.params.discovery.enable}
                       disablePortal
                       multiple
                       id="auto-complete-robot-hosts"
@@ -558,7 +554,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                       renderInput={(params) => (
                         <TextField {...params} variant="outlined" label="Add Robot Hosts" placeholder="..." fullWidth />
                       )}
-                      value={launchCfg.discovery.robotHosts}
+                      value={launchCfg.params.discovery.robotHosts}
                       onChange={(_event, newValue) => {
                         setRobotHostValues(newValue.map((item) => host2string(item)));
                       }}
@@ -592,7 +588,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                 </AccordionDetails>
               </Accordion>
             )}
-            {launchCfg.rosVersion === "1" && (
+            {launchCfg.params.rosVersion === "1" && (
               <Accordion
                 disableGutters
                 elevation={0}
@@ -622,9 +618,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                           // disabled={!startSystemNodes}
                           control={
                             <Checkbox
-                              checked={launchCfg.sync.enable}
+                              checked={launchCfg.params.sync.enable}
                               onChange={(event) => {
-                                launchCfg.sync.enable = event.target.checked;
+                                launchCfg.params.sync.enable = event.target.checked;
                                 updateStartParameter();
                               }}
                             />
@@ -646,7 +642,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                             ml: 0.5,
                           }}
                         >
-                          {`DoNotSync: [${launchCfg.sync.doNotSync.join()}]`}
+                          {`DoNotSync: [${launchCfg.params.sync.doNotSync.join()}]`}
                         </Typography>
                         <Typography
                           noWrap
@@ -658,7 +654,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                             ml: 0.5,
                           }}
                         >
-                          {`SyncTopics: [${launchCfg.sync.syncTopics.join()}]`}
+                          {`SyncTopics: [${launchCfg.params.sync.syncTopics.join()}]`}
                         </Typography>
                       </Stack>
                     </GridLegacy>
@@ -676,7 +672,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                       freeSolo
                       sx={{ margin: 0 }}
                       renderInput={(params) => <TextField {...params} variant="outlined" label="do not sync" />}
-                      value={launchCfg.sync.doNotSync}
+                      value={launchCfg.params.sync.doNotSync}
                       onChange={(_event, newValue) => {
                         setDoNotSync(newValue);
                       }}
@@ -692,7 +688,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                       freeSolo
                       sx={{ margin: 0 }}
                       renderInput={(params) => <TextField {...params} variant="outlined" label="sync topics" />}
-                      value={launchCfg.sync.syncTopics}
+                      value={launchCfg.params.sync.syncTopics}
                       onChange={(_event, newValue) => {
                         setSyncTopics(newValue);
                       }}
@@ -728,12 +724,12 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                     >
                       <Checkbox
                         style={{ marginLeft: 0, paddingLeft: 0 }}
-                        checked={launchCfg.terminal.enable}
+                        checked={launchCfg.params.terminal.enable}
                         onClick={(event) => {
                           event.stopPropagation();
                         }}
                         onChange={(event) => {
-                          launchCfg.terminal.enable = event.target.checked;
+                          launchCfg.params.terminal.enable = event.target.checked;
                           updateStartParameter();
                         }}
                       />
@@ -791,7 +787,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                           ml: 0.5,
                         }}
                       >
-                        {`Path: ${launchCfg.terminal.path}`}
+                        {`Path: ${launchCfg.params.terminal.path}`}
                       </Typography>
                       <Typography
                         variant="body2"
@@ -802,7 +798,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                           ml: 0.5,
                         }}
                       >
-                        {`Port: ${launchCfg.terminal.port}`}
+                        {`Port: ${launchCfg.params.terminal.port}`}
                       </Typography>
                     </Stack>
                   </GridLegacy>
@@ -817,8 +813,8 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                   variant="outlined"
                   fullWidth
                   onChange={(e) => setTerminalPath(`${e.target.value}`)}
-                  value={launchCfg.terminal.path}
-                  disabled={!launchCfg.terminal.enable}
+                  value={launchCfg.params.terminal.path}
+                  disabled={!launchCfg.params.terminal.enable}
                 />
                 <TextField
                   type="number"
@@ -828,12 +824,12 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                   variant="outlined"
                   fullWidth
                   onChange={(e) => setTerminalPort(Number(`${e.target.value}`))}
-                  value={launchCfg.terminal.port}
-                  disabled={!launchCfg.terminal.enable}
+                  value={launchCfg.params.terminal.port}
+                  disabled={!launchCfg.params.terminal.enable}
                 />
               </AccordionDetails>
             </Accordion>
-            {launchCfg.rosVersion === "1" && (
+            {launchCfg.params.rosVersion === "1" && (
               <Accordion>
                 <AccordionSummary
                   expandIcon={<ExpandMoreIcon />}
@@ -854,9 +850,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                           control={
                             <Checkbox
                               size="small"
-                              checked={launchCfg.ros1MasterUri.enable}
+                              checked={launchCfg.params.ros1MasterUri.enable}
                               onChange={(event) => {
-                                launchCfg.ros1MasterUri.enable = event.target.checked;
+                                launchCfg.params.ros1MasterUri.enable = event.target.checked;
                                 updateStartParameter();
                               }}
                             />
@@ -886,7 +882,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                             ml: 0.5,
                           }}
                         >
-                          {`${launchCfg.ros1MasterUri.uri}`}
+                          {`${launchCfg.params.ros1MasterUri.uri}`}
                         </Typography>
                       </Stack>
                     </GridLegacy>
@@ -962,10 +958,10 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                     size="small"
                     checked={!!forceRmwImplementation}
                     onChange={(event) => {
-                      launchCfg.rmwImplementation = event.target.checked
+                      launchCfg.params.rmwImplementation = event.target.checked
                         ? rosCtx.rosInfo?.rmwImplementation
                         : undefined;
-                      setForceRmwImplementation(launchCfg.rmwImplementation || "");
+                      setForceRmwImplementation(launchCfg.params.rmwImplementation || "");
                       updateStartParameter();
                     }}
                   />
@@ -994,7 +990,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                       size="small"
                       checked={!!optionOverrideZenohConfig}
                       onChange={(event) => {
-                        launchCfg.currentRmwImpl = event.target.checked ? rosCtx.rosInfo?.rmwImplementation || "" : "";
+                        launchCfg.params.currentRmwImpl = event.target.checked
+                          ? rosCtx.rosInfo?.rmwImplementation || ""
+                          : "";
                         setOptionOverrideZenohConfig(event.target.checked);
                         updateStartParameter();
                       }}
@@ -1012,13 +1010,13 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
             >
               <FormControlLabel
-                disabled={!(launchCfg.daemon.enable && launchCfg.discovery.enable)}
+                disabled={!(launchCfg.params.daemon.enable && launchCfg.params.discovery.enable)}
                 control={
                   <Checkbox
                     size="small"
                     checked={forceRestart}
                     onChange={(event) => {
-                      launchCfg.force = { stop: event.target.checked, start: event.target.checked };
+                      launchCfg.params.force = { stop: event.target.checked, start: event.target.checked };
                       updateStartParameter();
                       setForceRestart(event.target.checked);
                     }}
@@ -1054,7 +1052,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                 direction="column"
                 // divider={<Divider orientation="horizontal" />}
               >
-                {launchCfg.daemon.enable && (
+                {launchCfg.params.daemon.enable && (
                   <Stack direction="row">
                     <CopyButton value={startCmdDaemon} fontSize="0.7em" />
                     <Typography
@@ -1074,7 +1072,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                     </Typography>
                   </Stack>
                 )}
-                {launchCfg.discovery.enable && (
+                {launchCfg.params.discovery.enable && (
                   <Stack direction="row">
                     <CopyButton value={startCmdDiscovery} fontSize="0.7em" />
                     <Typography
@@ -1094,7 +1092,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                     </Typography>
                   </Stack>
                 )}
-                {launchCfg.terminal.enable && (
+                {launchCfg.params.terminal.enable && (
                   <Stack direction="row">
                     <CopyButton value={startCmdTtyd} fontSize="0.7em" />
                     <Typography

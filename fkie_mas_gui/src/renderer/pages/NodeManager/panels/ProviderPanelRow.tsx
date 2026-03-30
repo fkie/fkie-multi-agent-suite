@@ -2,7 +2,6 @@ import CheckIcon from "@mui/icons-material/Check";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import JoinFullIcon from "@mui/icons-material/JoinFull";
-import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
 import VerticalAlignBottomIcon from "@mui/icons-material/VerticalAlignBottom";
@@ -86,10 +85,6 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
     await rosCtx.connectToProvider(provider);
   }
 
-  async function handleStartProvider(provider: Provider): Promise<void> {
-    await rosCtx.startProvider(provider, true);
-  }
-
   const debouncedCallbackUpdateDelay = useDebounceCallback(() => {
     forceUpdate();
   }, 1000);
@@ -118,10 +113,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
     }
   });
 
-  async function onProviderMenuClick(
-    actionType: EMenuProvider,
-    provider: Provider
-  ): Promise<void> {
+  async function onProviderMenuClick(actionType: EMenuProvider, provider: Provider): Promise<void> {
     if (actionType === EMenuProvider.INFO) {
       const nodes = Array.from(rosCtx.nodeMap)
         .filter((value: [string, RosNode]) => {
@@ -132,17 +124,6 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
         });
       navCtx.setSelectedProviders([provider.id], true);
       navCtx.setSelectedNodes(nodes, false);
-      // emitCustomEvent(
-      //   EVENT_OPEN_COMPONENT,
-      //   eventOpenComponent(
-      //     `provider-info-${providerName}`,
-      //     providerName,
-      //     <SystemInformationPanel providerId={providerId} />,
-      //     true,
-      //     LAYOUT_TABS.HOSTS,
-      //     new LayoutTabConfig(false, "info")
-      //   )
-      // );
       return;
     }
     if (actionType === EMenuProvider.DELETE) {
@@ -223,7 +204,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                 </Typography>
               </Button>
             </Tooltip>
-            <Tooltip title="Start daemon" placement="bottom" disableInteractive>
+            {/* <Tooltip title="Start daemon" placement="bottom" disableInteractive>
               <IconButton
                 color="default"
                 onClick={() => {
@@ -232,52 +213,15 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
               >
                 <PlayCircleOutlineIcon fontSize="inherit" />
               </IconButton>
-            </Tooltip>
+            </Tooltip> */}
           </Stack>
         );
       case ConnectionState.STATES.LOST:
       case ConnectionState.STATES.UNSUPPORTED:
       case ConnectionState.STATES.UNREACHABLE:
       case ConnectionState.STATES.ERRORED: {
-        // eslint-disable-next-line no-case-declarations
-        let state = provider.connectionState;
-        if (provider.connectionState === ConnectionState.STATES.ERRORED) {
-          if (!provider.daemon) {
-            state = "no daemon";
-          } else if (!provider.discovery) {
-            state = "no discovery";
-          }
-        }
         return (
           <Stack direction="row" alignItems="center" justifyContent="center">
-            <Tooltip
-              title={`Click to start provider! ${
-                provider.errorDetails ? `${state}: ${JSON.stringify(provider.errorDetails)}` : ""
-              }`}
-              placement="bottom"
-              disableInteractive
-            >
-              <span>
-                {window.commandExecutor && (
-                  <Button
-                    style={{
-                      textTransform: "none",
-                    }}
-                    onClick={() => {
-                      handleStartProvider(provider);
-                    }}
-                    variant="text"
-                    color="info"
-                    size="small"
-                    endIcon={<PlayCircleOutlineIcon fontSize="inherit" />}
-                  >
-                    <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>
-                  </Button>
-                )}
-                {!window.commandExecutor && <div style={{ color: "red", whiteSpace: "nowrap" }}>{state}</div>}
-              </span>
-            </Tooltip>
-
             {window.commandExecutor && rosCtx.rosInfo?.version === "2" && (
               <Tooltip title="Show daemon log" placement="bottom" disableInteractive>
                 <IconButton
@@ -317,18 +261,6 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                   }}
                 >
                   <TextSnippetOutlinedIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            )}
-            {window.commandExecutor && (
-              <Tooltip title="Start daemon" placement="bottom" disableInteractive>
-                <IconButton
-                  color="default"
-                  onClick={() => {
-                    handleStartProvider(provider);
-                  }}
-                >
-                  <PlayCircleOutlineIcon fontSize="inherit" />
                 </IconButton>
               </Tooltip>
             )}

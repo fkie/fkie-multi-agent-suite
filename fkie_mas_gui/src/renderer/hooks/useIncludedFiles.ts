@@ -307,7 +307,7 @@ export function useIncludedFiles(
       if (exists) return prev;
 
       // Template of the last Include file (if exists)
-      const template = [...prev].reverse().find((f) => f.path === currentFile);
+      const template = [...prev].reverse().find((f) => f.path === currentFile) as LaunchIncludedFile;
 
       const newEntry: LaunchIncludedFile = {
         ...(template ?? {
