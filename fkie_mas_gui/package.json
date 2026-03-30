@@ -65,7 +65,6 @@
     "json5": "^2.2.3",
     "jtest": "^0.0.1",
     "monaco-editor": "^0.52.2",
-    "mui-markdown": "^2.0.1",
     "notistack": "^3.0.1",
     "react-app-polyfill": "^3.0.0",
     "react-custom-events": "^1.1.1",

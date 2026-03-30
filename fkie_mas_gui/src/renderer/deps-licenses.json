@@ -168,12 +168,6 @@
     "author": "Microsoft Corporation"
   },
   {
-    "name": "mui-markdown",
-    "licenseType": "MIT",
-    "installedVersion": "2.0.1",
-    "author": "Hosein Pouyanmehr a.h.pouyanmehr@gmail.com https://github.com/HPouyanmehr"
-  },
-  {
     "name": "notistack",
     "licenseType": "MIT",
     "installedVersion": "3.0.2",

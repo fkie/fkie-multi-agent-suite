@@ -1056,10 +1056,10 @@ class LaunchConfig(object):
                                                       current_file=current_file, indent=indent+'  ', launch_file_obj=launch_file_obj,
                                                       depth=depth, start_position_in_file=position_in_file, timer_period=timer_period,
                                                       env=additional_environment, remove_env=remove_environment)
-                except:
+                except Exception as e:
                     import traceback
                     err_msg = traceback.format_exc()
-                    self.load_exceptions.append(err_msg)
+                    self.load_exceptions.append(f"{e}")
                     print(err_msg)
 
             else:

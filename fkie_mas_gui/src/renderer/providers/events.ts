@@ -7,6 +7,7 @@ import {
   PathEvent,
   ProviderLaunchConfiguration,
   RosNode,
+  RosPackage,
   ScreensMapping,
   SubscriberEvent,
   SystemWarningGroup,
@@ -230,6 +231,17 @@ export class EventProviderAuthRequest {
     this.provider = provider;
     this.launchConfig = launchConfig;
     this.connectConfig = connectConfig;
+  }
+}
+
+export class EventProviderRosPackages {
+  provider: Provider;
+
+  packages: RosPackage[];
+
+  constructor(provider: Provider, packages: RosPackage[]) {
+    this.provider = provider;
+    this.packages = packages;
   }
 }
 
