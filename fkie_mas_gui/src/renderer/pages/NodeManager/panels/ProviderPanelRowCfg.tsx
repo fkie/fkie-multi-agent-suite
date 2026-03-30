@@ -65,6 +65,11 @@ export default function ProviderPanelRowCfg(props: ProviderPanelRowCfgProps): JS
                 [{startConfig.params.networkId}]
               </Typography>
             </Tooltip>
+            {startConfig.params.rmw.forceUse && (
+              <Typography color="grey" variant="body2">
+                {startConfig.params.rmw.current}
+              </Typography>
+            )}
           </Stack>
         </TableCell>
         <TableCell
