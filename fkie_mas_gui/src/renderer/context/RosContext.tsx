@@ -45,6 +45,7 @@ import { TResult, TRosInfo, TSystemInfo } from "@/types";
 import { useAlwaysCurrentRef } from "../hooks/useAlwaysCurrentRef";
 import { useLoggingContext } from "../hooks/useLoggingContext";
 import { useSettingsContext } from "../hooks/useSettingsContext";
+import { TProviderLaunchParams } from "../models/ProviderLaunchConfiguration";
 import { LAUNCH_FILE_EXTENSIONS, getDefaultPortFromRos } from "./SettingsContext";
 
 // ─────────────────────────────────────────────
@@ -93,6 +94,7 @@ export interface IRosContext {
   updateLocalNodes: (providerId: string, nodes: string[]) => void;
   setShowSnackbarReloadLaunchNotification: (show: boolean) => void;
   setShowSnackbarBinaryChangedNotification: (show: boolean) => void;
+  hiddenConnect(configParams: TProviderLaunchParams);
 }
 
 type TLoadLaunchResult = {
@@ -130,6 +132,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [providersAddQueue, setProvidersAddQueue] = useState<Provider[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [localNodes, setLocalNodes] = useState<TLocalNode[]>([]);
+  const [hiddenProviders, setHiddenProviders] = useState<Provider[]>([]);
   const [showSnackbarReloadLaunchNotification, setShowSnackbarReloadLaunchNotification] = useState<boolean>(true);
   const [showSnackbarBinaryChangedNotification, setShowSnackbarBinaryChangedNotification] = useState<boolean>(true);
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(new Map<string, RosNode[]>());
@@ -573,7 +576,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         logCtx.error(
           `Failed to create ${serviceLabel} start command: ${cmdResult.message}`,
           JSON.stringify(config),
-          `${config.host} ${serviceLabel} not started`
+          `${config.params.host} ${serviceLabel} not started`
         );
         return { started: false, authRequested: false };
       }
@@ -591,18 +594,18 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           return { started: false, authRequested: true };
         }
         logCtx.error(
-          `Error while starting ${serviceLabel} on host '${config.host}'`,
+          `Error while starting ${serviceLabel} on host '${config.params.host}'`,
           result.message,
-          `${config.host} ${serviceLabel} not started`
+          `${config.params.host} ${serviceLabel} not started`
         );
         provider.setConnectionState(ConnectionState.STATES.ERRORED, result.message);
         return { started: false, authRequested: false };
       }
 
       logCtx.success(
-        `${serviceLabel} on host '${config.host}' started successfully`,
+        `${serviceLabel} on host '${config.params.host}' started successfully`,
         "",
-        `${config.host} ${serviceLabel} started`
+        `${config.params.host} ${serviceLabel} started`
       );
       return { started: true, authRequested: false };
     },
@@ -617,26 +620,32 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     async (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig | null = null): Promise<boolean> => {
       if (!window.commandExecutor) return false;
 
+      console.log(`config: ${JSON.stringify(config)}`);
       let allStarted = true;
       try {
-        const isLocal = isLocalHost(config.host);
-        const credential: ConnectConfig | null = isLocal ? null : (connectConfig ?? { host: config.host });
+        const isLocal = isLocalHost(config.params.host);
+        const credential: ConnectConfig | null = isLocal ? null : (connectConfig ?? { host: config.params.host });
 
         const port =
-          config.port ||
-          getDefaultPortFromRos(Provider.defaultType, config.rosVersion, config.ros1MasterUri.uri, config.networkId);
+          config.params.port ||
+          getDefaultPortFromRos(
+            Provider.defaultType,
+            config.params.rosVersion,
+            config.params.ros1MasterUri.uri,
+            config.params.networkId
+          );
 
         // ── Resolve / create provider ─────────────
-        let provider = getProviderByHosts([config.host], port, null) as Provider | null;
+        let provider = getProviderByHosts([config.params.host], port, null) as Provider | null;
         if (!provider) {
           provider = new Provider(
             logCtxRef,
             settingsCtxRef,
-            config.host,
-            config.rosVersion,
+            config.params.host,
+            config.params.rosVersion,
             port,
-            config.networkId,
-            config.useSSL
+            config.params.networkId,
+            config.params.useSSL
           );
           provider.isLocalHost = isLocal;
           provider.startConfiguration = config;
@@ -652,41 +661,48 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         }
 
         // Default to daemon + discovery + terminal if nothing is enabled.
-        if (!(config.daemon.enable || config.discovery.enable || config.terminal.enable || config.sync.enable)) {
-          config.daemon.enable = true;
-          config.discovery.enable = true;
-          config.terminal.enable = true;
+        if (
+          !(
+            config.params.daemon.enable ||
+            config.params.discovery.enable ||
+            config.params.terminal.enable ||
+            config.params.sync.enable
+          )
+        ) {
+          config.params.daemon.enable = true;
+          config.params.discovery.enable = true;
+          config.params.terminal.enable = true;
         }
 
-        if (config.daemon.enable || config.discovery.enable) {
+        if (config.params.daemon.enable || config.params.discovery.enable) {
           provider.setConnectionState(ConnectionState.STATES.STARTING, "");
         }
 
         // ── Stop running system nodes if requested ─
         const systemNodes = provider.rosNodes.filter((n) => n.system_node);
-        if (config.force.stop && systemNodes.length > 0) {
+        if (config.params.force.stop && systemNodes.length > 0) {
           const pick = (key: string) => systemNodes.find((n) => n.id.includes(key));
           const nodesToStop: RosNode[] = [];
 
-          if (config.rosVersion === "1") {
-            if (config.sync.enable) {
+          if (config.params.rosVersion === "1") {
+            if (config.params.sync.enable) {
               const n = pick("mas_sync") ?? pick("master_sync");
               if (n) nodesToStop.push(n);
             }
-            if (config.daemon.enable) {
+            if (config.params.daemon.enable) {
               const n = pick("mas/_daemon") ?? pick("node_manager_daemon");
               if (n) nodesToStop.push(n);
             }
-            if (config.discovery.enable) {
+            if (config.params.discovery.enable) {
               const n = pick("mas/_discovery") ?? pick("master_discovery");
               if (n) nodesToStop.push(n);
             }
           } else {
-            if (config.discovery.enable) {
+            if (config.params.discovery.enable) {
               const n = pick("mas/_discovery") ?? pick("master_discovery");
               if (n) nodesToStop.push(n);
             }
-            if (config.daemon.enable) {
+            if (config.params.daemon.enable) {
               const n = pick("mas/_daemon") ?? pick("node_manager_daemon");
               if (n) nodesToStop.push(n);
             }
@@ -694,33 +710,33 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
           await Promise.all(
             nodesToStop.map(async (node) => {
-              logCtx.info(`Stopping running ${node.name} on host '${config.host}'`, "");
+              logCtx.info(`Stopping running ${node.name} on host '${config.params.host}'`, "");
               await provider?.stopNode(node.id);
             })
           );
-          config.force.stop = false;
+          config.params.force.stop = false;
         }
 
         // ── Start services ─────────────────────────
-        if (config.daemon.enable) {
+        if (config.params.daemon.enable) {
           const sr = await startService(credential, config.daemonStartCmd(), provider, config, "daemon");
           if (sr.authRequested) return false;
           if (!sr.started) allStarted = false;
         }
 
-        if (config.discovery.enable) {
+        if (config.params.discovery.enable) {
           const sr = await startService(credential, config.masterDiscoveryStartCmd(), provider, config, "discovery");
           if (sr.authRequested) return false;
           if (!sr.started) allStarted = false;
         }
 
-        if (config.sync.enable) {
+        if (config.params.sync.enable) {
           const sr = await startService(credential, config.masterSyncStartCmd(), provider, config, "sync");
           if (sr.authRequested) return false;
           if (!sr.started) allStarted = false;
         }
 
-        if (config.terminal.enable) {
+        if (config.params.terminal.enable) {
           const sr = await startService(credential, config.terminalStartCmd(), provider, config, "terminal");
           if (sr.authRequested) return false;
           if (!sr.started) allStarted = false;
@@ -729,17 +745,20 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         // Connect after giving services time to start.
         setTimeout(() => connectToProvider(provider as Provider), 2000);
       } catch (error) {
-        logCtx.error(`Error starting host: ${config.host}`, `${error}`, `${config.host} start failed`);
+        logCtx.error(`Error starting host: ${config.params.host}`, `${error}`, `${config.params.host} start failed`);
         allStarted = false;
-        const p = getProviderByHosts([config.host], config.port, null);
+        const p = getProviderByHosts([config.params.host], config.params.port, null);
         if (p) {
           if (`${error}`.includes("Missing SSH credentials")) {
             p.setConnectionState(ConnectionState.STATES.AUTHZ, "start aborted");
           } else {
-            p.setConnectionState(ConnectionState.STATES.UNREACHABLE, `Error starting host: ${config.host}: ${error}`);
+            p.setConnectionState(
+              ConnectionState.STATES.UNREACHABLE,
+              `Error starting host: ${config.params.host}: ${error}`
+            );
           }
         } else {
-          console.warn(`provider for host ${config.host}:${config.port} not found`);
+          console.warn(`provider for host ${config.params.host}:${config.params.port} not found`);
         }
       }
       return allStarted;
@@ -759,19 +778,18 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       }
       if (!forceStartWithDefault) return false;
 
-      const defaultCfg = new ProviderLaunchConfiguration(
-        provider.host(),
-        provider.rosVersion,
-        provider.connection?.port
-      );
+      const defaultCfg = new ProviderLaunchConfiguration();
+      defaultCfg.params.host = provider.host();
+      defaultCfg.params.rosVersion = provider.rosVersion;
+      defaultCfg.params.port = provider.connection?.port;
       const domainId = provider.rosState?.ros_domain_id;
-      if (domainId !== undefined) defaultCfg.networkId = Number.parseInt(domainId);
-      defaultCfg.daemon.enable = true;
-      defaultCfg.discovery.enable = true;
-      defaultCfg.terminal.enable = true;
-      defaultCfg.autoConnect = true;
-      defaultCfg.autostart = false;
-      defaultCfg.currentRmwImpl = provider.rosState?.rmw_implementation || "";
+      if (domainId !== undefined) defaultCfg.params.networkId = Number.parseInt(domainId);
+      defaultCfg.params.daemon.enable = true;
+      defaultCfg.params.discovery.enable = true;
+      defaultCfg.params.terminal.enable = true;
+      defaultCfg.params.autoConnect = true;
+      defaultCfg.params.autostart = false;
+      defaultCfg.params.currentRmwImpl = provider.rosState?.rmw_implementation || "";
       return startConfig(defaultCfg, null);
     },
     [startConfig]
@@ -789,16 +807,18 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       logCtx.debug(`Starting master-sync on host '${host}'`, "");
       const provider = getProviderByHosts([host]) as Provider;
 
-      const launchCfg = new ProviderLaunchConfiguration(host, rosVersion);
-      launchCfg.daemon.enable = false;
-      launchCfg.discovery.enable = false;
-      launchCfg.sync.enable = true;
-      launchCfg.sync.doNotSync = [];
-      launchCfg.sync.syncTopics = [];
-      launchCfg.terminal.enable = false;
-      launchCfg.force.start = true;
-      launchCfg.force.stop = true;
-      if (masteruri) launchCfg.ros1MasterUri = { enable: true, uri: masteruri };
+      const launchCfg = new ProviderLaunchConfiguration();
+      launchCfg.params.host = host;
+      launchCfg.params.rosVersion = rosVersion;
+      launchCfg.params.daemon.enable = false;
+      launchCfg.params.discovery.enable = false;
+      launchCfg.params.sync.enable = true;
+      launchCfg.params.sync.doNotSync = [];
+      launchCfg.params.sync.syncTopics = [];
+      launchCfg.params.terminal.enable = false;
+      launchCfg.params.force.start = true;
+      launchCfg.params.force.stop = true;
+      if (masteruri) launchCfg.params.ros1MasterUri = { enable: true, uri: masteruri };
 
       const cmd = launchCfg.masterSyncStartCmd();
       if (!cmd.result) return false;
@@ -815,7 +835,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           );
           return false;
         }
-        logCtx.error(`Failed to start sync on host '${launchCfg.host}'`, result.message);
+        logCtx.error(`Failed to start sync on host '${launchCfg.params.host}'`, result.message);
         return false;
       }
       return true;
@@ -834,8 +854,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         return { result: false, message: msg };
       }
 
-      const config = new ProviderLaunchConfiguration("localhost", "1");
-      config.ros1MasterUri = { enable: true, uri: masteruri };
+      const config = new ProviderLaunchConfiguration();
+      config.params.rosVersion = "1";
+      config.params.ros1MasterUri = { enable: true, uri: masteruri };
       const cmd = config.dynamicReconfigureClientCmd(nodeName, masteruri);
       if (!cmd.result) return { result: false, message: cmd.message };
 
@@ -851,8 +872,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           );
           return { result: false, message: "password requested" };
         }
-        logCtx.error(`Failed to start dynamic reconfigure node on host '${config.host}'`, result.message);
-        return { result: false, message: `Failed to start dynamic reconfigure node on host '${config.host}'` };
+        logCtx.error(`Failed to start dynamic reconfigure node on host '${config.params.host}'`, result.message);
+        return { result: false, message: `Failed to start dynamic reconfigure node on host '${config.params.host}'` };
       }
       return { result: true, message: "" };
     },
@@ -915,6 +936,24 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       />
     ),
     [logCtx]
+  );
+
+  const hiddenConnect = useCallback(
+    (configParams: TProviderLaunchParams) => {
+      const provider = new Provider(
+        logCtxRef,
+        settingsCtxRef,
+        configParams.host,
+        configParams.rosVersion,
+        configParams.port,
+        configParams.networkId,
+        configParams.useSSL
+      );
+      provider.init();
+      provider.startConfiguration = new ProviderLaunchConfiguration(configParams);
+      setHiddenProviders((prev) => [...prev, provider]);
+    },
+    [logCtxRef, settingsCtxRef]
   );
 
   // ─────────────────────────────────────────────
@@ -1052,12 +1091,31 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     console.log(
       `trigger connection state ${provider.id}: new: ${newState}, old: ${oldState}, ${JSON.stringify(details)}`
     );
+    console.log(`STATE: ${provider.startConfiguration?.params.id}: ${newState}`);
+    const hiddenProv = hiddenProviders.find((p) => {
+      console.log(`  ph: ${p.startConfiguration?.params.id}`);
+      console.log(`  pr: ${provider.startConfiguration?.params.id}`);
+      return p.startConfiguration?.params.id === provider.startConfiguration?.params.id;
+    });
+    console.log(`hiddenProv: ${hiddenProv?.startConfiguration?.params.id}: ${newState}`);
     switch (newState) {
       case ConnectionState.STATES.CONNECTED:
         clearProviders();
+        if (hiddenProv) {
+          if (!providers.find((p) => p.hostnames.findIndex((h) => h === hiddenProv.host()) !== -1))
+            setProviders((prev) => [...prev, hiddenProv]);
+          setHiddenProviders((prev) =>
+            prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
+          );
+        }
         break;
       case ConnectionState.STATES.CLOSED:
         mapProviderRosNodesRef.current.set(provider.id, []);
+        if (hiddenProv) {
+          setHiddenProviders((prev) =>
+            prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
+          );
+        }
         clearProviders();
         break;
       case ConnectionState.STATES.AUTHZ:
@@ -1065,6 +1123,11 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       case ConnectionState.STATES.UNSUPPORTED:
       case ConnectionState.STATES.UNREACHABLE:
       case ConnectionState.STATES.ERRORED:
+        if (hiddenProv) {
+          setHiddenProviders((prev) =>
+            prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
+          );
+        }
         clearProviders();
         break;
       default:
@@ -1156,6 +1219,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       updateLocalNodes,
       setShowSnackbarReloadLaunchNotification,
       setShowSnackbarBinaryChangedNotification,
+      hiddenConnect,
     }),
     [
       initialized,
@@ -1186,6 +1250,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       isLocalHost,
       addProvider,
       updateLocalNodes,
+      hiddenConnect,
     ]
   );
 

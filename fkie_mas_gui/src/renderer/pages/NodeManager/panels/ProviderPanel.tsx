@@ -1,25 +1,61 @@
+import AddIcon from "@mui/icons-material/Add";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
-import { IconButton, Stack, Table, TableBody, TableContainer, Tooltip } from "@mui/material";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import { IconButton, Stack, Table, TableBody, TableContainer, Tooltip, Typography } from "@mui/material";
+import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
+import MuiAccordionDetails from "@mui/material/AccordionDetails";
+import MuiAccordionSummary from "@mui/material/AccordionSummary";
+import { styled } from "@mui/material/styles";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { useEffect, useMemo, useState } from "react";
-import { useCustomEventListener } from "react-custom-events";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
-import ConnectToProviderModal from "@/renderer/components/ConnectToProviderModal/ConnectToProviderModal";
 import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
+import { ProviderLaunchConfiguration } from "@/renderer/models";
+import { TProviderLaunchParams } from "@/renderer/models/ProviderLaunchConfiguration";
 import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 import Provider from "@/renderer/providers/Provider";
-import { EVENT_OPEN_CONNECT } from "../layout/events";
+import { LAYOUT_TAB_SETS } from "../layout";
+import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "../layout/events";
+import ProviderLaunchConfigPanel from "./ProviderLaunchConfigPanel";
 import ProviderPanelRow from "./ProviderPanelRow";
+import ProviderPanelRowCfg from "./ProviderPanelRowCfg";
+
+const AccordionAdv = styled((props: AccordionProps) => <MuiAccordion disableGutters elevation={0} square {...props} />)(
+  ({ theme }) => ({
+    border: "none",
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(0, 0, 0, .00)" : "rgba(255, 255, 255, .00)",
+    ".MuiAccordionSummary-content": { margin: 0 },
+    "&:before": {
+      display: "none",
+    },
+    paddingTop: "9px",
+  })
+);
+
+const AccordionSummary = styled(MuiAccordionSummary)(({ theme }) => ({
+  paddingTop: 0,
+  margin: 0,
+  minHeight: 26,
+  borderTop: "1px solid rgba(0, 0, 0, .125)",
+  background: theme.palette.background.default,
+}));
+
+const AccordionDetails = styled(MuiAccordionDetails)(() => ({
+  paddingTop: 0,
+  // borderTop: '1px solid rgba(0, 0, 0, .125)',
+}));
 
 export default function ProviderPanel(): JSX.Element {
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
-  const [openConnect, setOpenConnect] = useState(false);
+  const [expandedProviderCfg, setExpandedProviderCfg] = useState(true);
   const [noSourcedROS, setNoSourcedROS] = useState(false);
   const [noRosVersion, setNoRosVersion] = useState(false);
   const [providerRowsFiltered, setProviderRowsFiltered] = useState<Provider[]>([]);
@@ -27,6 +63,13 @@ export default function ProviderPanel(): JSX.Element {
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
+  const [startConfigurations, setStartConfigurations] = useLocalStorage<TProviderLaunchParams[]>(
+    "Provider:startConfigurations",
+    []
+  );
+  const [showStartConfigurations, setShowStartConfigurations] = useState<ProviderLaunchConfiguration[]>([]);
+
+  const addButtonRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
@@ -34,14 +77,17 @@ export default function ProviderPanel(): JSX.Element {
     setButtonLocation(settingsCtx.get("buttonLocation") as string);
   }, [settingsCtx.changed]);
 
-  useCustomEventListener(EVENT_OPEN_CONNECT, () => {
-    setOpenConnect(true);
-  });
+  useEffect(() => {
+    setShowStartConfigurations(
+      startConfigurations.map((cfg) => {
+        return new ProviderLaunchConfiguration(cfg);
+      })
+    );
+  }, [startConfigurations]);
 
   async function getDomainId(): Promise<void> {
     if (rosCtx.providers.length === 0) {
       if (settingsCtx.getArgument("start") && window.commandExecutor) {
-        setOpenConnect(true);
         return;
       }
       const rosDomainId = settingsCtx.getArgument("ros-domain-id") as number;
@@ -52,8 +98,6 @@ export default function ProviderPanel(): JSX.Element {
           setNoRosVersion(true);
           return;
         }
-
-        setOpenConnect(true);
         return;
       }
       // try to get local domain id from running mas processes
@@ -82,6 +126,7 @@ export default function ProviderPanel(): JSX.Element {
               }
             }
             if (domainId >= 0) {
+              console.log("CONNECT TO PROVIDER");
               const newProvider = rosCtx.createProvider(
                 "localhost",
                 rosCtx.rosInfo.version,
@@ -97,11 +142,17 @@ export default function ProviderPanel(): JSX.Element {
           console.log(`error while lookup for running daemons: ${error} `);
         }
       }
-      if (!window.commandExecutor) {
-        setOpenConnect(true);
-      } else if (rosCtx.rosInfo?.version || settingsCtx.getArgument("ros-version")) {
-        setOpenConnect(true);
-      } else {
+      console.log("HIDDEN CONNECT");
+      for (const startCfg of startConfigurations) {
+        if (startCfg.host === "localhost") {
+          rosCtx.hiddenConnect(startCfg);
+        }
+      }
+
+      if (startConfigurations.length === 0) {
+        addButtonRef?.current?.focus();
+      }
+      if (window.commandExecutor && !(rosCtx.rosInfo?.version || settingsCtx.getArgument("ros-version"))) {
         setNoSourcedROS(true);
       }
     }
@@ -116,10 +167,74 @@ export default function ProviderPanel(): JSX.Element {
           return pos !== -1;
         })
       );
+      setShowStartConfigurations(
+        startConfigurations
+          .filter((item) => item.host.search(re) !== -1)
+          .map((cfg) => {
+            return new ProviderLaunchConfiguration(cfg);
+          })
+      );
     } else {
       setProviderRowsFiltered(providers);
+      setShowStartConfigurations(
+        startConfigurations.map((cfg) => {
+          return new ProviderLaunchConfiguration(cfg);
+        })
+      );
     }
   }, 300);
+
+  const saveLaunchConfiguration = useCallback(
+    (config: ProviderLaunchConfiguration) => {
+      setStartConfigurations((prev) => {
+        const idx = prev.findIndex((c) => c.id === config.params.id);
+        const next = [...prev];
+
+        if (idx !== -1) {
+          // replace
+          next[idx] = config.params;
+        } else {
+          // add new
+          next.push(config.params);
+        }
+
+        // sort
+        return next.sort((a, b) => a.host.localeCompare(b.host));
+      });
+    },
+    [setStartConfigurations]
+  );
+
+  const deleteLaunchConfiguration = useCallback(
+    (configId: string) => {
+      setStartConfigurations((prev) => {
+        return prev.filter((c) => c.id !== configId);
+      });
+    },
+    [setStartConfigurations]
+  );
+
+  const editLaunchConfiguration = useCallback((config: ProviderLaunchConfiguration, title?: string) => {
+    emitCustomEvent(
+      EVENT_OPEN_COMPONENT,
+      eventOpenComponent(
+        config.params.id,
+        title || `${config.params.host} start configuration`,
+        <ProviderLaunchConfigPanel
+          config={config}
+          onDelete={(configId) => {
+            deleteLaunchConfiguration(configId);
+          }}
+          onSave={(config) => {
+            saveLaunchConfiguration(config);
+          }}
+        />,
+        true,
+        LAYOUT_TAB_SETS.CENTER,
+        undefined
+      )
+    );
+  }, []);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   useCustomEventListener(EVENT_PROVIDER_STATE, () => {
@@ -150,17 +265,6 @@ export default function ProviderPanel(): JSX.Element {
             <RefreshIcon sx={{ fontSize: "inherit" }} />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Start system nodes" placement="bottom" disableInteractive>
-          <IconButton
-            color="primary"
-            onClick={() => {
-              setOpenConnect(true);
-            }}
-            size="small"
-          >
-            <RocketLaunchIcon fontSize="inherit" />
-          </IconButton>
-        </Tooltip>
       </Stack>
     );
   }, [tooltipDelay]);
@@ -181,6 +285,28 @@ export default function ProviderPanel(): JSX.Element {
     return result;
   }, [providerRowsFiltered, rosCtx]);
 
+  const createProviderStartTable = useMemo(() => {
+    const result = (
+      // <TableContainer  height="100%" style={{ overflowX: 'scroll', flexGrow: 1 }}>
+      <TableContainer style={{ flexGrow: 1 }}>
+        <Table aria-label="configs table">
+          <TableBody>
+            {showStartConfigurations.map((config) => {
+              return (
+                <ProviderPanelRowCfg
+                  key={config.params.id}
+                  startConfig={config}
+                  editConfiguration={editLaunchConfiguration}
+                />
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+    return result;
+  }, [showStartConfigurations, rosCtx]);
+
   return (
     <Stack
       spacing={1}
@@ -200,19 +326,6 @@ export default function ProviderPanel(): JSX.Element {
           // fullWidth={true}
         />
         {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
-        {openConnect && (
-          <ConnectToProviderModal
-            startOnOpen={
-              rosCtx.providers.length === 0 && window.commandExecutor
-                ? (settingsCtx.getArgument("start") as boolean)
-                : false
-            }
-            joinOnOpen={rosCtx.providers.length === 0 && (settingsCtx.getArgument("join") as boolean)}
-            onCloseDialog={() => {
-              setOpenConnect(false);
-            }}
-          />
-        )}
         {noSourcedROS && (
           <ConfirmModal
             title="Is ROS sourced?"
@@ -234,7 +347,56 @@ export default function ProviderPanel(): JSX.Element {
           />
         )}
       </Stack>
-      <Stack height="100%">{createProviderTable}</Stack>
+      <AccordionAdv
+        disabled={!window.commandExecutor}
+        expanded={expandedProviderCfg}
+        onChange={(_event, expanded) => {
+          setExpandedProviderCfg(expanded);
+        }}
+        sx={{ pl: 0, padding: 0 }}
+      >
+        <Stack direction="row" alignItems="center" spacing="0.3em" flexGrow={1}>
+          <AccordionSummary
+            // disabled={!startSystemNodes}
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="start-commands"
+            id="start-commands"
+            sx={{ pl: 0, paddingBottom: 0 }}
+          >
+            <Stack direction="row" alignItems="center" spacing="0.3em" flexGrow={1}>
+              <SettingsOutlinedIcon fontSize="inherit" />
+              <Typography variant="subtitle1" flexGrow={1}>
+                Provider Configurations - {startConfigurations.length}
+              </Typography>
+            </Stack>
+          </AccordionSummary>
+          <Tooltip title="Add new start configuration" disableInteractive>
+            <IconButton
+              component="span"
+              ref={addButtonRef}
+              onClick={(event) => {
+                event.stopPropagation();
+                const launchCfg = new ProviderLaunchConfiguration();
+                editLaunchConfiguration(launchCfg, "New start configuration");
+              }}
+              onTouchEnd={(event) => {
+                event.stopPropagation();
+              }}
+            >
+              <AddIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+        <AccordionDetails sx={{ paddingBottom: 1 }}>
+          <Stack
+            direction="column"
+            // divider={<Divider orientation="horizontal" />}
+          >
+            {createProviderStartTable}
+          </Stack>
+        </AccordionDetails>
+      </AccordionAdv>
+      <Stack flexGrow={1}>{createProviderTable}</Stack>
     </Stack>
   );
 }

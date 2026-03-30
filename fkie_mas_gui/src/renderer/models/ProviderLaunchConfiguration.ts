@@ -1,9 +1,11 @@
 import { TResult } from "@/types";
+import { generateUniqueId } from "../utils";
 
-/**
- * ProviderLaunchConfiguration models launch configuration to start ROS system nodes
- */
-export default class ProviderLaunchConfiguration {
+export type TProviderLaunchParams = {
+  id: string;
+
+  name: string | undefined;
+
   /** Name of the provider, usually set after the provider was launched. */
   providerName: string | undefined;
 
@@ -12,26 +14,26 @@ export default class ProviderLaunchConfiguration {
   host: string;
 
   /** If zero the port is depending on ROS version. */
-  port: number = 0;
+  port: number;
 
   /** Currently support websocket */
-  type: string = "websocket";
+  type: string;
 
   /** Use secure connection */
-  useSSL: boolean = false;
+  useSSL: boolean;
 
   /** ROS version as string of {'1', '2'} */
-  rosVersion: string = "1";
+  rosVersion: string;
 
-  networkId: number = -1;
+  networkId: number;
 
-  rmwImplementation: string | undefined = undefined;
+  rmwImplementation: string | undefined;
 
-  currentRmwImpl: string = "";
+  currentRmwImpl: string | undefined;
 
   daemon: {
     enable: boolean;
-  } = { enable: true };
+  };
 
   discovery: {
     enable: boolean;
@@ -39,58 +41,85 @@ export default class ProviderLaunchConfiguration {
     heartbeatHz?: number;
     robotHosts?: string[];
     respawn: boolean;
-  } = { enable: true, robotHosts: [], heartbeatHz: 0.5, respawn: true };
+  };
 
   sync: {
     enable: boolean;
     doNotSync: string[];
     syncTopics: string[];
-  } = { enable: false, doNotSync: [], syncTopics: [] };
+  };
 
   terminal: {
     enable: boolean;
     port?: number;
     path?: string;
-  } = { enable: true, path: "ttyd", port: 8681 };
+  };
 
   force: {
     stop: boolean;
     start: boolean;
-  } = { stop: false, start: false };
-  // forceStop = false;
-  // forceStart = false;
+  };
 
   /** Try to connect on start. */
-  autoConnect: boolean = true;
+  autoConnect: boolean;
 
   /** Start system nodes on failed connection */
-  autostart: boolean = false;
+  autostart: boolean;
 
   ros1MasterUri: {
     enable: boolean;
     uri: string;
-  } = { enable: false, uri: "default" };
+  };
 
-  respawn: boolean = false;
+  respawn: boolean;
+};
 
-  constructor(host: string, rosVersion: string, port: number = 0) {
-    this.host = host;
-    this.rosVersion = rosVersion;
-    this.port = port;
+/**
+ * ProviderLaunchConfiguration models launch configuration to start ROS system nodes
+ */
+export default class ProviderLaunchConfiguration {
+  params: TProviderLaunchParams;
+
+  constructor(
+    params: TProviderLaunchParams = {
+      id: generateUniqueId(),
+      name: undefined,
+      providerName: undefined,
+      providerId: undefined,
+      host: "localhost",
+      port: 0,
+      networkId: -1,
+      type: "websocket",
+      useSSL: false,
+      rosVersion: "2",
+      rmwImplementation: undefined,
+      currentRmwImpl: undefined,
+      daemon: { enable: true },
+      discovery: { enable: true, robotHosts: [], heartbeatHz: 0.5, respawn: true },
+      sync: { enable: false, doNotSync: [], syncTopics: [] },
+      terminal: { enable: true, path: "ttyd", port: 8681 },
+      force: { stop: false, start: false },
+      autoConnect: true,
+      autostart: false,
+      ros1MasterUri: { enable: false, uri: "default" },
+      respawn: false,
+    }
+  ) {
+    this.params = params;
   }
 
   name: () => string = () => {
-    return this.providerName ? this.providerName : this.host;
+    return this.params.providerName ? this.params.providerName : this.params.host;
   };
 
   public terminalStartCmd(): TResult {
-    const portNumber = this.terminal.port || 8681;
-    const ttydPath = this.terminal.path || "ttyd";
+    const portNumber = this.params.terminal.port || 8681;
+    const ttydPath = this.params.terminal.path || "ttyd";
     const ttydCmd = `${ttydPath} --writable --port ${portNumber} bash`;
     let cmd = "";
-    if (this.rosVersion === "1") {
+    if (this.params.rosVersion === "1") {
       cmd = `rosrun fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true;`;
-    } else if (this.rosVersion === "2") {
+    } else if (this.params.rosVersion === "2") {
       cmd = `ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-${portNumber} --command=${ttydCmd} --pre_check_binary=true;`;
     } else {
       return {
@@ -104,7 +133,7 @@ export default class ProviderLaunchConfiguration {
   public toRos1MasterUriPrefix(ros1MasterUri: { enable: boolean; uri: string }): string {
     let rosMasterUriPrefix = "";
     if (ros1MasterUri?.enable && ros1MasterUri.uri.length > 0 && ros1MasterUri.uri !== "default") {
-      rosMasterUriPrefix = `ROS_MASTER_URI=${ros1MasterUri.uri.replace("{HOST}", this.host)} `;
+      rosMasterUriPrefix = `ROS_MASTER_URI=${ros1MasterUri.uri.replace("{HOST}", this.params.host)} `;
     }
     return rosMasterUriPrefix;
   }
@@ -113,31 +142,31 @@ export default class ProviderLaunchConfiguration {
   public masterDiscoveryStartCmd(): TResult {
     // Spawn a new Node Manager Master sync node
     const hostSuffix = "{HOST}";
-    let dName = this.rosVersion === "2" ? `discovery_${hostSuffix}` : "mas_discovery";
-    if (this.rosVersion === "2") {
+    let dName = this.params.rosVersion === "2" ? `discovery_${hostSuffix}` : "mas_discovery";
+    if (this.params.rosVersion === "2") {
       if (!dName.startsWith("_")) {
         dName = `_${dName}`;
       }
     }
     // uses ROS1 method
     let cmdMasterDiscovery: string | null = null;
-    const namespace = this.rosVersion === "2" ? "/mas" : "";
+    const namespace = this.params.rosVersion === "2" ? "/mas" : "";
     const nameArg = `--name=${namespace}/${dName}`;
 
-    const forceArg = this.force.start ? "--force " : "";
-    if (this.rosVersion === "1") {
-      const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.ros1MasterUri);
+    const forceArg = this.params.force.start ? "--force " : "";
+    if (this.params.rosVersion === "1") {
+      const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.params.ros1MasterUri);
       // networkId shift the default multicast port (11511)
-      const dPort = `${11511 + this.networkId || 0}`;
-      const dGroup = this.discovery.group || "226.0.0.0";
-      const dHeartbeat = this.discovery.heartbeatHz;
-      const dRobotHosts = this.discovery.robotHosts ? `_robot_hosts:=[${this.discovery.robotHosts}]` : "";
+      const dPort = `${11511 + this.params.networkId || 0}`;
+      const dGroup = this.params.discovery.group || "226.0.0.0";
+      const dHeartbeat = this.params.discovery.heartbeatHz;
+      const dRobotHosts = this.params.discovery.robotHosts ? `_robot_hosts:=[${this.params.discovery.robotHosts}]` : "";
       cmdMasterDiscovery = `${ros1MasterUriPrefix}${this.domainPrefix()}rosrun fkie_mas_daemon mas-remote-node.py ${
-        this.respawn ? "--respawn" : ""
+        this.params.respawn ? "--respawn" : ""
       } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat}`;
-    } else if (this.rosVersion === "2") {
+    } else if (this.params.rosVersion === "2") {
       cmdMasterDiscovery = `${this.domainPrefix()}${this.rmwPrefix()}${this.getZenohPrefix()}ros2 run fkie_mas_daemon mas-remote-node.py ${
-        this.respawn || this.discovery.respawn ? "--respawn" : ""
+        this.params.respawn || this.params.discovery.respawn ? "--respawn" : ""
       } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
     } else {
       return {
@@ -160,25 +189,25 @@ export default class ProviderLaunchConfiguration {
 
   /** Generate start command for a master sync node */
   public masterSyncStartCmd(): TResult {
-    if (this.rosVersion === "1") {
+    if (this.params.rosVersion === "1") {
       // Spawn a new Node Manager Master sync node
       const dName = "mas_sync";
       // uses ROS1 method
       const namespace = "";
       const nameArg = `--name=${namespace}/${dName}`;
       const doNotSyncParam =
-        this.sync.doNotSync && this.sync.doNotSync?.length > 0
-          ? `_do_not_sync:=[${this.fixStringArray(this.sync.doNotSync)?.toString()}]`
+        this.params.sync.doNotSync && this.params.sync.doNotSync?.length > 0
+          ? `_do_not_sync:=[${this.fixStringArray(this.params.sync.doNotSync)?.toString()}]`
           : " ";
       const syncTopicsParam =
-        this.sync.syncTopics && this.sync.syncTopics?.length > 0
-          ? `_sync_topics:=[${this.fixStringArray(this.sync.syncTopics)?.toString()}]`
+        this.params.sync.syncTopics && this.params.sync.syncTopics?.length > 0
+          ? `_sync_topics:=[${this.fixStringArray(this.params.sync.syncTopics)?.toString()}]`
           : " ";
       let cmdMasterSync = "";
-      const forceArg = this.force.start ? "--force " : "";
-      const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.ros1MasterUri);
+      const forceArg = this.params.force.start ? "--force " : "";
+      const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.params.ros1MasterUri);
       cmdMasterSync = `${ros1MasterUriPrefix}${this.domainPrefix()}rosrun fkie_mas_daemon mas-remote-node.py  ${
-        this.respawn ? "--respawn" : ""
+        this.params.respawn ? "--respawn" : ""
       } ${forceArg}${nameArg} --set_name=false --node_type=mas-sync --package=fkie_mas_sync ${doNotSyncParam} ${syncTopicsParam}`;
       // combine commands and execute
       const cmd = `${cmdMasterSync}`;
@@ -193,28 +222,28 @@ export default class ProviderLaunchConfiguration {
   /** Generate start command for a Daemon Node */
   public daemonStartCmd(): TResult {
     const hostSuffix = "{HOST}";
-    let dName = this.rosVersion === "2" ? `daemon_${hostSuffix}` : "mas_daemon";
-    if (this.rosVersion === "2") {
+    let dName = this.params.rosVersion === "2" ? `daemon_${hostSuffix}` : "mas_daemon";
+    if (this.params.rosVersion === "2") {
       if (!dName.startsWith("_")) {
         dName = `_${dName}`;
       }
     }
     let daemonType = "mas-daemon";
-    const namespace = this.rosVersion === "2" ? "/mas" : "";
+    const namespace = this.params.rosVersion === "2" ? "/mas" : "";
     const nameArg = `--name=${namespace}/${dName}`;
-    if (this.rosVersion === "2") {
+    if (this.params.rosVersion === "2") {
       daemonType = "mas-daemon";
     }
-    const forceArg = this.force.start ? "--force " : "";
+    const forceArg = this.params.force.start ? "--force " : "";
     // uses ROS1 method
     let cmdDaemon = `fkie_mas_daemon mas-remote-node.py ${
-      this.respawn ? "--respawn" : ""
+      this.params.respawn ? "--respawn" : ""
     } ${forceArg}${nameArg} --set_name=false --node_type=${daemonType} --package=fkie_mas_daemon`;
 
-    if (this.rosVersion === "1") {
-      const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.ros1MasterUri);
+    if (this.params.rosVersion === "1") {
+      const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.params.ros1MasterUri);
       cmdDaemon = `${ros1MasterUriPrefix}${this.domainPrefix()}rosrun ${cmdDaemon}`;
-    } else if (this.rosVersion === "2") {
+    } else if (this.params.rosVersion === "2") {
       cmdDaemon = `${this.domainPrefix()}${this.rmwPrefix()}${this.getZenohPrefix()}ros2 run ${cmdDaemon}; `;
     } else {
       return {
@@ -230,31 +259,31 @@ export default class ProviderLaunchConfiguration {
     const nameArg = `--name=/dynamic_reconfigure${nodeName}`;
     const envArg = `ROS_MASTER_URI=${ros1MasterUri}`;
     let domainPrefix = "";
-    if (this.networkId >= 0) {
-      domainPrefix = `ROS_DOMAIN_ID=${this.networkId} `;
+    if (this.params.networkId >= 0) {
+      domainPrefix = `ROS_DOMAIN_ID=${this.params.networkId} `;
     }
     const cmd = `${envArg} ${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py ${nameArg} --node_type=dynamic-reconfigure.py --package=fkie_mas_daemon ${nodeName} `;
     return { result: true, message: cmd } as TResult;
   }
 
   public domainPrefix(): string {
-    if (this.networkId >= 0) {
-      return `ROS_DOMAIN_ID=${this.networkId} `;
+    if (this.params.networkId >= 0) {
+      return `ROS_DOMAIN_ID=${this.params.networkId} `;
     }
     return "";
   }
 
   public rmwPrefix(): string {
-    if (this.rmwImplementation) {
-      return ` RMW_IMPLEMENTATION=${this.rmwImplementation} `;
+    if (this.params.rmwImplementation) {
+      return ` RMW_IMPLEMENTATION=${this.params.rmwImplementation} `;
     }
-    return ""
+    return "";
   }
 
   public getZenohPrefix(): string {
-    if (this.currentRmwImpl !== "rmw_zenoh_cpp") return "";
+    if (this.params.currentRmwImpl !== "rmw_zenoh_cpp") return "";
 
-    const zenohPort = 7447 + this.networkId || 0;
+    const zenohPort = 7447 + this.params.networkId || 0;
     const zenohMcastGroup = "224.0.0.224";
     return ` ZENOH_ROUTER_CHECK_ATTEMPTS=-1 ZENOH_CONFIG_OVERRIDE='listen/endpoints=["tcp/0.0.0.0:0"];scouting/multicast/enabled=true;scouting/multicast/address="${zenohMcastGroup}:${zenohPort}";scouting/multicast/listen=true;scouting/multicast/ttl=16' `;
   }
