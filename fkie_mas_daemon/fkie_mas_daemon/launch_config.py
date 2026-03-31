@@ -849,14 +849,18 @@ class LaunchConfig(object):
                     container_name = ""
                     if isinstance(entity._LoadComposableNodes__target_container, launch_ros.actions.ComposableNodeContainer):
                         node = LaunchNodeWrapper(
-                            entity._LoadComposableNodes__target_container, launch_description=current_launch_description, launch_context=self.context,
-                            environment=additional_environment, remove_environment=remove_environment, position_in_file=position_in_file)
+                            entity._LoadComposableNodes__target_container, launch_description=current_launch_description,
+                            launch_context=self.context, environment=additional_environment,
+                            remove_environment=remove_environment, position_in_file=position_in_file)
                         node.timer_period = timer_period
                         self._nodes.append(node)
                         container_name = node.node_name
                     else:
                         subs = normalize_to_list_of_substitutions(entity._LoadComposableNodes__target_container)
                         container_name = make_namespace_absolute(perform_substitutions(self.context, subs))
+                    for n in self._nodes:
+                        if n.node_name == container_name:
+                            n.composable_container = container_name
                     node = LaunchNodeWrapper(cn, launch_description=current_launch_description, launch_context=self.context,
                                              composable_container=container_name, environment=additional_environment,
                                              remove_environment=remove_environment, position_in_file=position_in_file)

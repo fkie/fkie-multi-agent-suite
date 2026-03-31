@@ -33,8 +33,8 @@ import {
   EVENT_FILTER_NODES,
   eventFilterNodes,
 } from "@/renderer/pages/NodeManager/layout/events";
-import { TEventNodeComposable, TEventNodeLifecycle } from "@/renderer/providers/events";
-import { EVENT_NODE_COMPOSABLE, EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
+import { TEventNodeLifecycle } from "@/renderer/providers/events";
+import { EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
 import { TTag } from "@/types";
 import { TRosMessageStruct } from "@/types/TRosMessageStruct";
@@ -319,25 +319,25 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
     }
   });
 
-  useCustomEventListener(EVENT_NODE_COMPOSABLE, (data: TEventNodeComposable) => {
-    if (data.provider.id === node.providerId && data.composable.containerName) {
-      if (data.composable.nodeId === node.id) {
-        setComposableTag({
-          id: "Manager",
-          data: "Manager",
-          color: getTagColor(data.composable.containerName),
-          tooltip: "Manager of a composable nodes",
-        } as TTag);
-      } else if (data.composable.nodes.includes(node.name)) {
-        setComposableTag({
-          id: "Nodelet",
-          data: "Nodelet",
-          color: getTagColor(data.composable.containerName),
-          tooltip: `Composable node, container: ${data.composable.containerName}`,
-        } as TTag);
-      }
-    }
-  });
+  // useCustomEventListener(EVENT_NODE_COMPOSABLE, (data: TEventNodeComposable) => {
+  //   if (data.provider.id === node.providerId && data.composable.containerName) {
+  //     if (data.composable.nodeId === node.id) {
+  //       setComposableTag({
+  //         id: "Manager",
+  //         data: "Manager",
+  //         color: getTagColor(data.composable.containerName),
+  //         tooltip: "Manager of a composable nodes",
+  //       } as TTag);
+  //     } else if (data.composable.nodes.includes(node.name)) {
+  //       setComposableTag({
+  //         id: "Nodelet",
+  //         data: "Nodelet",
+  //         color: getTagColor(data.composable.containerName),
+  //         tooltip: `Composable node, container: ${data.composable.containerName}`,
+  //       } as TTag);
+  //     }
+  //   }
+  // });
 
   useEffect(() => {
     const provider = rosCtx.getProviderById(node.providerId as string, true);
@@ -360,6 +360,16 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
         return list;
       }, [])
     );
+    // set composition node tag, in case no launch info is available
+    const ci = provider?.getComposableForNode(node.id);
+    if (ci) {
+      setComposableTag({
+        id: "Manager",
+        data: "Manager",
+        color: getTagColor(ci.containerName),
+        tooltip: "Manager of a composable nodes",
+      } as TTag);
+    }
     // create composition tag from launch file
     for (const launchInfo of node.launchInfo.values()) {
       if (launchInfo.composable_container) {
@@ -679,7 +689,18 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
         {...other}
       />
     );
-  }, [contextMenu, showLaunchFile, node, sigKillTimeout, lifecycle, timerPeriod, nodeIcon, isDarkMode, composableTag]);
+  }, [
+    itemId,
+    contextMenu,
+    showLaunchFile,
+    node,
+    sigKillTimeout,
+    lifecycle,
+    timerPeriod,
+    nodeIcon,
+    isDarkMode,
+    composableTag,
+  ]);
 
   return createNode;
 }
