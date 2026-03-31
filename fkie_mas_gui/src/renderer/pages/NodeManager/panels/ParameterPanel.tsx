@@ -232,7 +232,7 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
   }, [tooltipDelay, selectedParameter, showParameterType]);
 
   return (
-    <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
+    <Box height="100%" sx={{ backgroundColor: backgroundColor }}>
       <Stack spacing={1} height="100%">
         <Stack direction="row" spacing={0.5} alignItems="center">
           {buttonLocation === BUTTON_LOCATIONS.LEFT && createButtons}
@@ -261,7 +261,9 @@ export default function ParameterPanel(props: ParameterPanelProps): JSX.Element 
             {"Use the filter and then click on refresh. And then delete filter!"}
           </Alert>
         )}
-        {createParameterItems}
+        <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
+          {createParameterItems}
+        </Box>
       </Stack>
     </Box>
   );
