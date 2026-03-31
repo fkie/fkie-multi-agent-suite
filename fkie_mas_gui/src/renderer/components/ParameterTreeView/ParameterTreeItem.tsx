@@ -312,11 +312,25 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
             if ("ArrowUp" === e.key && e.shiftKey) {
               e.stopPropagation();
               setChanged(true);
-              setValue((prev) => Number.parseInt(`${prev}`) + (range?.step || 1.0));
+              setValue((prev) => {
+                let range: RosParameterRange | null = null;
+                if (paramInfo.floating_point_range && paramInfo.floating_point_range.length === 1) {
+                  range = paramInfo.floating_point_range[0];
+                } else if (paramInfo.integer_range && paramInfo.integer_range.length === 1) {
+                  range = paramInfo.integer_range[0];
+                }
+                return Number.parseInt(`${prev}`) + (range?.step || 1.0);
+              });
             }
             if ("ArrowDown" === e.key && e.shiftKey) {
               e.stopPropagation();
               setChanged(true);
+              let range: RosParameterRange | null = null;
+              if (paramInfo.floating_point_range && paramInfo.floating_point_range.length === 1) {
+                range = paramInfo.floating_point_range[0];
+              } else if (paramInfo.integer_range && paramInfo.integer_range.length === 1) {
+                range = paramInfo.integer_range[0];
+              }
               setValue((prev) => Number.parseInt(`${prev}`) - (range?.step || 1.0));
             }
           }}
