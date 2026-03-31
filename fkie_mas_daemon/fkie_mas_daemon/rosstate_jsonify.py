@@ -299,6 +299,7 @@ class RosStateJsonify:
                         # We check whenever it is a composable services
                         if self._is_local_composable_service(tp.name, tp.srv_type, ros_node):
                             with self._lock:
+                                ros_node.is_container = True
                                 if ros_node.id not in self._composable_nodes:
                                     self._composable_nodes[ros_node.id] = RosComposable(ros_node.name, ros_node.id, [])
                                     new_composable_nodes.append(ros_node)
@@ -372,6 +373,7 @@ class RosStateJsonify:
                                 node.services.append(srv.get_topic_id())
                                 if self._is_local_composable_service(service_name, service_type, node):
                                     with self._lock:
+                                        ros_node.is_container = True
                                         if node.id not in self._composable_nodes:
                                             self._composable_nodes[node.id] = RosComposable(node.name, node.id, [])
                                             new_composable_nodes.append(node)
