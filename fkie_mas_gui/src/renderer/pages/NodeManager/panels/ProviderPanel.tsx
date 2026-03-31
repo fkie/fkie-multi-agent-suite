@@ -2,7 +2,20 @@ import AddIcon from "@mui/icons-material/Add";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import { IconButton, Stack, Table, TableBody, TableContainer, Tooltip, Typography } from "@mui/material";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Stack,
+  Table,
+  TableBody,
+  TableContainer,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary from "@mui/material/AccordionSummary";
@@ -12,6 +25,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
+import { DraggablePaper } from "@/renderer/components/UI";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
@@ -68,6 +82,7 @@ export default function ProviderPanel(): JSX.Element {
     []
   );
   const [showStartConfigurations, setShowStartConfigurations] = useState<ProviderLaunchConfiguration[]>([]);
+  const [openHintDialog, setOpenHintDialog] = useState<boolean>(startConfigurations.length === 0);
 
   const addButtonRef = useRef<HTMLInputElement>(null);
 
@@ -366,7 +381,7 @@ export default function ProviderPanel(): JSX.Element {
             <Stack direction="row" alignItems="center" spacing="0.3em" flexGrow={1}>
               <SettingsOutlinedIcon fontSize="inherit" />
               <Typography variant="subtitle1" flexGrow={1}>
-                Provider Configurations - {startConfigurations.length}
+                Start Configurations - {startConfigurations.length}
               </Typography>
             </Stack>
           </AccordionSummary>
@@ -397,6 +412,41 @@ export default function ProviderPanel(): JSX.Element {
         </AccordionDetails>
       </AccordionAdv>
       <Stack flexGrow={1}>{createProviderTable}</Stack>
+      <Dialog
+        key="start-cfg-hint-dialog"
+        open={openHintDialog}
+        onClose={() => setOpenHintDialog(false)}
+        fullWidth
+        scroll="paper"
+        maxWidth="sm"
+        PaperComponent={DraggablePaper}
+        aria-labelledby="draggable-dialog-title"
+      >
+        <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
+          Create start configuration
+        </DialogTitle>
+
+        <DialogContent dividers={true} aria-label="info">
+          <Typography variant="body2">
+            Create a startup configuration for each host that is used to start the MAS nodes. This allows the ROS system
+            to be monitored and controlled.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions>
+          <Button color="primary" onClick={() => setOpenHintDialog(false)}>
+            Cancel
+          </Button>
+
+          <Button autoFocus color="success" onClick={() => {
+            const launchCfg = new ProviderLaunchConfiguration();
+            editLaunchConfiguration(launchCfg, "New start configuration");
+            setOpenHintDialog(false)
+          }}>
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 }
