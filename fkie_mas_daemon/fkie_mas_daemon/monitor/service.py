@@ -69,7 +69,8 @@ class Service:
 
         self.sensors = []
         self.sensors.append(CpuLoad(hostname, 1.0, 0.9))
-        self.sensors.append(CpuTemperatur(hostname, 1.0, 85.0))
+        # CpuTemperatur has been removed due to high CPU usage
+        # self.sensors.append(CpuTemperatur(hostname, 1.0, 85.0))
         self.sensors.append(HddUsage(hostname, 30.0, 0.95))
         self.sensors.append(MemUsage(hostname, 1.0, 0.95))
         self.sensors.append(NetLoad(hostname, 1.0, 0.9))
