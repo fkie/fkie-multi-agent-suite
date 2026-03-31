@@ -267,6 +267,12 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
                 type: "number",
                 "aria-labelledby": `slider-${paramInfo.id}`,
               }}
+              onKeyDown={(e) => {
+                // don't forward Arrow-Keys to TreeView
+                if (["ArrowRight", "ArrowLeft"].includes(e.key)) {
+                  e.stopPropagation();
+                }
+              }}
             />
             <Slider
               id={`slider-${paramInfo.id}`}
@@ -298,6 +304,22 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
           onChange={(event) => handleChange(event)}
           onKeyUp={(event: React.KeyboardEvent) => handleKey(event)}
           onBlur={() => onLeave()}
+          onKeyDown={(e) => {
+            // don't forward Arrow-Keys to TreeView
+            if (["ArrowRight", "ArrowLeft"].includes(e.key)) {
+              e.stopPropagation();
+            }
+            if ("ArrowUp" === e.key && e.shiftKey) {
+              e.stopPropagation();
+              setChanged(true);
+              setValue((prev) => Number.parseInt(`${prev}`) + (range?.step || 1.0));
+            }
+            if ("ArrowDown" === e.key && e.shiftKey) {
+              e.stopPropagation();
+              setChanged(true);
+              setValue((prev) => Number.parseInt(`${prev}`) - (range?.step || 1.0));
+            }
+          }}
         />
       );
     } else if (["list", "str[]", "int[]", "float[]", "bool[]"].includes(parameterType)) {
@@ -313,6 +335,12 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
           onChange={(event) => handleChange(event)}
           onKeyUp={(event: React.KeyboardEvent) => handleKey(event)}
           onBlur={() => onLeave()}
+          onKeyDown={(e) => {
+            // don't forward Arrow-Keys to TreeView
+            if (["ArrowRight", "ArrowLeft"].includes(e.key)) {
+              e.stopPropagation();
+            }
+          }}
         />
       );
     } else if (["bool"].includes(parameterType)) {
@@ -342,6 +370,12 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
           onChange={(event) => handleChange(event)}
           onKeyUp={(event: React.KeyboardEvent) => handleKey(event)}
           onBlur={() => onLeave()}
+          onKeyDown={(e) => {
+            // don't forward Arrow-Keys to TreeView
+            if (["ArrowRight", "ArrowLeft"].includes(e.key)) {
+              e.stopPropagation();
+            }
+          }}
         />
       );
     }
