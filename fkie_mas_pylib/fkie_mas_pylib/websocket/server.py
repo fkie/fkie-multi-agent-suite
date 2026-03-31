@@ -119,9 +119,9 @@ class WebSocketServer:
             target=self.spin, args=(port,), daemon=True)
         self._spin_thread.start()
         # Start Watchdog
-        self._watchdog_thread = threading.Thread(
-            target=self._watchdog, args=(port,), daemon=True)
-        self._watchdog_thread.start()
+        # self._watchdog_thread = threading.Thread(
+        #     target=self._watchdog, args=(port,), daemon=True)
+        # self._watchdog_thread.start()
 
     def _watchdog(self, port: int):
         while not self._shutdown:
