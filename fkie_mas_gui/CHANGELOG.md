@@ -1,5 +1,20 @@
 # Changelog
 
+## 5.4.2 - 31.03.2026
+
+Improved description of start configuration
+Fixed select RMW_IMPLEMENTATION in start configuration
+Do not select group on manual node selection
+Changed zenoh start port number
+Added start configurations
+Test new start configurations
+Improved include files resolve
+Select the launch directory when searching for a package
+Improved display of warnings caused by the loading of startup files
+Removed mui-markdown: it caused causes crash by click on about info
+Improved package explorer: expand launch directory by default
+Fixed warning while handling unknown xml tags
+
 ## 5.4.1 - 26.03.2026
 
 Improved connect dialog: added info about start commands

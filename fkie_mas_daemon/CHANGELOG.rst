@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.4.1 (31.03.2026)
+------------------
+* improved display of warnings caused by the loading of startup files
+
 5.4.0 (25.03.2026)
 ------------------
 * Fixed use launch-prefix
