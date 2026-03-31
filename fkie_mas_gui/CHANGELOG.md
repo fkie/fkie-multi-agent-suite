@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.4.4 - 31.03.2026
+
+Fixed navigation with arrow keys in parameter panel
+Changed parameter type label
+Fixed scroll in parameter panel
+
 ## 5.4.3 - 31.03.2026
 
 Added info about start configuration
