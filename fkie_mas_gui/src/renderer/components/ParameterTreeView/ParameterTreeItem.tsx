@@ -442,7 +442,7 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
                   ) : (
                     showParameterType && (
                       <Typography variant="caption" color="inherit" padding={0.5} minWidth="5em">
-                        [{parameterType}]
+                        {parameterType}
                       </Typography>
                     )
                   )}
