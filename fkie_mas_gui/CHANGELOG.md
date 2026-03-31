@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.4.3 - 31.03.2026
+
+Added info about start configuration
+
 ## 5.4.2 - 31.03.2026
 
 Improved description of start configuration
