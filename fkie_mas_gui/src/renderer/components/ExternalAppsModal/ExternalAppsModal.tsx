@@ -166,17 +166,17 @@ export default function ExternalAppsModal(): JSX.Element {
     [rosCtx.providers, rosCtx.rosInfo, window.commandExecutor]
   );
 
-  const runAppWid = useCallback(
-    async (command: string, domain_id: string) => {
-      let rmwImplementation = "";
-      if (rosCtx.rosInfo?.rmwImplementation) {
-        // set RMW_IMPLEMENTATION only if the variable is valid for the gui
-        rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
-      }
-      window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id}${rmwImplementation} ${command}`);
-    },
-    [rosCtx]
-  );
+  // const runAppWid = useCallback(
+  //   async (command: string, domain_id: string) => {
+  //     let rmwImplementation = "";
+  //     if (rosCtx.rosInfo?.rmwImplementation) {
+  //       // set RMW_IMPLEMENTATION only if the variable is valid for the gui
+  //       rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
+  //     }
+  //     window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id}${rmwImplementation} ${command}`);
+  //   },
+  //   [rosCtx]
+  // );
 
   return (
     <Stack padding={0}>
