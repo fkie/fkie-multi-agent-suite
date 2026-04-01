@@ -270,7 +270,7 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
         <MessageFrame
           key={event.key}
           event={event}
-          domainId={currentProvider?.rosState.ros_domain_id || "0"}
+          domainId={`${currentProvider?.connection.domainId}` || "0"}
           qos={currentQos}
           filter={filterText}
           initRootCollapsed={rootCollapsed}

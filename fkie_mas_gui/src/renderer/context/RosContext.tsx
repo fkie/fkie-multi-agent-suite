@@ -65,7 +65,7 @@ export interface IRosContext {
   mapProviderRosNodes: Map<string, RosNode[]>;
   nodeMap: Map<string, RosNode>;
   localNodes: TLocalNode[];
-  createProvider(host: string, rosVersion: string, port?: number, networkId?: number, useSSL?: boolean): Provider;
+  createProvider(host: string, rosVersion: string, port?: number, domainId?: number, useSSL?: boolean): Provider;
   connectToProvider: (provider: Provider) => Promise<boolean>;
   startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
   startMasterSync: (host: string, rosVersion: string, masteruri?: string) => void;
@@ -154,8 +154,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   /** Create a configured Provider instance. */
   const createProvider = useCallback(
-    (host: string, rosVersion: string, port = 0, networkId = 0, useSSL = false): Provider => {
-      return new Provider(logCtxRef, settingsCtxRef, host, rosVersion, port, networkId, useSSL);
+    (host: string, rosVersion: string, port = 0, domainId = 0, useSSL = false): Provider => {
+      return new Provider(logCtxRef, settingsCtxRef, host, rosVersion, port, domainId, useSSL);
     },
     [logCtxRef, settingsCtxRef]
   );
@@ -632,7 +632,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             Provider.defaultType,
             config.params.rosVersion,
             config.params.ros1MasterUri.uri,
-            config.params.networkId
+            config.params.domainId
           );
 
         // ── Resolve / create provider ─────────────
@@ -644,7 +644,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             config.params.host,
             config.params.rosVersion,
             port,
-            config.params.networkId,
+            config.params.domainId,
             config.params.useSSL
           );
           provider.isLocalHost = isLocal;
@@ -783,7 +783,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       defaultCfg.params.rosVersion = provider.rosVersion;
       defaultCfg.params.port = provider.connection?.port;
       const domainId = provider.rosState?.ros_domain_id;
-      if (domainId !== undefined) defaultCfg.params.networkId = Number.parseInt(domainId);
+      if (domainId !== undefined) defaultCfg.params.domainId = Number.parseInt(domainId);
       defaultCfg.params.daemon.enable = true;
       defaultCfg.params.discovery.enable = true;
       defaultCfg.params.terminal.enable = true;
@@ -947,7 +947,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         configParams.host,
         configParams.rosVersion,
         configParams.port,
-        configParams.networkId,
+        configParams.domainId,
         configParams.useSSL
       );
       provider.isLocalHost = isLocalHost(provider.connection.host);

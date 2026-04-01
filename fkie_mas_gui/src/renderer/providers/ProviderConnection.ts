@@ -25,6 +25,10 @@ export default class ProviderConnection {
 
   uri: string = "";
 
+  rosVersion: string = "";
+
+  domainId: number = -1;
+
   useSSL: boolean = false;
 
   /** Default connection timeout in milliseconds */

@@ -118,7 +118,7 @@ export default function ProviderPanel(): JSX.Element {
       const connectedToDomainIds: number[] = [];
       for (const startCfg of startConfigurations) {
         if (startCfg.host === "localhost") {
-          connectedToDomainIds.push(startCfg.networkId);
+          connectedToDomainIds.push(startCfg.domainId);
           await rosCtx.hiddenConnect(startCfg);
         }
       }

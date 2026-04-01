@@ -56,7 +56,7 @@ export default function ProviderPanelRowCfg(props: ProviderPanelRowCfgProps): JS
             </Link>
             <Tooltip title={startConfig.params.rosVersion === "2" ? "ROS_DOMAIN_ID" : "Network ID"} placement="right">
               <Typography color="grey" variant="body2">
-                [{startConfig.params.networkId}]
+                [{startConfig.params.domainId}]
               </Typography>
             </Tooltip>
             {startConfig.params.rmw.forceUse && (

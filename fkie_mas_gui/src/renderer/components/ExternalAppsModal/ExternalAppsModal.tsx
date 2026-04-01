@@ -109,14 +109,14 @@ export default function ExternalAppsModal(): JSX.Element {
   const settingsCtx = useSettingsContext();
 
   const [open, setOpen] = useState(false);
-  const [localProviderDomains, setLocalProviderDomains] = useState<string[]>([]);
+  const [localProviderDomains, setLocalProviderDomains] = useState<number[]>([]);
 
   useEffect(() => {
     const localProvs = rosCtx.getLocalProvider();
     setLocalProviderDomains(
       localProvs
         .filter((prov) => prov.isAvailable() && prov.rosState !== undefined)
-        .map((prov) => prov.rosState.ros_domain_id || "-")
+        .map((prov) => prov.connection.domainId)
         .sort()
     );
   }, [rosCtx.providers]);
@@ -131,10 +131,10 @@ export default function ExternalAppsModal(): JSX.Element {
   }
 
   const runApp = useCallback(
-    async (command: RowType, domainId: string) => {
+    async (command: RowType, domainId: number) => {
       const localProvs = rosCtx.getLocalProvider();
       for (const localProv of localProvs) {
-        if (localProv.rosVersion === "2" && localProv.rosState.ros_domain_id === domainId) {
+        if (localProv.rosVersion === "2" && localProv.connection.domainId === domainId) {
           localProv.rosRun({
             package: command.package,
             binary: command.binary,
@@ -143,7 +143,7 @@ export default function ExternalAppsModal(): JSX.Element {
             ros_args: command.ros_args,
           });
         } else {
-          if (localProv.rosState.ros_domain_id === domainId) {
+          if (localProv.connection.domainId === domainId) {
             window.commandExecutor?.exec(null, command.commandROS1);
             handleClose("confirmed");
           }
@@ -156,7 +156,7 @@ export default function ExternalAppsModal(): JSX.Element {
 
           //   window.commandExecutor?.exec(
           //     null,
-          //     `ROS_DOMAIN_ID=${localProv.rosState.ros_domain_id}${rmwImplementation} ${command.commandROS1}`
+          //     `ROS_DOMAIN_ID=${localProv.connection.domainId}${rmwImplementation} ${command.commandROS1}`
           //   );
           // }
         }

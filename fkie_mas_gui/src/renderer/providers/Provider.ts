@@ -254,7 +254,7 @@ export default class Provider implements IProvider {
     host: string,
     rosVersion: string,
     port: number = 0,
-    networkId: number = 0,
+    domainId: number = 0,
     useSSL: boolean = false
   ) {
     this.rosVersion = rosVersion;
@@ -265,7 +265,7 @@ export default class Provider implements IProvider {
         host,
         rosVersion,
         port,
-        networkId,
+        domainId,
         useSSL,
         (reason, details) => this.onCloseConnection(reason, details),
         () => this.onOpenConnection(),
@@ -351,8 +351,8 @@ export default class Provider implements IProvider {
     if (!name) {
       name = this.rosState.name ? this.rosState.name : this.connection.host;
     }
-    if (this.rosState.ros_domain_id) {
-      name = `${name} [${this.rosState.ros_domain_id}]`;
+    if (this.connection.domainId) {
+      name = `${name} [${this.connection.domainId}]`;
     }
     return name;
   };

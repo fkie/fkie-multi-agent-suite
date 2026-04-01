@@ -35,7 +35,7 @@ export type TProviderLaunchParams = {
   /** ROS version as string of {'1', '2'} */
   rosVersion: string;
 
-  networkId: number;
+  domainId: number;
 
   rmw: {
     current: RmwSelection;
@@ -103,7 +103,7 @@ export default class ProviderLaunchConfiguration {
       providerId: undefined,
       host: "localhost",
       port: 0,
-      networkId: -1,
+      domainId: -1,
       type: "websocket",
       useSSL: false,
       rosVersion: "2",
@@ -176,8 +176,8 @@ export default class ProviderLaunchConfiguration {
     const forceArg = this.params.force.start ? "--force " : "";
     if (this.params.rosVersion === "1") {
       const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.params.ros1MasterUri);
-      // networkId shift the default multicast port (11511)
-      const dPort = `${11511 + this.params.networkId || 0}`;
+      // domainId shift the default multicast port (11511)
+      const dPort = `${11511 + this.params.domainId || 0}`;
       const dGroup = this.params.discovery.group || "226.0.0.0";
       const dHeartbeat = this.params.discovery.heartbeatHz;
       const dRobotHosts = this.params.discovery.robotHosts ? `_robot_hosts:=[${this.params.discovery.robotHosts}]` : "";
@@ -279,16 +279,16 @@ export default class ProviderLaunchConfiguration {
     const nameArg = `--name=/dynamic_reconfigure${nodeName}`;
     const envArg = `ROS_MASTER_URI=${ros1MasterUri}`;
     let domainPrefix = "";
-    if (this.params.networkId >= 0) {
-      domainPrefix = `ROS_DOMAIN_ID=${this.params.networkId} `;
+    if (this.params.domainId >= 0) {
+      domainPrefix = `ROS_DOMAIN_ID=${this.params.domainId} `;
     }
     const cmd = `${envArg} ${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py ${nameArg} --node_type=dynamic-reconfigure.py --package=fkie_mas_daemon ${nodeName} `;
     return { result: true, message: cmd } as TResult;
   }
 
   public domainPrefix(): string {
-    if (this.params.networkId >= 0) {
-      return `ROS_DOMAIN_ID=${this.params.networkId} `;
+    if (this.params.domainId >= 0) {
+      return `ROS_DOMAIN_ID=${this.params.domainId} `;
     }
     return "";
   }
@@ -309,7 +309,7 @@ export default class ProviderLaunchConfiguration {
   public getZenohOverride(): string {
     if (!this.params.rmw.overrideZeno || this.params.rmw.current !== "rmw_zenoh_cpp") return "";
 
-    const zenohPort = 7448 + this.params.networkId || 0;
+    const zenohPort = 7448 + this.params.domainId || 0;
     let envParam = "";
     if (this.params.zenohConfigOverride) {
       envParam = `ZENOH_CONFIG_OVERRIDE='${this.params.zenohConfigOverride.replace("${ZENOH_PORT}", `${zenohPort}`)}'`;

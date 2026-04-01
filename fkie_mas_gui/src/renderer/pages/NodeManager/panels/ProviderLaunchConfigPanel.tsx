@@ -245,8 +245,8 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     updateStartParameter();
   }
 
-  function setNetworkId(networkId: number): void {
-    launchCfg.params.networkId = networkId;
+  function setNetworkId(domainId: number): void {
+    launchCfg.params.domainId = domainId;
     updateStartParameter();
   }
 
@@ -462,9 +462,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               InputProps={{ inputProps: { min: -1, max: 99 } }}
               // fullWidth
               onChange={(e) => setNetworkId(Number(`${e.target.value}`))}
-              value={launchCfg.params.networkId}
+              value={launchCfg.params.domainId}
             />
-            {launchCfg.params.networkId === -1 && <Typography>Use default domain ID</Typography>}
+            {launchCfg.params.domainId === -1 && <Typography>Use default domain ID</Typography>}
           </Stack>
 
           <Stack

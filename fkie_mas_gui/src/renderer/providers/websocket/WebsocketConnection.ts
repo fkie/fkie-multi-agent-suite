@@ -55,7 +55,7 @@ export default class WebsocketConnection extends ProviderConnection {
     host: string,
     rosVersion: string,
     port: number = 0,
-    networkId: number = 0,
+    domainId: number = 0,
     useSSL: boolean = false,
     onClose: (reason: string, details: string) => void = () => {},
     onOpen: () => void = () => {},
@@ -65,8 +65,10 @@ export default class WebsocketConnection extends ProviderConnection {
     this.subscriptions = {};
     this.queue = {};
     this.rpcId = 0;
+    this.rosVersion = rosVersion;
+    this.domainId = domainId;
 
-    const providerPort = port !== 0 ? port : getDefaultPortFromRos(WebsocketConnection.type, rosVersion, "", networkId);
+    const providerPort = port !== 0 ? port : getDefaultPortFromRos(WebsocketConnection.type, rosVersion, "", domainId);
 
     this.port = providerPort;
     this.host = host;

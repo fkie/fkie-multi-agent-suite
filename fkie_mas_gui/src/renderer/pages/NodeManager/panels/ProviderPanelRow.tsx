@@ -418,10 +418,10 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                 (localhost)
               </Typography>
             )}
-            {/* {provider.rosState.ros_domain_id !== undefined && Number.parseInt(provider.rosState.ros_domain_id) > 0 && (
+            {/* {provider.connection.domainId !== undefined && Number.parseInt(provider.connection.domainId) > 0 && (
               <Tooltip title={provider.rosVersion === "2" ? "ROS_DOMAIN_ID" : "Network ID"} placement="right">
                 <Typography color="grey" variant="body2">
-                  [{provider.rosState.ros_domain_id}]
+                  [{provider.connection.domainId}]
                 </Typography>
               </Tooltip>
             )} */}

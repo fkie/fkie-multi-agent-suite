@@ -9,17 +9,17 @@ export const getDefaultPortFromRos: (
   connectionType: string,
   rosVersion: string,
   ros1MasterUri: string,
-  networkId: number
-) => number = (connectionType, rosVersion, ros1MasterUri, networkId) => {
+  domainId: number
+) => number = (connectionType, rosVersion, ros1MasterUri, domainId) => {
   if (connectionType === "crossbar-wamp") {
-    return rosVersion === "2" ? 11811 + networkId : 11911 + networkId;
+    return rosVersion === "2" ? 11811 + domainId : 11911 + domainId;
   }
   let uriShift = 0;
   if (rosVersion === "1" && ros1MasterUri && ros1MasterUri !== "default") {
     // shift port if ROS_MASTER_URI has not a default port
     uriShift = (Number.parseInt(ros1MasterUri.split(":").slice(-1)[0]) - 11311) * 101;
   }
-  return rosVersion === "2" ? 35430 + networkId : 35685 + uriShift + networkId;
+  return rosVersion === "2" ? 35430 + domainId : 35685 + uriShift + domainId;
 };
 
 type TCliArg = { default: string | boolean | number | undefined; hint: string };
