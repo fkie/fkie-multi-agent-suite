@@ -296,6 +296,9 @@ export default function PackageExplorerPanel(): JSX.Element {
           const fItem = pathItemMap.get(name);
           if (fItem) {
             // file
+            if (a[a.length-2] === "launch") {
+              launchDirId = item.id;
+            }
             prev.packageTree.push({
               name: fItem.name as string,
               children: [],
@@ -305,9 +308,6 @@ export default function PackageExplorerPanel(): JSX.Element {
             });
           } else {
             // directory
-            if (name === "launch") {
-              launchDirId = item.id;
-            }
             prev.packageTree.push({
               name: name,
               children: prev[name].packageTree,
