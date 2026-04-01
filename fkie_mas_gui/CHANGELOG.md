@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.5.0 - 01.04.2026
+
+Added ros domain id to the system nodes
+Added zenoh override configuration parameter in settings
+Added domain id to the provider name
+Fixed expand launch directory in package explorer
+Added ros.path.get_list
+Disabled watchdog check of the websocket
+Removed cpu temperature check to avoid high cpu usage
+Fixed visualization of composable node in some cases
+
 ## 5.4.4 - 31.03.2026
 
 Fixed navigation with arrow keys in parameter panel

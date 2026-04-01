@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.5.0 (01.04.2026)
+------------------
+* added types for ros.path.get_list
+* disabled watchdog check of the websocket
+
 5.4.0 (25.03.2026)
 ------------------
 * Added watchdog for websocket connection

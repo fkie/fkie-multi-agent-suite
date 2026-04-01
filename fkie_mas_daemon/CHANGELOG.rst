@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.5.0 (01.04.2026)
+------------------
+* fixed visualization of composable node in some cases
+* removed cpu temperature check to avoid high cpu usage
++ added ros domain id to the system nodes
+
 5.4.1 (31.03.2026)
 ------------------
 * improved display of warnings caused by the loading of startup files
