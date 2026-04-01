@@ -166,15 +166,15 @@ export const HostColors = [
 
 export function colorFromHostname(hostname: string): string {
   if (!hostname) return HostColors[0];
-  // TODO get color from manually assigned list
-  // generate hashCode from hostname
-  let hash = 0;
+
+  // FNV-1a Hash
+  let hash = 0x811c9dc5; // 2166136261
   for (let i = 0; i < hostname.length; i++) {
-    hash = (hash << 5) - hash + hostname.charCodeAt(i);
-    hash |= 0; // Convert to 32bit integer
+    hash ^= hostname.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193); // 16777619
   }
-  // determine a color (map 31 unsigned bits to color list)
-  const index = Math.floor((Math.abs(hash) / 0x80000000) * HostColors.length);
+
+  const index = Math.abs(hash) % HostColors.length;
   return HostColors[index];
 }
 
