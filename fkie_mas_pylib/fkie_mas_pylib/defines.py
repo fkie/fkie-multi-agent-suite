@@ -31,9 +31,10 @@ NM_NAMESPACE = '/mas'
 nm_name_suffix = ros_host_suffix()
 if nm_name_suffix:
     nm_name_suffix = f"_{nm_name_suffix}"
-NM_DISCOVERY_NAME = f'_discovery{nm_name_suffix}'
-NM_DAEMON_NAME = f'_daemon{nm_name_suffix}'
-NM_SUBSCRIBER_NAME = f'_subscriber{nm_name_suffix}'
+ROS_DOMAIN_ID = os.environ["ROS_DOMAIN_ID"] if "ROS_DOMAIN_ID" in os.environ else "0"
+NM_DISCOVERY_NAME = f'_discovery_{ROS_DOMAIN_ID}{nm_name_suffix}'
+NM_DAEMON_NAME = f'_daemon_{ROS_DOMAIN_ID}{nm_name_suffix}'
+NM_SUBSCRIBER_NAME = f'_subscriber_{ROS_DOMAIN_ID}{nm_name_suffix}'
 EMPTY_PATTERN = re.compile('\b', re.I)
 SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.py'
                  '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']

@@ -161,10 +161,10 @@ not_valid:
 /**
  * Get a value from a environment variable
  */
-std::string getEnvironmentVariable(std::string const &key)
+std::string getEnvironmentVariable(std::string const &key, std::string default_value)
 {
   char *val = getenv(key.c_str());
-  return val == NULL ? std::string("") : std::string(val);
+  return val == NULL ? default_value : std::string(val);
 }
 
 void convert_gid_to_msg(const eprosima::fastdds::rtps::GUID_t &gid, fkie_mas_msgs::msg::Gid &msg_gid)
@@ -446,7 +446,7 @@ int main(int argc, char *argv[])
   hostname = std::regex_replace(hostname, std::regex("\\."), "_");
   hostname = std::regex_replace(hostname, std::regex("-"), "_");
 
-  std::string node_name = "_discovery_" + hostname;
+  std::string node_name = "_discovery_" + getEnvironmentVariable("ROS_DOMAIN_ID", "0") + "_" + hostname;
   auto listener = std::make_shared<CustomParticipantListener>(node_name, "/mas");
   RCLCPP_INFO(listener->get_logger(), "started");
   rclcpp::spin(listener);

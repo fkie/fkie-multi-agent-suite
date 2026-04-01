@@ -288,6 +288,8 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
         if addr in set(ip for ip in get_local_addresses()):
             new_env['ROS_HOSTNAME'] = ros_hostname
 
+    ROS_DOMAIN_ID = os.environ["ROS_DOMAIN_ID"] if "ROS_DOMAIN_ID" in os.environ else "0"
+    ros_hostname = f"{ROS_DOMAIN_ID}_{ros_hostname}"
     # get namespace and basename from name
     namer = name.replace('{HOST}', ros_hostname)
     arg_ns = names.namespace(
@@ -328,8 +330,10 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
     Runs a ROS2 node
     '''
 
+    ROS_DOMAIN_ID = os.environ["ROS_DOMAIN_ID"] if "ROS_DOMAIN_ID" in os.environ else "0"
+    ros_hostname = f"{ROS_DOMAIN_ID}_{ros_host_suffix()}"
     # get namespace and basename from name
-    namer = name.replace('{HOST}', ros_host_suffix())
+    namer = name.replace('{HOST}', ros_hostname)
     arg_ns = names.namespace(
         namer, with_sep_suffix=False, raise_err_on_none=False)
     arg_name = names.basename(namer)

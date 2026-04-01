@@ -303,7 +303,7 @@ export default class ProviderLaunchConfiguration {
   public getZenohPrefix(): string {
     if (!this.params.rmw.overrideZeno || this.params.rmw.current !== "rmw_zenoh_cpp") return "";
 
-    return ` ZENOH_ROUTER_CHECK_ATTEMPTS=-1 ${this.getZenohOverride()}`;
+    return ` ZENOH_ROUTER_CHECK_ATTEMPTS=-1 ${this.getZenohOverride()} `;
   }
 
   public getZenohOverride(): string {
@@ -312,7 +312,7 @@ export default class ProviderLaunchConfiguration {
     const zenohPort = 7448 + this.params.networkId || 0;
     let envParam = "";
     if (this.params.zenohConfigOverride) {
-      envParam = `ZENOH_CONFIG_OVERRIDE=${this.params.zenohConfigOverride.replace("${ZENOH_PORT}", `${zenohPort}`)}`;
+      envParam = `ZENOH_CONFIG_OVERRIDE='${this.params.zenohConfigOverride.replace("${ZENOH_PORT}", `${zenohPort}`)}'`;
     }
     return envParam;
   }
