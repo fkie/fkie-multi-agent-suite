@@ -1853,6 +1853,32 @@ export default class Provider implements IProvider {
     return result;
   };
 
+  public rosRun: (request: {
+    package: string;
+    binary: string;
+    name?: string;
+    ns?: string;
+    args?: string[];
+    ros_args?: string[];
+    prefix?: string;
+  }) => Promise<TResult> = async (request) => {
+    const result = await this.makeCall(URI.ROS_LAUNCH_ROS_RUN, [request], false).then((value: TResultData) => {
+      if (value.result) {
+        const parsed = value.data as Result;
+        if (parsed.result) {
+          return parsed;
+        }
+        // use debug because of spamming messages when nodes does not run
+        this.log().debug(`ros run result: ${parsed.message}`, parsed.message);
+        return parsed;
+      }
+      this.log().debug(`Provider [${this.id}]: Error at rosRun()`, `${value.message}`);
+      return new Result(false, `${value.message}`);
+    });
+
+    return Promise.resolve(result);
+  };
+
   /**
    * Start a ROS node using a given provider and node object
    */

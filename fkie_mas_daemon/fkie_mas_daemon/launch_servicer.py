@@ -5,7 +5,6 @@
 # License: MIT
 #
 # ****************************************************************************
-
 import fkie_mas_daemon as nmd
 from .launch_validator import LaunchValidator
 from .launch_context import LaunchContext
@@ -37,6 +36,8 @@ from fkie_mas_pylib.interface.launch_interface import LaunchLoadRequest
 from fkie_mas_pylib.interface.launch_interface import LaunchFile
 from fkie_mas_pylib.interface.launch_interface import LaunchCallService
 from fkie_mas_pylib.interface.launch_interface import LaunchArgument
+from fkie_mas_pylib.interface.launch_interface import RosRun
+from fkie_mas_pylib.interface.launch_interface import RosRunReply
 from fkie_mas_pylib.interface.runtime_interface import RosQos
 from fkie_mas_pylib.interface.runtime_interface import SubscriberNode
 from fkie_mas_pylib.interface import SelfEncoder
@@ -150,6 +151,7 @@ class LaunchServicer(LoggingEventHandler):
         websocket.register("ros.launch.reload", self.reload_launch)
         websocket.register("ros.launch.unload", self.unload_launch)
         websocket.register("ros.launch.get_list", self.get_list)
+        websocket.register("ros.launch.ros_run", self.ros_run)
         websocket.register("ros.launch.start_node", self.start_node)
         websocket.register("ros.launch.start_nodes", self.start_nodes)
         websocket.register("ros.launch.get_included_files", self.get_included_files)
@@ -479,7 +481,8 @@ class LaunchServicer(LoggingEventHandler):
                 for (a_name, a_value) in old_launch.provided_launch_arguments:
                     pla.append(LaunchArgument(a_name, a_value))
                 launch_arguments = []
-                req_args: List[LaunchArgument] = LaunchConfig.get_launch_arguments(launch_context, old_launch.filename, provided_args=[])
+                req_args: List[LaunchArgument] = LaunchConfig.get_launch_arguments(
+                    launch_context, old_launch.filename, provided_args=[])
                 for arg in req_args:
                     found = False
                     for pa in pla:
@@ -575,7 +578,6 @@ class LaunchServicer(LoggingEventHandler):
             self.websocket.publish('ros.launch.changed', {
                                    'path': request.path, 'action': 'reloaded', 'requester': requester})
 
-
     def unload_launch(self, request_json: LaunchFile, *, requester: str = "") -> LaunchLoadReply:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.launch.unload]")
 
@@ -656,6 +658,69 @@ class LaunchServicer(LoggingEventHandler):
             reply_lc.env = lc.environment
             reply.append(reply_lc)
         return json.dumps(reply, cls=SelfEncoder)
+
+    def ros_run(self, request_json: RosRun, return_as_json: bool = True) -> RosRunReply:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.launch.ros_run]: {request_json}")
+
+        # Covert input dictionary into a proper python object
+        request = request_json
+        package = request.package
+        binary = request.binary
+        result = RosRunReply(package=package, binary=binary)
+        try:
+            ns = getattr(request, "ns", "")
+            name = getattr(request, "name", binary)
+            ns_name = ns_join(ns, name)
+            screen_prefix = screen.get_cmd(ns_name)
+            # set environment
+            new_env = os.environ.copy()
+            # set display variable to local display
+            if 'DISPLAY' in new_env:
+                if not new_env['DISPLAY'] or new_env['DISPLAY'] == 'remote':
+                    del new_env['DISPLAY']
+            else:
+                new_env['DISPLAY'] = ':0'
+
+            launch_prefix = getattr(request, "prefix", "")
+
+            args = ' '.join(getattr(request, "args", []))
+            # params
+            ros_args = ''
+            request_name = getattr(request, "name", "")
+            request_ros_args = getattr(request, "ros_args", [])
+            if ns or request_name or request_ros_args:
+                ros_args = '--ros-args'
+                if ns:
+                    if not ns.startswith("/"):
+                        ns = f"/{ns}"
+                    ros_args += f" -r __ns:={ns}"
+                if request_name:
+                    ros_args += f" -r __name:={request_name}"
+                if request_ros_args:
+                    ros_args += f" {' '.join(request_ros_args)}"
+            # start
+            cmd = ' '.join([screen_prefix, launch_prefix, 'ros2', 'run', package, binary, args, ros_args])
+            Log.info(f"{cmd}")
+            Log.debug(f"environment while run node '{ns_name}': '{new_env}'")
+            sp = SupervisedPopen(cmd, shell=True, env=new_env,
+                                 object_id=f"run_node_{ns_name}", description=f"ros2 run [{package}]{binary}")
+            result.result = True
+            error = sp.stderr.read()
+            if error:
+                result.result = False
+                result.message = error
+        except exceptions.ResourceNotFound as err_nf:
+            result.result = False
+            result.message = f"Error while start binary '{binary}' from '{package}': {err_nf}"
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
+        except Exception as _errr:
+            result.result = False
+            result.message = f"Error while start binary '{binary}' from '{package}' {traceback.format_exc()}"
+            Log.warn(f"{self.__class__.__name__}: {result.message}")
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
+        finally:
+            nmd.launcher.server.screen_servicer.system_change()
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
     def start_node(self, request_json: LaunchNode, return_as_json: bool = True) -> LaunchNodeReply:
         Log.info(
@@ -793,7 +858,7 @@ class LaunchServicer(LoggingEventHandler):
                             del cfg_included_files[0]
                 lincf = LaunchIncludedFile(path=inc_file.path_or_str,
                                            line_number=inc_file.line_number,
-                                           inc_path= org_inc_path if org_inc_path is not None else inc_file.inc_path,
+                                           inc_path=org_inc_path if org_inc_path is not None else inc_file.inc_path,
                                            inc_realpath=os.path.realpath(inc_file.inc_path),
                                            exists=inc_file.exists,
                                            raw_inc_path=inc_file.raw_inc_path,

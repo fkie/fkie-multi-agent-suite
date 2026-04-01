@@ -285,6 +285,44 @@ class LaunchContent:
         return json.dumps(dict(self), ensure_ascii=False)
 
 
+class RosRun:
+    '''
+    Run ros node
+    '''
+
+    def __init__(self, package: str, binary: str, *,
+                 name: str = '',
+                 ns: str = '',
+                 args: List[str] = None,
+                 ros_args: List[str] = None,
+                 prefix: str = ''
+                 ) -> None:
+        self.package = package
+        self.binary = binary
+        self.name = name
+        self.ns = ns
+        self.args = args
+        self.ros_args = ros_args
+        self.prefix = prefix
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
+
+class RosRunReply:
+    '''
+    Reply to run ros node
+    '''
+
+    def __init__(self, package: str, binary: str, *,
+                 result: bool = False,
+                 message: str = ""
+                 ) -> None:
+        self.package = package
+        self.binary = binary
+        self.result = result
+        self.message = message
+
+
 class LaunchNode:
     '''
     Starts a ROS node by full name.

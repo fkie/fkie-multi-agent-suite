@@ -38,49 +38,73 @@ const headers = [
   },
 ];
 
+type RowType = {
+  id: string;
+  application: string;
+  commandROS1: string;
+  package: string;
+  binary: string;
+  namespace?: string;
+  name?: string;
+  args: string[];
+  ros_args?: string[]
+};
+
 // TODO: Make commands editable and save into configuration config
-const applicationRows = [
+const applicationRows: RowType[] = [
   {
     id: generateUniqueId(),
     application: "RVIZ",
     commandROS1: "rosrun rviz rviz",
-    commandROS2: "ros2 run rviz2 rviz2",
+    package: "rviz2",
+    binary: "rviz2",
+    name: "mas_rviz",
+    args: [],
   },
   {
     id: generateUniqueId(),
     application: "RQT GUI",
     commandROS1: "rosrun rqt_gui rqt_gui",
-    commandROS2: "ros2 run rqt_gui rqt_gui",
-  },
-  {
-    id: generateUniqueId(),
-    application: "Terminal",
-    commandROS1: "terminator",
-    commandROS2: "terminator",
+    package: "rqt_gui",
+    binary: "rqt_gui",
+    name: "mas_rqt_gui",
+    args: [],
   },
   {
     id: generateUniqueId(),
     application: "TF Tree",
     commandROS1: "rosrun rqt_tf_tree rqt_tf_tree",
-    commandROS2: "ros2 run rqt_tf_tree rqt_tf_tree --force-discover",
+    package: "rqt_tf_tree",
+    binary: "rqt_tf_tree",
+    name: "mas_rqt_tf_tree",
+    args: ["--force-discover"],
   },
   {
     id: generateUniqueId(),
     application: "Logger Level",
     commandROS1: "rosrun rqt_logger_level rqt_logger_level",
-    commandROS2: null,
+    package: "",
+    binary: "",
+    args: [],
+
   },
   {
     id: generateUniqueId(),
     application: "Console",
     commandROS1: "rosrun rqt_console rqt_console",
-    commandROS2: "ros2 run rqt_console rqt_console",
+    package: "rqt_console",
+    binary: "rqt_console",
+    name: "mas_rqt_rqt_console",
+    args: [],
   },
   {
     id: generateUniqueId(),
     application: "ROS Graph",
     commandROS1: "rosrun rqt_graph rqt_graph",
-    commandROS2: "ros2 run rqt_graph rqt_graph",
+    package: "rqt_graph",
+    binary: "rqt_graph",
+    name: "mas_rqt_rqt_graph",
+    args: [],
   },
 ];
 
@@ -100,28 +124,27 @@ export default function ExternalAppsModal(): JSX.Element {
   }
 
   const runApp = useCallback(
-    async (command: string) => {
-      const domainIds: string[] = [
-        ...new Set(
-          rosCtx.providers
-            .filter((prov) => prov.rosVersion === "2" && prov.rosState.ros_domain_id)
-            .map((prov) => prov.rosState.ros_domain_id)
-        ),
-      ] as string[];
-
-      let rmwImplementation = "";
-      if (rosCtx.rosInfo?.rmwImplementation) {
-        // set RMW_IMPLEMENTATION only if the variable is valid for the gui
-        rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
-      }
-      if (domainIds?.length === 0) {
-        window.commandExecutor?.exec(null, command);
-        handleClose("confirmed");
-      } else if (domainIds?.length === 1) {
-        window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domainIds[0]}${rmwImplementation} ${command}`);
-        handleClose("confirmed");
-      } else if (domainIds) {
-        setShowSelectDialog({ command: command, domainIds: domainIds });
+    async (command: RowType) => {
+      const localProvs = rosCtx.getLocalProvider();
+      for (const localProv of localProvs) {
+        if (localProv.rosVersion === "2") {
+          localProv.rosRun({package: command.package, binary: command.binary, name: command.name, args: command.args, ros_args: command.ros_args})
+        } else {
+          let rmwImplementation = "";
+          if (rosCtx.rosInfo?.rmwImplementation) {
+            // set RMW_IMPLEMENTATION only if the variable is valid for the gui
+            rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
+          }
+          if (!localProv.rosState.ros_domain_id) {
+            window.commandExecutor?.exec(null, command.commandROS1);
+            handleClose("confirmed");
+          } else
+            window.commandExecutor?.exec(
+              null,
+              `ROS_DOMAIN_ID=${localProv.rosState.ros_domain_id}${rmwImplementation} ${command.commandROS1}`
+            );
+          handleClose("confirmed");
+        }
       }
     },
     [rosCtx.providers, rosCtx.rosInfo, window.commandExecutor]
@@ -169,12 +192,12 @@ export default function ExternalAppsModal(): JSX.Element {
               </TableHead>
               <TableBody>
                 {applicationRows.map((row) => {
-                  let command: string | null = null;
+                  let command: RowType | null = null;
 
                   if (rosCtx.rosInfo) {
-                    if (rosCtx.rosInfo.version === "1" && row.commandROS1) command = row.commandROS1;
+                    if (rosCtx.rosInfo.version === "1" && row.commandROS1) command = row;
 
-                    if (rosCtx.rosInfo.version === "2" && row.commandROS2) command = row.commandROS2;
+                    if (rosCtx.rosInfo.version === "2" && row.package) command = row;
                   }
                   return (
                     <TableRow key={row.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>

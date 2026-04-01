@@ -36,8 +36,7 @@ class SupervisedPopen():
         self.popen = subprocess.Popen(args=args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout,
                                       stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds, shell=shell, cwd=cwd, env=env,
                                       universal_newlines=universal_newlines, startupinfo=startupinfo, creationflags=creationflags)
-        thread = threading.Thread(target=self._supervise)
-        thread.setDaemon(True)
+        thread = threading.Thread(target=self._supervise, daemon=True)
         thread.start()
 
 #   def __del__(self):
