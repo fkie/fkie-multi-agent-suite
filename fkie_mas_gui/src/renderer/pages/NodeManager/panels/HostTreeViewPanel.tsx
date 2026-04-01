@@ -52,7 +52,7 @@ import {
   TEventKillNodes,
   TEventShowScreens,
 } from "@/renderer/pages/NodeManager/layout/events";
-import { CmdType } from "@/renderer/providers";
+import { CmdType, Provider } from "@/renderer/providers";
 import { ConnectionState, EventProviderRestartNodes, EventProviderRosNodes } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
@@ -194,7 +194,8 @@ export default function HostTreeViewPanel(): JSX.Element {
         newVisibleNodes.push(
           ...filteredNodes.filter(
             (node) =>
-              node.isLocal || node.launchInfo.size > 0 ||
+              node.isLocalRunningNode() ||
+              node.launchInfo.size > 0 ||
               rosCtx.localNodes.filter((lNode) => lNode.node === node.name && lNode.providerId !== node.providerId)
                 .length === 0
           )
@@ -206,24 +207,31 @@ export default function HostTreeViewPanel(): JSX.Element {
     [providerNodes]
   );
 
+  const updateNodes = useCallback(
+    (provider: Provider, nodes: RosNode[]) => {
+      rosCtx.updateLocalNodes(
+        provider.id,
+        nodes.filter((node) => node.isLocalRunningNode() || node.launchInfo.size > 0).map((node) => node.name)
+      );
+      setProviderNodes((oldValues) => [
+        ...oldValues.filter((item) => {
+          return item.providerId !== provider.id;
+        }),
+        {
+          providerId: provider.id,
+          nodes: nodes,
+        },
+      ]);
+    },
+    [rosCtx.updateLocalNodes]
+  );
+
   useCustomEventListener(EVENT_PROVIDER_ROS_NODES, (data: EventProviderRosNodes) => {
     // put in our providerNodes list
     const { provider, nodes } = data;
     // TODO: should we remove closed/lost provider infos
     // Update local nodes in RosContext
-    rosCtx.updateLocalNodes(
-      data.provider.id,
-      data.nodes.filter((node) => node.isLocal || node.launchInfo.size > 0).map((node) => node.name)
-    );
-    setProviderNodes((oldValues) => [
-      ...oldValues.filter((item) => {
-        return item.providerId !== provider.id;
-      }),
-      {
-        providerId: provider.id,
-        nodes: nodes,
-      },
-    ]);
+    updateNodes(provider, nodes);
   });
 
   useCustomEventListener(EVENT_PROVIDER_RESTART_NODES, (data: EventProviderRestartNodes) => {
@@ -969,6 +977,12 @@ export default function HostTreeViewPanel(): JSX.Element {
   }, [rosCtx.providers]);
 
   // Register useEffect Callbacks ----------------------------------------------------------------------------------
+
+  useEffect(() => {
+    for (const p of rosCtx.providers) {
+      updateNodes(p, p.rosNodes);
+    }
+  }, []);
 
   useEffect(() => {
     // apply filter to nodes if search text was changed by user or nodes are updated by provider
