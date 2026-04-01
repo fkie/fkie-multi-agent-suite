@@ -95,6 +95,10 @@ export default function ProviderPanel(): JSX.Element {
   useEffect(() => {
     setShowStartConfigurations(
       startConfigurations.map((cfg) => {
+        // fix deprecated networkId parameter
+        if (!cfg.domainId && cfg.networkId) {
+          cfg.domainId = cfg.networkId;
+        }
         return new ProviderLaunchConfiguration(cfg);
       })
     );

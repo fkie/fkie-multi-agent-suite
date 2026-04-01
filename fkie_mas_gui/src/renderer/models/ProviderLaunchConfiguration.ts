@@ -37,6 +37,8 @@ export type TProviderLaunchParams = {
 
   domainId: number;
 
+  networkId?: number;  // deprecated
+
   rmw: {
     current: RmwSelection;
     selected: RmwSelection;
