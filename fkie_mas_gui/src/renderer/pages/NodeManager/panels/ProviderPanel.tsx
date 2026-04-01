@@ -115,6 +115,17 @@ export default function ProviderPanel(): JSX.Element {
         }
         return;
       }
+      const connectedToDomainIds: number[] = [];
+      for (const startCfg of startConfigurations) {
+        if (startCfg.host === "localhost") {
+          connectedToDomainIds.push(startCfg.networkId);
+          await rosCtx.hiddenConnect(startCfg);
+        }
+      }
+
+      if (startConfigurations.length === 0) {
+        addButtonRef?.current?.focus();
+      }
       // try to get local domain id from running mas processes
       if (rosCtx.rosInfo?.version) {
         try {
@@ -138,34 +149,22 @@ export default function ProviderPanel(): JSX.Element {
                     domainId = Number.parseInt(rosCtx.rosInfo?.domainId || "0");
                   }
                 }
+                if (domainId >= 0 && connectedToDomainIds.indexOf(domainId) === -1) {
+                  const newProvider = rosCtx.createProvider(
+                    "localhost",
+                    rosCtx.rosInfo.version,
+                    undefined,
+                    domainId,
+                    undefined
+                  );
+                  await rosCtx.connectToProvider(newProvider);
+                }
               }
-            }
-            if (domainId >= 0) {
-              console.log("CONNECT TO PROVIDER");
-              const newProvider = rosCtx.createProvider(
-                "localhost",
-                rosCtx.rosInfo.version,
-                undefined,
-                domainId,
-                undefined
-              );
-              await rosCtx.connectToProvider(newProvider);
-              return;
             }
           }
         } catch (error) {
           console.log(`error while lookup for running daemons: ${error} `);
         }
-      }
-      console.log("HIDDEN CONNECT");
-      for (const startCfg of startConfigurations) {
-        if (startCfg.host === "localhost") {
-          rosCtx.hiddenConnect(startCfg);
-        }
-      }
-
-      if (startConfigurations.length === 0) {
-        addButtonRef?.current?.focus();
       }
       if (window.commandExecutor && !(rosCtx.rosInfo?.version || settingsCtx.getArgument("ros-version"))) {
         setNoSourcedROS(true);
@@ -438,11 +437,15 @@ export default function ProviderPanel(): JSX.Element {
             Cancel
           </Button>
 
-          <Button autoFocus color="success" onClick={() => {
-            const launchCfg = new ProviderLaunchConfiguration();
-            editLaunchConfiguration(launchCfg, "New start configuration");
-            setOpenHintDialog(false)
-          }}>
+          <Button
+            autoFocus
+            color="success"
+            onClick={() => {
+              const launchCfg = new ProviderLaunchConfiguration();
+              editLaunchConfiguration(launchCfg, "New start configuration");
+              setOpenHintDialog(false);
+            }}
+          >
             Create
           </Button>
         </DialogActions>

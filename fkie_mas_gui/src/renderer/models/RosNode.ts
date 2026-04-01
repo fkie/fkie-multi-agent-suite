@@ -202,6 +202,10 @@ export default class RosNode {
     this.providerId = "";
   }
 
+  public isLocalRunningNode(): boolean {
+    return this.isLocal && (!this.pid || !this.processIds || this.status === RosNodeStatus.RUNNING);
+  }
+
   public getRosLoggersCount(): number {
     return Object.keys(this.rosLoggers).length;
   }

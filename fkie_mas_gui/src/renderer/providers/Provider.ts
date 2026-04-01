@@ -267,8 +267,9 @@ export default class Provider implements IProvider {
         port,
         networkId,
         useSSL,
-        this.onCloseConnection,
-        this.onOpenConnection
+        (reason, details) => this.onCloseConnection(reason, details),
+        () => this.onOpenConnection(),
+        () => this.setConnectionState(ConnectionState.STATES.CONNECTING, "")
       );
     }
     this.id = `${this.connection.host}:${this.connection.port}`;
@@ -2785,8 +2786,8 @@ export default class Provider implements IProvider {
       return result;
     };
 
-  private onCloseConnection: (state: ConnectionState, details: string) => void = (state, details) => {
-    this.setConnectionState(state, details);
+  private onCloseConnection: (reason: string, details: string) => void = (_reason, details) => {
+    this.setConnectionState(ConnectionState.STATES.CLOSED, details);
     // clear all activities
     this.currentRequestList.clear();
     emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ""));

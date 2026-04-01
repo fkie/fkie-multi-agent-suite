@@ -950,6 +950,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         configParams.networkId,
         configParams.useSSL
       );
+      provider.isLocalHost = isLocalHost(provider.connection.host);
       provider.init();
       provider.startConfiguration = new ProviderLaunchConfiguration(configParams);
       setHiddenProviders((prev) => [...prev, provider]);
@@ -1092,13 +1093,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     console.log(
       `trigger connection state ${provider.id}: new: ${newState}, old: ${oldState}, ${JSON.stringify(details)}`
     );
-    console.log(`STATE: ${provider.startConfiguration?.params.id}: ${newState}`);
     const hiddenProv = hiddenProviders.find((p) => {
-      console.log(`  ph: ${p.startConfiguration?.params.id}`);
-      console.log(`  pr: ${provider.startConfiguration?.params.id}`);
       return p.startConfiguration?.params.id === provider.startConfiguration?.params.id;
     });
-    console.log(`hiddenProv: ${hiddenProv?.startConfiguration?.params.id}: ${newState}`);
     switch (newState) {
       case ConnectionState.STATES.CONNECTED:
         clearProviders();
@@ -1113,6 +1110,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       case ConnectionState.STATES.CLOSED:
         mapProviderRosNodesRef.current.set(provider.id, []);
         if (hiddenProv) {
+          hiddenProv.close();
           setHiddenProviders((prev) =>
             prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
           );
@@ -1125,6 +1123,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       case ConnectionState.STATES.UNREACHABLE:
       case ConnectionState.STATES.ERRORED:
         if (hiddenProv) {
+          hiddenProv.close();
           setHiddenProviders((prev) =>
             prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
           );

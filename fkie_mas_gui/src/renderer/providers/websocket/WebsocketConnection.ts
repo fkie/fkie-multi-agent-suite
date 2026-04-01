@@ -35,6 +35,7 @@ export default class WebsocketConnection extends ProviderConnection {
 
   private onClose: (reason: string, details: string) => void = () => {};
   private onOpen: () => void = () => {};
+  private onReconnect: () => void = () => {};
 
   // --- reconnect configuration ---
   /** Whether the connection should auto-reconnect after unexpected close */
@@ -57,7 +58,8 @@ export default class WebsocketConnection extends ProviderConnection {
     networkId: number = 0,
     useSSL: boolean = false,
     onClose: (reason: string, details: string) => void = () => {},
-    onOpen: () => void = () => {}
+    onOpen: () => void = () => {},
+    onReconnect: () => void = () => {}
   ) {
     super();
     this.subscriptions = {};
@@ -75,6 +77,7 @@ export default class WebsocketConnection extends ProviderConnection {
 
     this.onClose = onClose;
     this.onOpen = onOpen;
+    this.onReconnect = onReconnect;
   }
 
   private log(): ILoggingContext {
@@ -209,14 +212,12 @@ export default class WebsocketConnection extends ProviderConnection {
     const delay = this.reconnectDelayMs * (this.reconnectAttempts + 1);
     this.reconnectAttempts += 1;
 
-    this.log().info(
-      `[${this.uri}] trying to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`,
-      ""
-    );
+    this.log().info(`[${this.uri}] trying to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`, "");
 
     setTimeout(() => {
       // Only attempt reconnect if still allowed
       if (!this.shouldReconnect) return;
+      this.onReconnect();
       this.open().catch((err) => {
         this.log().warn(`[${this.uri}] reconnect attempt failed: ${err}`, "");
       });
