@@ -350,6 +350,9 @@ export default class Provider implements IProvider {
     if (!name) {
       name = this.rosState.name ? this.rosState.name : this.connection.host;
     }
+    if (this.rosState.ros_domain_id) {
+      name = `${name} [${this.rosState.ros_domain_id}]`;
+    }
     return name;
   };
 

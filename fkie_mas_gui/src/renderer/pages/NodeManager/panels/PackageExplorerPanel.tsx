@@ -160,7 +160,7 @@ export default function PackageExplorerPanel(): JSX.Element {
     const provPackageHistory: TPackageItemsTree = {};
     for (const prov of rosCtx.providers) {
       const provHistory = launchFileHistory.filter(
-        (file) => file.host === prov.host() || file.providerName === prov.name()
+        (file) => file.providerId === prov.id
       );
       if (provHistory.length > 0) {
         const pit: TPackageTreeItem[] = provHistory.map((curr) => {

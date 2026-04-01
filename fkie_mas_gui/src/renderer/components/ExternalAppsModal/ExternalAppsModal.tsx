@@ -1,7 +1,5 @@
 import { generateUniqueId } from "@/renderer/utils";
 import AppsIcon from "@mui/icons-material/Apps";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import RemoveOutlinedIcon from "@mui/icons-material/RemoveOutlined";
 import {
   Button,
   Dialog,
@@ -20,12 +18,11 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import DraggablePaper from "../UI/DraggablePaper";
-import SelectDomainIdModal from "./SelectDomainIdModal";
 
 const headers = [
   {
@@ -34,7 +31,7 @@ const headers = [
   },
   {
     key: "run",
-    header: "Run",
+    header: "Run for domain id",
   },
 ];
 
@@ -47,7 +44,7 @@ type RowType = {
   namespace?: string;
   name?: string;
   args: string[];
-  ros_args?: string[]
+  ros_args?: string[];
 };
 
 // TODO: Make commands editable and save into configuration config
@@ -86,7 +83,6 @@ const applicationRows: RowType[] = [
     package: "",
     binary: "",
     args: [],
-
   },
   {
     id: generateUniqueId(),
@@ -113,39 +109,59 @@ export default function ExternalAppsModal(): JSX.Element {
   const settingsCtx = useSettingsContext();
 
   const [open, setOpen] = useState(false);
-  const [showSelectDialog, setShowSelectDialog] = useState<{ command: string; domainIds: string[] } | undefined>();
+  const [localProviderDomains, setLocalProviderDomains] = useState<string[]>([]);
+
+  useEffect(() => {
+    const localProvs = rosCtx.getLocalProvider();
+    setLocalProviderDomains(
+      localProvs
+        .filter((prov) => prov.isAvailable() && prov.rosState !== undefined)
+        .map((prov) => prov.rosState.ros_domain_id || "-")
+        .sort()
+    );
+  }, [rosCtx.providers]);
+
   function handleOpen(): void {
     setOpen(true);
   }
+
   function handleClose(reason: "backdropClick" | "escapeKeyDown" | "confirmed" | "cancel"): void {
     if (reason && reason === "backdropClick") return;
-    setShowSelectDialog(undefined);
     setOpen(false);
   }
 
   const runApp = useCallback(
-    async (command: RowType) => {
+    async (command: RowType, domainId: string) => {
       const localProvs = rosCtx.getLocalProvider();
       for (const localProv of localProvs) {
-        if (localProv.rosVersion === "2") {
-          localProv.rosRun({package: command.package, binary: command.binary, name: command.name, args: command.args, ros_args: command.ros_args})
+        if (localProv.rosVersion === "2" && localProv.rosState.ros_domain_id === domainId) {
+          localProv.rosRun({
+            package: command.package,
+            binary: command.binary,
+            name: command.name,
+            args: command.args,
+            ros_args: command.ros_args,
+          });
         } else {
-          let rmwImplementation = "";
-          if (rosCtx.rosInfo?.rmwImplementation) {
-            // set RMW_IMPLEMENTATION only if the variable is valid for the gui
-            rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
-          }
-          if (!localProv.rosState.ros_domain_id) {
+          if (localProv.rosState.ros_domain_id === domainId) {
             window.commandExecutor?.exec(null, command.commandROS1);
             handleClose("confirmed");
-          } else
-            window.commandExecutor?.exec(
-              null,
-              `ROS_DOMAIN_ID=${localProv.rosState.ros_domain_id}${rmwImplementation} ${command.commandROS1}`
-            );
-          handleClose("confirmed");
+          }
+          // else {
+          //   let rmwImplementation = "";
+          //   if (rosCtx.rosInfo?.rmwImplementation) {
+          //     // set RMW_IMPLEMENTATION only if the variable is valid for the gui
+          //     rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
+          //   }
+
+          //   window.commandExecutor?.exec(
+          //     null,
+          //     `ROS_DOMAIN_ID=${localProv.rosState.ros_domain_id}${rmwImplementation} ${command.commandROS1}`
+          //   );
+          // }
         }
       }
+      handleClose("confirmed");
     },
     [rosCtx.providers, rosCtx.rosInfo, window.commandExecutor]
   );
@@ -158,7 +174,6 @@ export default function ExternalAppsModal(): JSX.Element {
         rmwImplementation = ` RMW_IMPLEMENTATION=${rosCtx.rosInfo.rmwImplementation}`;
       }
       window.commandExecutor?.exec(null, `ROS_DOMAIN_ID=${domain_id}${rmwImplementation} ${command}`);
-      setShowSelectDialog(undefined);
     },
     [rosCtx]
   );
@@ -170,7 +185,7 @@ export default function ExternalAppsModal(): JSX.Element {
         onClose={(reason: "backdropClick" | "escapeKeyDown") => handleClose(reason)}
         fullWidth
         scroll="paper"
-        maxWidth="md"
+        maxWidth="sm"
         PaperComponent={DraggablePaper}
         aria-labelledby="draggable-dialog-title"
       >
@@ -178,7 +193,7 @@ export default function ExternalAppsModal(): JSX.Element {
           External Applications
         </DialogTitle>
 
-        <DialogContent dividers={true}>
+        <DialogContent dividers={false}>
           <TableContainer>
             <Table>
               <TableHead>
@@ -202,38 +217,28 @@ export default function ExternalAppsModal(): JSX.Element {
                   return (
                     <TableRow key={row.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                       <TableCell component="th" scope="row">
-                        {!command && <Typography variant="body2">{row.application}</Typography>}
-                        {command && (
-                          <Link
-                            noWrap
-                            href="#"
-                            underline="none"
-                            color="inherit"
-                            onClick={() => {
-                              runApp(command);
-                            }}
-                          >
-                            <Typography variant="body2">{row.application}</Typography>
-                          </Link>
-                        )}
+                        <Typography variant="body2">{row.application}</Typography>
                       </TableCell>
                       <TableCell>
-                        {command && (
-                          <IconButton
-                            size="small"
-                            onClick={() => {
-                              runApp(command);
-                            }}
-                          >
-                            <PlayArrowIcon />
-                          </IconButton>
-                        )}
-
-                        {!command && (
-                          <IconButton size="small">
-                            <RemoveOutlinedIcon />
-                          </IconButton>
-                        )}
+                        <Stack direction="row" spacing={1}>
+                          {command &&
+                            localProviderDomains.map((domainId) => {
+                              return (
+                                <Link
+                                  key={`${domainId}`}
+                                  noWrap
+                                  href="#"
+                                  underline="none"
+                                  color="inherit"
+                                  onClick={() => {
+                                    runApp(command, domainId);
+                                  }}
+                                >
+                                  <Typography variant="body2">[{domainId}]</Typography>
+                                </Link>
+                              );
+                            })}
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   );
@@ -264,19 +269,6 @@ export default function ExternalAppsModal(): JSX.Element {
           <AppsIcon sx={{ fontSize: "inherit" }} />
         </IconButton>
       </Tooltip>
-      {showSelectDialog && (
-        <SelectDomainIdModal
-          domainIds={showSelectDialog.domainIds}
-          onClose={(domainId) => {
-            if (domainId) {
-              runAppWid(showSelectDialog.command, domainId);
-              handleClose("confirmed");
-            } else {
-              handleClose("cancel");
-            }
-          }}
-        />
-      )}
     </Stack>
   );
 }
