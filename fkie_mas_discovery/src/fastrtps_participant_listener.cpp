@@ -163,8 +163,8 @@ not_valid:
  */
 std::string getEnvironmentVariable(std::string const &key, std::string default_value)
 {
-  char *val = getenv(key.c_str());
-  return val == NULL ? default_value : std::string(val);
+    char *val = getenv(key.c_str());
+    return val == NULL ? default_value : std::string(val);
 }
 
 void convert_gid_to_msg(const eprosima::fastrtps::rtps::GUID_t &gid, fkie_mas_msgs::msg::Gid &msg_gid)
@@ -188,22 +188,26 @@ public:
         RCLCPP_INFO(get_logger(), "Node name: %s", node_name.c_str());
         publisher_ = this->create_publisher<fkie_mas_msgs::msg::ChangedState>("~/changed", rclcpp::QoS(10));
         RCLCPP_INFO(get_logger(), "  publisher: %s [fkie_mas_msgs/msg/ChangedState]", this->publisher_->get_topic_name());
-        publisher_participants_ = this->create_publisher<fkie_mas_msgs::msg::Participants>("~/participants", rclcpp::QoS(1).reliable().transient_local().keep_last(1));
-        RCLCPP_INFO(get_logger(), "  publisher: %s [fkie_mas_msgs/msg/Participants]", this->publisher_participants_->get_topic_name());
-        daemon_topic_ = std::string("rt") + this->publisher_->get_topic_name();
-        participant_ = nullptr;
-        eprosima::fastrtps::rtps::RTPSParticipantAttributes participant_attr;
-        std::string full_name = this->get_node_base_interface()->get_fully_qualified_name();
-        RCLCPP_INFO(get_logger(), "create eProsima participant: %s", full_name.c_str());
-        participant_attr.setName(full_name.erase(0, 1).c_str());
-        char *ros_domain_id = getenv("ROS_DOMAIN_ID");
-        uint32_t domain_id = 0;
-        if (ros_domain_id != NULL)
+        bool is_dds = getEnvironmentVariable("RMW_IMPLEMENTATION", "") != std::string("rmw_zenoh_cpp");
+        if (is_dds)
         {
-            RCLCPP_INFO(get_logger(), "listen to domain id: %s", ros_domain_id);
-            domain_id = atoi(ros_domain_id);
+            publisher_participants_ = this->create_publisher<fkie_mas_msgs::msg::Participants>("~/participants", rclcpp::QoS(1).reliable().transient_local().keep_last(1));
+            RCLCPP_INFO(get_logger(), "  publisher: %s [fkie_mas_msgs/msg/Participants]", this->publisher_participants_->get_topic_name());
+            daemon_topic_ = std::string("rt") + this->publisher_->get_topic_name();
+            participant_ = nullptr;
+            eprosima::fastrtps::rtps::RTPSParticipantAttributes participant_attr;
+            std::string full_name = this->get_node_base_interface()->get_fully_qualified_name();
+            RCLCPP_INFO(get_logger(), "create eProsima participant: %s", full_name.c_str());
+            participant_attr.setName(full_name.erase(0, 1).c_str());
+            char *ros_domain_id = getenv("ROS_DOMAIN_ID");
+            uint32_t domain_id = 0;
+            if (ros_domain_id != NULL)
+            {
+                RCLCPP_INFO(get_logger(), "listen to domain id: %s", ros_domain_id);
+                domain_id = atoi(ros_domain_id);
+            }
+            participant_ = eprosima::fastrtps::rtps::RTPSDomain::createParticipant(domain_id, participant_attr, this);
         }
-        participant_ = eprosima::fastrtps::rtps::RTPSDomain::createParticipant(domain_id, participant_attr, this);
         graph_event_ = this->get_graph_event();
         timer_ = this->create_wall_timer(500ms, std::bind(&CustomParticipantListener::check_graph, this));
     }

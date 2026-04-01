@@ -93,8 +93,10 @@ class RosStateServicer:
         self._ros_service_list_mutex = threading.RLock()
         self._ros_lifecycle_mutex = threading.RLock()
         self._ros_composable_mutex = threading.RLock()
+        self._is_dds = os.environ["RMW_IMPLEMENTATION"] != "rmw_zenoh_cpp" if "RMW_IMPLEMENTATION" in os.environ else True
         self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/changed"
-        self.topic_name_participants = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/participants"
+        if self._is_dds:
+            self.topic_name_participants = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/participants"
         self.topic_name_endpoint = f"{NM_NAMESPACE}/daemons"
         self.topic_state_publisher_count = 0
         self._force_refresh = False
@@ -149,8 +151,10 @@ class RosStateServicer:
         Log.info(f"{self.__class__.__name__}: listen for endpoint items on {self.topic_name_endpoint}")
         self.sub_endpoints = nmd.ros_node.create_subscription(
             Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_endpoint_profile)
-        self.sub_participants = nmd.ros_node.create_subscription(
-            Participants, self.topic_name_participants, self._on_msg_participants, qos_profile=qos_participants_profile)
+        if self._is_dds:
+            Log.info(f"{self.__class__.__name__}: listen for participants on {self.topic_name_participants}")
+            self.sub_participants = nmd.ros_node.create_subscription(
+                Participants, self.topic_name_participants, self._on_msg_participants, qos_profile=qos_participants_profile)
         self._lock_check = threading.RLock()
         self._thread_check_discovery_node = threading.Thread(target=self._check_discovery_node, daemon=True)
         self._thread_check_discovery_node.start()
