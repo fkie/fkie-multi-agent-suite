@@ -790,6 +790,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       defaultCfg.params.autoConnect = true;
       defaultCfg.params.autostart = false;
       defaultCfg.params.rmw.current = (provider.rosState?.rmw_implementation || "") as RmwSelection;
+      defaultCfg.params.zenohConfigOverride = settingsCtx.get("zenohConfigOverride") as string;
       return startConfig(defaultCfg, null);
     },
     [startConfig]

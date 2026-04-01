@@ -85,6 +85,8 @@ export type TProviderLaunchParams = {
   };
 
   respawn: boolean;
+
+  zenohConfigOverride: string;
 };
 
 /**
@@ -120,6 +122,7 @@ export default class ProviderLaunchConfiguration {
       autostart: false,
       ros1MasterUri: { enable: false, uri: "default" },
       respawn: false,
+      zenohConfigOverride: "",
     }
   ) {
     this.params = params;
@@ -291,7 +294,7 @@ export default class ProviderLaunchConfiguration {
   }
 
   public rmwPrefix(): string {
-    if (this.params.rmw.forceUse &&  this.params.rmw.selected !== "RMW_IMPLEMENTATION") {
+    if (this.params.rmw.forceUse && this.params.rmw.selected !== "RMW_IMPLEMENTATION") {
       return ` RMW_IMPLEMENTATION=${this.params.rmw.selected} `;
     }
     return "";
@@ -300,8 +303,17 @@ export default class ProviderLaunchConfiguration {
   public getZenohPrefix(): string {
     if (!this.params.rmw.overrideZeno || this.params.rmw.current !== "rmw_zenoh_cpp") return "";
 
+    return ` ZENOH_ROUTER_CHECK_ATTEMPTS=-1 ${this.getZenohOverride()}`;
+  }
+
+  public getZenohOverride(): string {
+    if (!this.params.rmw.overrideZeno || this.params.rmw.current !== "rmw_zenoh_cpp") return "";
+
     const zenohPort = 7448 + this.params.networkId || 0;
-    const zenohMcastGroup = "224.0.0.224";
-    return ` ZENOH_ROUTER_CHECK_ATTEMPTS=-1 ZENOH_CONFIG_OVERRIDE='listen/endpoints=["tcp/0.0.0.0:0"];scouting/multicast/enabled=true;scouting/multicast/address="${zenohMcastGroup}:${zenohPort}";scouting/multicast/listen=true;scouting/multicast/ttl=16' `;
+    let envParam = "";
+    if (this.params.zenohConfigOverride) {
+      envParam = `ZENOH_CONFIG_OVERRIDE=${this.params.zenohConfigOverride.replace("${ZENOH_PORT}", `${zenohPort}`)}`;
+    }
+    return envParam;
   }
 }

@@ -100,6 +100,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   const [startCmdDaemon, setStartCmdDaemon] = useState<string>("");
   const [startCmdDiscovery, setStartCmdDiscovery] = useState<string>("");
   const [startCmdTtyd, setStartCmdTtyd] = useState<string>("");
+  const [startCmdZenohOverride, setStartCmdZenohOverride] = useState<string>("");
   const [tsList, setTSList] = useState<string[]>([]);
   const [topicList, setTopicList] = useState<string[]>([]);
   const [forceRestart, setForceRestart] = useState(false);
@@ -137,6 +138,8 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
 
   useEffect(() => {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+    launchCfg.params.zenohConfigOverride = settingsCtx.get("zenohConfigOverride") as string;
+    updateStartParameter();
   }, [settingsCtx.changed]);
 
   function updateTopics(): void {
@@ -220,6 +223,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     setStartCmdDaemon(launchCfg.daemonStartCmd().message);
     setStartCmdDiscovery(launchCfg.masterDiscoveryStartCmd().message);
     setStartCmdTtyd(launchCfg.terminalStartCmd().message);
+    setStartCmdZenohOverride(launchCfg.getZenohOverride());
     forceValuesUpdate();
   }
 
@@ -1101,7 +1105,14 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               >
                 {launchCfg.params.daemon.enable && (
                   <Stack direction="row">
-                    <CopyButton value={startCmdDaemon} fontSize="0.7em" />
+                    <Stack spacing={1}>
+                      <CopyButton value={startCmdDaemon} fontSize="inherit" />
+                      {startCmdZenohOverride && (
+                        <Tooltip title="copy only ZENOH_CONFIG_OVERRIDE" disableInteractive>
+                          <CopyButton value={startCmdZenohOverride} fontSize="0.7em" />
+                        </Tooltip>
+                      )}
+                    </Stack>
                     <Typography
                       variant="body2"
                       component="pre"
@@ -1120,8 +1131,8 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                   </Stack>
                 )}
                 {launchCfg.params.discovery.enable && (
-                  <Stack direction="row">
-                    <CopyButton value={startCmdDiscovery} fontSize="0.7em" />
+                  <Stack direction="row" alignItems="start">
+                    <CopyButton value={startCmdDiscovery} fontSize="inherit" />
                     <Typography
                       variant="body2"
                       component="pre"
@@ -1140,8 +1151,8 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                   </Stack>
                 )}
                 {launchCfg.params.terminal.enable && (
-                  <Stack direction="row">
-                    <CopyButton value={startCmdTtyd} fontSize="0.7em" />
+                  <Stack direction="row" alignItems="start">
+                    <CopyButton value={startCmdTtyd} fontSize="inherit" />
                     <Typography
                       variant="body2"
                       component="pre"
