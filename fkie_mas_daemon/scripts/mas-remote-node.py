@@ -120,12 +120,14 @@ def parse_arguments():
 def find_process_by_name(command: str, package: str, additional_args: List[str]):
     "Return a list of processes matching 'package', 'command' and 'additional_args'. Ignores self node."
     self_name = psutil.Process().name()
-    pkg = package if package is not None else ''
     cmd_args = f'{" ".join(additional_args)}'.strip()
     if cmd_args:
         cmd_args = fr'\s*{cmd_args}'.replace('[', r'\[').replace(']', r'\]')
     # try to compare the process with regex
-    cmd_reg = re.compile(fr'{pkg}.*[\s\/]{command}{cmd_args}\Z')
+    if package is not None:
+        cmd_reg = re.compile(fr'{package}.*[\s\/]{command}{cmd_args}\Z')
+    else:
+        cmd_reg = re.compile(re.escape(command), re.IGNORECASE)
 
     result = []
     for p in psutil.process_iter(["pid", "name", "exe", "cmdline"]):
@@ -137,7 +139,6 @@ def find_process_by_name(command: str, package: str, additional_args: List[str])
             cmdline = ' '.join(p.info['cmdline'])
         if 'mas-remote-node.py' in cmdline:
             continue
-
         for _ in cmd_reg.finditer(cmdline):
             result.append(p)
             break
@@ -248,7 +249,7 @@ def _prepareROSMaster(masteruri):
         socket.setdefaulttimeout(None)
 
 
-def run_ROS1_node(package: str, executable: str, name: str, args: List[str], prefix='', respawn=False, masteruri=None, loglevel='', set_name=True):
+def run_ROS1_node(package: str, executable: str, name: str, args: List[str], prefix='', respawn=False, masteruri=None, loglevel='', set_name=True, force: bool = False):
     '''
     Runs a ROS1 node. Starts a roscore if needed.
     '''
@@ -307,6 +308,14 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
                 *arg_name_list, node_params]
     Log.info('run on remote host:', ' '.join(cmd_args))
 
+    if not force:
+        running_processes = find_process_by_name(screen_prefix, None, [])
+        if len(running_processes) > 0:
+            Log.warn(
+                f'A process of same package/executable [{package}/{executable}] is already running.',
+                'Skipping command because [force] is disable' if not force else "")
+            return 0
+
     # determine the current working path
     arg_cwd = getCwdArg('__cwd', args)
     cwd = ros1_masteruri.get_ros_home()
@@ -325,7 +334,7 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
             'Multiple executables were found! The first one was started! Executables:\n%s', str(cmd))
 
 
-def run_ROS2_node(package: str, executable: str, name: str, args: List[str], prefix='', respawn=False, set_name=True):
+def run_ROS2_node(package: str, executable: str, name: str, args: List[str], prefix='', respawn=False, set_name=True, force: bool = False):
     '''
     Runs a ROS2 node
     '''
@@ -344,16 +353,23 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
         ' ') > -1 else a for a in args[0:])
     if not set_name and node_params:
         node_params = f'--ros-args {node_params}'
-    cmd_args = [screen.get_cmd(node=arg_name if arg_name else executable, namespace=arg_ns),
-                RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd, node_params]
+    screen_cmd = screen.get_cmd(node=arg_name if arg_name else executable, namespace=arg_ns)
+    cmd_args = [screen_cmd, RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd, node_params]
 
     screen_command = ' '.join(cmd_args)
 
+    if not force:
+        running_processes = find_process_by_name(screen_cmd, None, [])
+        if len(running_processes) > 0:
+            Log.warn(
+                f'A process of same package/executable [{package}/{executable}] is already running.',
+                'Skipping command because [force] is disable' if not force else "")
+            return 1
     Log.info('run on remote host:', screen_command)
     subprocess.Popen(shlex.split(screen_command), env=dict(os.environ))
 
 
-def run_command(name: str, command: str, additional_args: List[str], respawn: bool = False, pre_check_binary: bool = False):
+def run_command(name: str, command: str, additional_args: List[str], respawn: bool = False, pre_check_binary: bool = False, force: bool = False):
     '''
     Runs a command remotely
     '''
@@ -364,11 +380,20 @@ def run_command(name: str, command: str, additional_args: List[str], respawn: bo
     # get namespace if given
     arg_ns = getCwdArg('__ns', additional_args)
 
-    cmd_args = [screen.get_cmd(node=name, namespace=arg_ns),
-                RESPAWN_SCRIPT if respawn is not None else '', "", command]
+    screen_cmd = screen.get_cmd(node=name, namespace=arg_ns)
+    cmd_args = [screen_cmd, RESPAWN_SCRIPT if respawn is not None else '', "", command]
 
     screen_command = ' '.join(cmd_args)
     screen_command += ' ' + ' '.join(additional_args)
+
+    if not force:
+        command = command
+        running_processes = find_process_by_name(screen_cmd, None, [])
+        if len(running_processes) > 0:
+            Log.warn(
+                f'A process with the same name [{name}] is already running.',
+                'Skipping command because [force] is disable' if not force else "")
+            return 1
 
     Log.info('run on remote host:', screen_command)
     subprocess.Popen(shlex.split(screen_command), env=dict(os.environ))
@@ -377,33 +402,33 @@ def run_command(name: str, command: str, additional_args: List[str], respawn: bo
 def main(argv=sys.argv) -> int:
     parser, args, additional_args = parse_arguments()
 
-    command = args.node_type
-    if args.node_type is None:
-        command = args.command
-    running_processes = find_process_by_name(
-        command, args.package, additional_args)
-    if not running_processes:
-        # try without package name
-        running_processes = find_process_by_name(
-            command, None, additional_args)
-    if len(running_processes) > 0:
-        if args.name:
-            Log.warn(
-                f'A process with the same name [{args.name}] is already running.',
-                'Skipping command because [force] is disable' if not args.force else "")
-        else:
-            Log.warn(
-                f'A process of same package/executable [{args.package}/{args.node_type}] is already running.',
-                'Skipping command because [force] is disable' if not args.force else "")
-        if not args.force:
-            return 0
+    # command = args.node_type
+    # if args.node_type is None:
+    #     command = args.command
+    # running_processes = find_process_by_name(
+    #     command, args.package, additional_args)
+    # if not running_processes:
+    #     # try without package name
+    #     running_processes = find_process_by_name(
+    #         command, None, additional_args)
+    # if len(running_processes) > 0:
+    #     if args.name:
+    #         Log.warn(
+    #             f'A process with the same name [{args.name}] is already running.',
+    #             'Skipping command because [force] is disable' if not args.force else "")
+    #     else:
+    #         Log.warn(
+    #             f'A process of same package/executable [{args.package}/{args.node_type}] is already running.',
+    #             'Skipping command because [force] is disable' if not args.force else "")
+    #     if not args.force:
+    #         return 0
 
     try:
         print_help = True
         if args.command:
             screen.test_screen()
             run_command(args.name, args.command,
-                        additional_args, args.respawn, args.pre_check_binary)
+                        additional_args, args.respawn, args.pre_check_binary, force=args.force)
             return 0
 
         if args.show_screen_log:
@@ -464,10 +489,10 @@ def main(argv=sys.argv) -> int:
             screen.test_screen()
             if os.environ['ROS_VERSION'] == "1":
                 run_ROS1_node(args.package, args.node_type, args.name,
-                              additional_args, args.prefix, args.respawn, args.masteruri, set_name=args.set_name)
+                              additional_args, args.prefix, args.respawn, args.masteruri, set_name=args.set_name, force=args.force)
             elif os.environ['ROS_VERSION'] == "2":
                 run_ROS2_node(args.package, args.node_type, args.name,
-                              additional_args, args.prefix, args.respawn, set_name=args.set_name)
+                              additional_args, args.prefix, args.respawn, set_name=args.set_name, force=args.force)
             else:
                 Log.error(f'Invalid ROS Version: {os.environ["ROS_VERSION"]}')
 
