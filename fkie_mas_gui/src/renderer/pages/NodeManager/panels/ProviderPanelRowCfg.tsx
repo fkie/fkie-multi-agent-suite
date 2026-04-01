@@ -41,20 +41,14 @@ export default function ProviderPanelRowCfg(props: ProviderPanelRowCfgProps): JS
 
   const createTableRow = useMemo(() => {
     return (
-      <TableRow
-        key={startConfig.params.id}
-        style={{
-          display: "block",
-          padding: 0,
-        }}
-      >
+      <TableRow key={startConfig.params.id} style={{ display: "block" }}>
         <TableCell
           style={{
             padding: 2,
             flexGrow: 1,
             width: "100%",
           }}
-          sx={getHostStyle(startConfig.params.host)}
+          // sx={getHostStyle(startConfig.params.host)}
         >
           <Stack direction="row" spacing="0.5em" flexGrow={1}>
             <Link noWrap href="#" underline="none" color="inherit" onClick={() => {}}>
