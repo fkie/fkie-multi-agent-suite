@@ -585,7 +585,8 @@ class SubscriberFilter:
         no_str: bool = False,
         hz: float = 1,
         window: int = 0,
-        arrayItemsCount: int = 15
+        arrayItemsCount: int = 15,
+        resetStats: bool = False
     ) -> None:
         self.no_data = no_data
         self.no_arr = no_arr
@@ -593,6 +594,7 @@ class SubscriberFilter:
         self.hz = hz
         self.window = window
         self.arrayItemsCount = arrayItemsCount
+        self.resetStats = resetStats
 
 
 class SubscriberNode:

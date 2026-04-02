@@ -7,6 +7,7 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import {
   Alert,
   Button,
@@ -170,6 +171,13 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
     [topicName]
   );
 
+  const resetStats = useCallback(() => {
+    if (!provider) return;
+    setContent(undefined);
+    const filterMsg = new SubscriberFilter(noData, noArr, noStr, hz, windowSize, arrayItemsCount, true);
+    rosCtx.updateFilterRosTopic(provider, topicName, filterMsg);
+  }, [provider, noData, noArr, noStr, hz, windowSize, arrayItemsCount, setContent]);
+
   // initialize provider
   useEffect(() => {
     if (!provider) return;
@@ -298,7 +306,7 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
               color: "inherit",
             }}
           >
-            <Stack spacing={1} direction="row" fontSize="0.8em">
+            <Stack spacing={1} direction="row" fontSize="0.8em" alignItems="center">
               <Tag text={`${content?.count || 0}`} color="info" tooltip="count of received message" />
               {content?.latched && (
                 <Typography variant="body2" style={{ fontWeight: "bold" }}>
@@ -313,6 +321,15 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
               </Typography>
             </Stack>
           </Button>
+          <IconButton
+            size="small"
+            onClick={(event) => {
+              event.stopPropagation();
+              resetStats();
+            }}
+          >
+            <RestartAltIcon sx={{ fontSize: "inherit" }} />
+          </IconButton>
         </Stack>
         {showStatistics && (
           <Stack marginLeft="0.7em" spacing={0} direction="column">

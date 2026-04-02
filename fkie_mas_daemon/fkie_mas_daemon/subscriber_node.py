@@ -448,6 +448,15 @@ class RosSubscriberLauncher:
         self._no_arr = request.no_arr
         self._no_str = request.no_str
         self._hz = request.hz
+        resetStats = getattr(request, "resetStats", False)
+        if resetStats:
+            self._count_received = 0
+            self._last_received_ts = 0
+            self._msg_t0 = -1.
+            self._msg_tn = 0
+            self._times = []
+            self._bytes = []
+            self._bws = []
         if hasattr(request, "arrayItemsCount"):
             self._array_items_count = request.arrayItemsCount
         if self._window != request.window:

@@ -30,12 +30,23 @@ export default class SubscriberFilter {
 
   arrayItemsCount: number;
 
-  constructor(no_data = false, no_arr = false, no_str = false, hz = 1, window = 0, arrayItemsCount = 15) {
+  resetStats: boolean;
+
+  constructor(
+    no_data = false,
+    no_arr = false,
+    no_str = false,
+    hz = 1,
+    window = 0,
+    arrayItemsCount = 15,
+    resetStats = false
+  ) {
     this.no_data = no_data;
     this.no_arr = no_arr;
     this.no_str = no_str;
     this.hz = hz;
     this.window = window;
     this.arrayItemsCount = arrayItemsCount;
+    this.resetStats = resetStats;
   }
 }
