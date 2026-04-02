@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.6.0 (02.04.2026)
+------------------
+* Added reset stats for echo topic
+* Do not create participants topics if started with zenoh
+
 5.5.0 (01.04.2026)
 ------------------
 * fixed visualization of composable node in some cases

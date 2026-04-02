@@ -1,5 +1,18 @@
 # Changelog
 
+## 5.6.0 - 02.04.2026
+
+Added reset stats in echo topic panel
+Changed zenoh parameter in start configuration
+Fixed start terminals with correct environment variables
+Fixed network/domainId
+Fixed connect to local start configurations on startup
+Fixed node visualization with different domain ids on the same host
+Do not create participants topics if started with zenoh
+Improved check for running nodes
+Do not colorize start configurations
+Improved host to color
+
 ## 5.5.0 - 01.04.2026
 
 Added ros domain id to the system nodes

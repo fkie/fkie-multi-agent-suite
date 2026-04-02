@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.2.0 (02.04.2026)
+------------------
+* Do not create participants topics if started with zenoh
+
 5.1.0 (01.04.2026)
 ------------------
 * added ros domain id to the node name

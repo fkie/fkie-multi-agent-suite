@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.6.0 (02.04.2026)
+------------------
+* Updated SubscriberFilter to reset stats for echo topic
+
 5.5.0 (01.04.2026)
 ------------------
 * added types for ros.path.get_list
