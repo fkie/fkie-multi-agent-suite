@@ -35,7 +35,12 @@ import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
-import { RMW_SELECTIONS, RmwSelection } from "@/renderer/models/ProviderLaunchConfiguration";
+import {
+  RMW_SELECTIONS,
+  RmwSelection,
+  ZENO_SELECTIONS,
+  ZenohEnvSelection,
+} from "@/renderer/models/ProviderLaunchConfiguration";
 import { EVENT_CLOSE_COMPONENT, eventCloseComponent } from "../layout/events";
 
 const AccordionAdv = styled((props: AccordionProps) => <MuiAccordion disableGutters elevation={0} square {...props} />)(
@@ -103,14 +108,12 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   const [startCmdZenohOverride, setStartCmdZenohOverride] = useState<string>("");
   const [tsList, setTSList] = useState<string[]>([]);
   const [topicList, setTopicList] = useState<string[]>([]);
-  const [forceRestart, setForceRestart] = useState(false);
+  // const [forceStart, setForceStart] = useState(false);
 
   const defaultHost: string = hostArg ? hostArg : config?.params.host || "localhost";
   const [selectedHost, setSelectedHost] = useState<THostIp | null>({ host: defaultHost });
   const [selectedRmw, setSelectedRmw] = useState<RmwSelection>(launchCfg.params.rmw.selected || "RMW_IMPLEMENTATION");
-  const [optionForceUseRmwImplementation, setOptionForceUseRmwImplementation] = useState<boolean>(
-    launchCfg.params.rmw.forceUse
-  );
+  const [selectedZenohEnv, setSelectedZenohEnv] = useState<ZenohEnvSelection>(launchCfg.params.rmw.overrideZenoEnv || "");
   const [hostList, setHostList] = useState<THostIp[]>([{ ip: "127.0.0.1", host: "localhost" }]);
   const [robotHostInputValue, setRobotHostInputValue] = useState("");
 
@@ -281,9 +284,8 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   }
 
   useEffect(() => {
-    launchCfg.params.rmw.forceUse = optionForceUseRmwImplementation;
     const fromEnv = selectedRmw === "RMW_IMPLEMENTATION";
-    if (!optionForceUseRmwImplementation || fromEnv) {
+    if (fromEnv) {
       launchCfg.params.rmw.current = rosCtx.rosInfo?.rmwImplementation as RmwSelection;
       launchCfg.params.rmw.selected = selectedRmw;
     } else {
@@ -291,7 +293,12 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
       launchCfg.params.rmw.selected = selectedRmw;
     }
     updateStartParameter();
-  }, [selectedRmw, optionForceUseRmwImplementation]);
+  }, [selectedRmw]);
+
+  useEffect(() => {
+    launchCfg.params.rmw.overrideZenoEnv = selectedZenohEnv;
+    updateStartParameter();
+  }, [selectedZenohEnv]);
 
   const createHostSelector = useMemo(() => {
     return (
@@ -375,6 +382,34 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
       </Stack>
     );
   }, [selectedRmw, rosCtx.rosInfo]);
+
+  const createZenohEnvSelector = useMemo(() => {
+    return (
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+        paddingRight={2}
+        sx={{ flexGrow: 1 }} // optional: horizontales Scrollen erlauben
+      >
+        <Autocomplete
+          id="autocomplete-zenoh-env"
+          size="small"
+          autoHighlight
+          freeSolo
+          fullWidth
+          handleHomeEndKeys={false}
+          options={ZENO_SELECTIONS}
+          value={selectedZenohEnv}
+          sx={{ minWidth: 250 }} // optional: horizontales Scrollen erlauben
+          renderInput={(params) => <TextField {...params} variant="standard" label="zenoh override configuration" />}
+          onInputChange={(_event, newInputValue) => {
+            setSelectedZenohEnv(newInputValue as ZenohEnvSelection);
+          }}
+        />
+      </Stack>
+    );
+  }, [selectedZenohEnv, rosCtx.rosInfo]);
 
   return (
     <Stack
@@ -996,35 +1031,10 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               </Accordion>
             )}
             <Divider />
-            <FormGroup
-              aria-label="position"
-              row
-              sx={{
-                "&:hover": { backgroundColor: (theme) => theme.palette.action.hover },
-                flexGrow: 1,
-                flexWrap: "nowrap",
-                overflowX: "auto",
-              }}
-            >
-              <FormControlLabel
-                disabled={!rosCtx.rosInfo?.rmwImplementation}
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={optionForceUseRmwImplementation}
-                    onChange={(event) => {
-                      setOptionForceUseRmwImplementation(event.target.checked);
-                      updateStartParameter();
-                    }}
-                  />
-                }
-                label="force use"
-                labelPlacement="end"
-              />
-              <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createRMWSelector}</Box>
-            </FormGroup>
+            <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createRMWSelector}</Box>
+            <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createZenohEnvSelector}</Box>
 
-            <Tooltip
+            {/* <Tooltip
               title={
                 <Typography variant="body2">
                   Prepend zenoh multicast configuration with new port (7448 + ROS_DOMAIN_ID)
@@ -1041,9 +1051,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                   control={
                     <Checkbox
                       size="small"
-                      checked={!!launchCfg.params.rmw.overrideZeno}
+                      checked={!!launchCfg.params.rmw.overrideZenoEnv}
                       onChange={(event) => {
-                        launchCfg.params.rmw.overrideZeno = event.target.checked;
+                        launchCfg.params.rmw.overrideZenoEnv = event.target.checked;
                         // setOptionOverrideZenohConfig(event.target.checked);
                         updateStartParameter();
                       }}
@@ -1053,9 +1063,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                   labelPlacement="end"
                 />
               </FormGroup>
-            </Tooltip>
+            </Tooltip> */}
 
-            <FormGroup
+            {/* <FormGroup
               aria-label="position"
               row
               sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
@@ -1065,18 +1075,18 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                 control={
                   <Checkbox
                     size="small"
-                    checked={forceRestart}
+                    checked={forceStart}
                     onChange={(event) => {
                       launchCfg.params.force = { stop: event.target.checked, start: event.target.checked };
                       updateStartParameter();
-                      setForceRestart(event.target.checked);
+                      setForceStart(event.target.checked);
                     }}
                   />
                 }
-                label="force restart MAS nodes"
+                label="force start MAS nodes"
                 labelPlacement="end"
               />
-            </FormGroup>
+            </FormGroup> */}
           </Stack>
           <Divider />
           <AccordionAdv
@@ -1107,9 +1117,11 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                   <Stack direction="row">
                     <Stack spacing={1}>
                       <CopyButton value={startCmdDaemon} fontSize="inherit" />
-                      {startCmdZenohOverride && (
+                      {selectedZenohEnv === "multicast" && (
                         <Tooltip title="copy only ZENOH_CONFIG_OVERRIDE" disableInteractive>
-                          <CopyButton value={startCmdZenohOverride} fontSize="0.7em" />
+                          <span>
+                            <CopyButton value={startCmdZenohOverride} fontSize="0.7em" />
+                          </span>
                         </Tooltip>
                       )}
                     </Stack>

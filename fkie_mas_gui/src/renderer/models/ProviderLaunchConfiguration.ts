@@ -9,7 +9,10 @@ export const RMW_SELECTIONS = [
   "rmw_zenoh_cpp",
 ] as const;
 
+export const ZENO_SELECTIONS = ["local", "multicast", "remote"] as const;
+
 export type RmwSelection = (typeof RMW_SELECTIONS)[number];
+export type ZenohEnvSelection = (typeof ZENO_SELECTIONS)[number] | string;
 
 export type TProviderLaunchParams = {
   id: string;
@@ -42,8 +45,7 @@ export type TProviderLaunchParams = {
   rmw: {
     current: RmwSelection;
     selected: RmwSelection;
-    forceUse: boolean;
-    overrideZeno: boolean;
+    overrideZenoEnv: ZenohEnvSelection;
   };
 
   daemon: {
@@ -112,8 +114,7 @@ export default class ProviderLaunchConfiguration {
       rmw: {
         current: "RMW_IMPLEMENTATION",
         selected: "RMW_IMPLEMENTATION",
-        forceUse: false,
-        overrideZeno: true,
+        overrideZenoEnv: "local",
       },
       daemon: { enable: true },
       discovery: { enable: true, robotHosts: [], heartbeatHz: 0.5, respawn: true },
@@ -287,17 +288,20 @@ export default class ProviderLaunchConfiguration {
   public getEnvPrefix() {
     const prefix = this.getEnv().join(" ");
     if (!prefix) return "";
-    return ` ${prefix} `;
+    return `${prefix} `;
   }
 
   public getEnv() {
-    const result: string[] = [
-      this.domainPrefix(),
-      this.rmwPrefix(),
-      this.getZenohRouterCheck(),
-      this.getZenohOverride(),
-    ].filter((entry) => !!entry);
-    return result;
+    const result: string[] = [this.domainPrefix(), this.rmwPrefix()];
+    if (this.params.rmw.overrideZenoEnv === "multicast") {
+      result.push(this.getZenohRouterCheck());
+      result.push(this.getZenohOverride());
+    } else if (this.params.rmw.overrideZenoEnv === "remote") {
+      result.push(this.getZenohRemoteRouter());
+    } else if (this.params.rmw.overrideZenoEnv !== "local") {
+      result.push(this.params.rmw.overrideZenoEnv);
+    }
+    return result.filter((entry) => !!entry);
   }
 
   public domainPrefix(): string {
@@ -308,20 +312,19 @@ export default class ProviderLaunchConfiguration {
   }
 
   public rmwPrefix(): string {
-    if (this.params.rmw.forceUse && this.params.rmw.selected !== "RMW_IMPLEMENTATION") {
+    if (this.params.rmw.selected !== "RMW_IMPLEMENTATION") {
       return `RMW_IMPLEMENTATION=${this.params.rmw.selected}`;
     }
     return "";
   }
 
   public getZenohRouterCheck(): string {
-    if (!this.params.rmw.overrideZeno || this.params.rmw.current !== "rmw_zenoh_cpp") return "";
-
+    if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
     return "ZENOH_ROUTER_CHECK_ATTEMPTS=-1";
   }
 
   public getZenohOverride(): string {
-    if (!this.params.rmw.overrideZeno || this.params.rmw.current !== "rmw_zenoh_cpp") return "";
+    if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
 
     const zenohPort = 7448 + this.params.domainId || 0;
     let envParam = "";
@@ -329,5 +332,10 @@ export default class ProviderLaunchConfiguration {
       envParam = `ZENOH_CONFIG_OVERRIDE='${this.params.zenohConfigOverride.replace("${ZENOH_PORT}", `${zenohPort}`)}'`;
     }
     return envParam;
+  }
+
+  public getZenohRemoteRouter(): string {
+    if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
+    return "ZENOH_CONNECT=tcp/<REMOTE-IP>:7447";
   }
 }

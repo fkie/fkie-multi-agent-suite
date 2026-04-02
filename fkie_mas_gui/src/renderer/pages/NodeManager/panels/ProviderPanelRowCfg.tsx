@@ -40,7 +40,7 @@ export default function ProviderPanelRowCfg(props: ProviderPanelRowCfgProps): JS
                 [{startConfig.params.domainId}]
               </Typography>
             </Tooltip>
-            {startConfig.params.rmw.forceUse && (
+            {startConfig.params.rmw.current !== "RMW_IMPLEMENTATION" && (
               <Typography color="grey" variant="body2">
                 {startConfig.params.rmw.current}
               </Typography>
