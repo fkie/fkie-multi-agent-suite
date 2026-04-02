@@ -4,9 +4,7 @@ import { IconButton, Link, Stack, TableCell, TableRow, Tooltip, Typography } fro
 
 import { useCallback, useMemo } from "react";
 
-import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
-import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 
 interface ProviderPanelRowCfgProps {
@@ -17,27 +15,10 @@ interface ProviderPanelRowCfgProps {
 export default function ProviderPanelRowCfg(props: ProviderPanelRowCfgProps): JSX.Element {
   const { startConfig, editConfiguration } = props;
   const rosCtx = useRosContext();
-  const settingsCtx = useSettingsContext();
 
   const handleStartProvider = useCallback(() => {
     rosCtx.startConfig(startConfig, null);
   }, [startConfig, rosCtx.startConfig]);
-
-  const getHostStyle = useCallback(
-    (name: string) => {
-      if (settingsCtx.get("colorizeHosts")) {
-        // borderLeft: `3px dashed`,
-        // borderColor: colorFromHostname(provider.name()),
-        return {
-          borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(name),
-          borderLeftWidth: "0.6em",
-        };
-      }
-      return {};
-    },
-    [settingsCtx.changed]
-  );
 
   const createTableRow = useMemo(() => {
     return (

@@ -8,6 +8,7 @@ export interface IExtTerminalConfig {
   topicName: string;
   screen: string;
   cmd: string;
+  env: string[];
 }
 
 export interface IEditorConfig {
@@ -45,6 +46,7 @@ export interface ITerminalConfig {
   node: string;
   screen: string;
   cmd: string;
+  env: string[]
 }
 
 export default class LayoutTabConfig {

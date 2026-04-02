@@ -17,10 +17,11 @@ interface SingleTerminalPanelProps {
   nodeName?: string;
   screen?: string;
   cmd?: string;
+  env?: string[];
 }
 
 export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JSX.Element {
-  const { id, type, provider, nodeName = "", screen = "", cmd = "" } = props;
+  const { id, type, provider, nodeName = "", screen = "", cmd = "", env = [] } = props;
 
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
@@ -52,7 +53,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         tkUrl = provider.id;
       }
       setTokenUrl(tkUrl);
-      const terminalCmd = await provider.cmdForType(type, nodeName, "", newScreen, cmd);
+      const terminalCmd = await provider.cmdForType(type, nodeName, "", newScreen, cmd, env);
       if (type !== CmdType.SET_TIME && terminalCmd.cmd) {
         setInitialCommands([`${terminalCmd.cmd}\r`]);
       }

@@ -15,7 +15,8 @@ export type TTerminalManager = {
     info: string,
     node: string,
     screen: string,
-    cmd: string
+    cmd: string,
+    env: string[]
   ) => Promise<string | null>;
   close: (id: string) => Promise<boolean>;
   has: (id: string) => Promise<boolean>;

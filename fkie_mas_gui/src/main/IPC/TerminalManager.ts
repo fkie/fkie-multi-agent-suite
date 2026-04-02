@@ -44,9 +44,10 @@ export default class TerminalManager implements TTerminalManager {
         info: string,
         node: string,
         screen: string,
-        cmd: string
+        cmd: string,
+        env: string[]
       ) => {
-        return this.open(id, host, port, info, node, screen, cmd);
+        return this.open(id, host, port, info, node, screen, cmd, env);
       }
     );
   }
@@ -74,8 +75,9 @@ export default class TerminalManager implements TTerminalManager {
     info: string,
     node: string,
     screen: string,
-    cmd: string
-  ) => Promise<string | null> = async (id, host, port, info, node, screen, cmd) => {
+    cmd: string,
+    env: string[]
+  ) => Promise<string | null> = async (id, host, port, info, node, screen, cmd, env) => {
     // if (isDebug) {
     //   await installExtensions()
     // }
@@ -134,8 +136,9 @@ export default class TerminalManager implements TTerminalManager {
       const nodeStr = node ? `&node=${node}` : "";
       const screenStr = screen ? `&screen=${screen}` : "";
       const cmdStr = cmd ? `&cmd=${cmd}` : "";
+      const envStr = env ? `&env=${env}` : "";
       window.loadURL(
-        `${process.env.ELECTRON_RENDERER_URL}/terminal.html?id=${id}&host=${host}&port=${port}&info=${info}${nodeStr}${screenStr}${cmdStr}`
+        `${process.env.ELECTRON_RENDERER_URL}/terminal.html?id=${id}&host=${host}&port=${port}&info=${info}${nodeStr}${screenStr}${cmdStr}${envStr}`
       );
     } else {
       window.loadFile(join(__dirname, "../renderer/terminal.html"), {
@@ -147,6 +150,7 @@ export default class TerminalManager implements TTerminalManager {
           node: node,
           screen: screen,
           cmd: cmd,
+          env: JSON.stringify(env)
         },
       });
     }

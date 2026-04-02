@@ -195,8 +195,17 @@ if (process.contextIsolated) {
 
     contextBridge.exposeInMainWorld("terminalManager", {
       // terminal interface
-      open: (id: string, host: string, port: number, info: string, node: string, screen: string, cmd: string) => {
-        return ipcRenderer.invoke(TerminalManagerEvents.open, id, host, port, info, node, screen, cmd);
+      open: (
+        id: string,
+        host: string,
+        port: number,
+        info: string,
+        node: string,
+        screen: string,
+        cmd: string,
+        env: string[]
+      ) => {
+        return ipcRenderer.invoke(TerminalManagerEvents.open, id, host, port, info, node, screen, cmd, env);
       },
       close: (id: string) => {
         return ipcRenderer.invoke(TerminalManagerEvents.close, id);

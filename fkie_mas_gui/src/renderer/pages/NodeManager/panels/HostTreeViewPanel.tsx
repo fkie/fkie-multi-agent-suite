@@ -330,9 +330,10 @@ export default function HostTreeViewPanel(): JSX.Element {
     nodeName: string,
     screen: string,
     externalKeyModifier: boolean = false,
-    openInTerminal: boolean = false
+    openInTerminal: boolean = false,
+    noPouout: boolean = false
   ): Promise<void> {
-    return navCtx.openTerminal(type, providerId, nodeName, screen, "", externalKeyModifier, openInTerminal);
+    return navCtx.openTerminal(type, providerId, nodeName, screen, "", externalKeyModifier, openInTerminal, noPouout);
   }
 
   /**
@@ -1557,7 +1558,8 @@ export default function HostTreeViewPanel(): JSX.Element {
                       "",
                       "",
                       event.nativeEvent.shiftKey,
-                      event.nativeEvent.ctrlKey
+                      event.nativeEvent.ctrlKey,
+                      true
                     );
                   }
                 }}

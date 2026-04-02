@@ -428,14 +428,31 @@ export default class Provider implements IProvider {
     this.hostnames = Array.from(resultMap.values());
   }
 
+  public toEnvExportPrefix(env: string[]) {
+    const prefix = env.map((entry) => `export ${entry};`).join(' ');
+    if (!prefix) return "";
+    return prefix;
+  }
+
+  public createEnvPrefix(env: string[]) {
+    if (this.startConfiguration) {
+      return this.toEnvExportPrefix(this.startConfiguration.getEnv());
+    }
+    return env
+      .filter((item) => !!item)
+      .map((item) => `export ${item};`)
+      .join(" ");
+  }
+
   /** Creates a command string to open screen or log in a terminal */
   public cmdForType: (
     type: CmdType,
     nodeName: string,
     topicName: string,
     screenName: string,
-    cmd: string
-  ) => Promise<CmdTerminal> = async (type, nodeName = "", topicName = "", screenName = "", cmd = "") => {
+    cmd: string,
+    env: string[]
+  ) => Promise<CmdTerminal> = async (type, nodeName = "", topicName = "", screenName = "", cmd = "", env = []) => {
     const result = new CmdTerminal();
     let cmdType = type;
     if (cmdType === CmdType.SCREEN && screenName === "") {
@@ -443,8 +460,8 @@ export default class Provider implements IProvider {
     }
     switch (cmdType) {
       case CmdType.CMD: {
-        const prefix = this.rosState?.ros_domain_id ? `export ROS_DOMAIN_ID=${this.rosState?.ros_domain_id}; ` : "";
-        result.cmd = cmd ? `${prefix}${cmd}` : `${prefix}/bin/bash`;
+        const prefix = this.createEnvPrefix(env);
+        result.cmd = cmd ? `${prefix} ${cmd}` : `${prefix}`;
         break;
       }
       case CmdType.SCREEN:
@@ -476,14 +493,14 @@ export default class Provider implements IProvider {
         if (this.rosState.ros_version === "1") {
           result.cmd = `rostopic echo ${topicName}`;
         } else if (this.rosState.ros_version === "2") {
-          const prefix = this.rosState?.ros_domain_id ? `export ROS_DOMAIN_ID=${this.rosState?.ros_domain_id}; ` : "";
-          result.cmd = `${prefix}ros2 topic echo ${topicName}`;
+          const prefix = this.createEnvPrefix(env);
+          result.cmd = `${prefix} ros2 topic echo ${topicName}`;
         }
         break;
       }
       case CmdType.TERMINAL: {
-        const prefix = this.rosState?.ros_domain_id ? `export ROS_DOMAIN_ID=${this.rosState?.ros_domain_id}; ` : "";
-        result.cmd = cmd ? `${prefix}${cmd}` : `${prefix}/bin/bash`;
+        const prefix = this.createEnvPrefix(env);
+        result.cmd = cmd ? `${prefix} ${cmd}` : `${prefix}`;
         break;
       }
       case CmdType.SET_TIME:

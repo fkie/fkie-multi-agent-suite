@@ -16,6 +16,7 @@ interface ITerminalInfo {
   node: string;
   screen: string;
   cmd: string;
+  env: string[];
 }
 
 export default function TerminalApp(): JSX.Element {
@@ -38,6 +39,9 @@ export default function TerminalApp(): JSX.Element {
     const node = urlParams.get("node");
     const screen = urlParams.get("screen");
     const cmd = urlParams.get("cmd");
+    const envParam = urlParams.get("env");
+    const env = envParam ? envParam.split(",") : [];
+    console.log(`ETENV: ${env}`);
     if (!host || !port) {
       logCtx.error(`invalid address ${host}:${port}`, "");
       return;
@@ -52,7 +56,7 @@ export default function TerminalApp(): JSX.Element {
     setConnectingHost(`${prov.connection.uri}`);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
-      setConnectingHost("")
+      setConnectingHost("");
       setParamInfo({
         id: id,
         provider: prov,
@@ -60,6 +64,7 @@ export default function TerminalApp(): JSX.Element {
         node: node ? node : "",
         screen: screen ? screen : "",
         cmd: cmd ? cmd : "",
+        env: env ? env : [],
       });
     } else {
       logCtx.error(`connection to ${host}:${port} failed`, "");
@@ -94,6 +99,7 @@ export default function TerminalApp(): JSX.Element {
           nodeName={paramInfo.node}
           screen={paramInfo.screen}
           cmd={paramInfo.cmd}
+          env={paramInfo.env}
         />
       )}
     </Stack>

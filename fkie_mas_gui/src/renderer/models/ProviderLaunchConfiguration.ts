@@ -37,7 +37,7 @@ export type TProviderLaunchParams = {
 
   domainId: number;
 
-  networkId?: number;  // deprecated
+  networkId?: number; // deprecated
 
   rmw: {
     current: RmwSelection;
@@ -183,11 +183,11 @@ export default class ProviderLaunchConfiguration {
       const dGroup = this.params.discovery.group || "226.0.0.0";
       const dHeartbeat = this.params.discovery.heartbeatHz;
       const dRobotHosts = this.params.discovery.robotHosts ? `_robot_hosts:=[${this.params.discovery.robotHosts}]` : "";
-      cmdMasterDiscovery = `${ros1MasterUriPrefix}${this.domainPrefix()}rosrun fkie_mas_daemon mas-remote-node.py ${
+      cmdMasterDiscovery = `${ros1MasterUriPrefix}${this.domainPrefix()} rosrun fkie_mas_daemon mas-remote-node.py ${
         this.params.respawn ? "--respawn" : ""
       } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery _mcast_port:=${dPort} _mcast_group:=${dGroup} ${dRobotHosts} _heartbeat_hz:=${dHeartbeat}`;
     } else if (this.params.rosVersion === "2") {
-      cmdMasterDiscovery = `${this.domainPrefix()}${this.rmwPrefix()}${this.getZenohPrefix()}ros2 run fkie_mas_daemon mas-remote-node.py ${
+      cmdMasterDiscovery = `${this.getEnvPrefix()}ros2 run fkie_mas_daemon mas-remote-node.py ${
         this.params.respawn || this.params.discovery.respawn ? "--respawn" : ""
       } ${forceArg}${nameArg} --set_name=false --node_type=mas-discovery --package=fkie_mas_discovery`;
     } else {
@@ -228,7 +228,7 @@ export default class ProviderLaunchConfiguration {
       let cmdMasterSync = "";
       const forceArg = this.params.force.start ? "--force " : "";
       const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.params.ros1MasterUri);
-      cmdMasterSync = `${ros1MasterUriPrefix}${this.domainPrefix()}rosrun fkie_mas_daemon mas-remote-node.py  ${
+      cmdMasterSync = `${ros1MasterUriPrefix}${this.domainPrefix()} rosrun fkie_mas_daemon mas-remote-node.py  ${
         this.params.respawn ? "--respawn" : ""
       } ${forceArg}${nameArg} --set_name=false --node_type=mas-sync --package=fkie_mas_sync ${doNotSyncParam} ${syncTopicsParam}`;
       // combine commands and execute
@@ -264,9 +264,9 @@ export default class ProviderLaunchConfiguration {
 
     if (this.params.rosVersion === "1") {
       const ros1MasterUriPrefix = this.toRos1MasterUriPrefix(this.params.ros1MasterUri);
-      cmdDaemon = `${ros1MasterUriPrefix}${this.domainPrefix()}rosrun ${cmdDaemon}`;
+      cmdDaemon = `${ros1MasterUriPrefix}${this.domainPrefix()} rosrun ${cmdDaemon}`;
     } else if (this.params.rosVersion === "2") {
-      cmdDaemon = `${this.domainPrefix()}${this.rmwPrefix()}${this.getZenohPrefix()}ros2 run ${cmdDaemon}; `;
+      cmdDaemon = `${this.getEnvPrefix()}ros2 run ${cmdDaemon}; `;
     } else {
       return {
         result: false,
@@ -280,32 +280,44 @@ export default class ProviderLaunchConfiguration {
   public dynamicReconfigureClientCmd(nodeName: string, ros1MasterUri: string): TResult {
     const nameArg = `--name=/dynamic_reconfigure${nodeName}`;
     const envArg = `ROS_MASTER_URI=${ros1MasterUri}`;
-    let domainPrefix = "";
-    if (this.params.domainId >= 0) {
-      domainPrefix = `ROS_DOMAIN_ID=${this.params.domainId} `;
-    }
-    const cmd = `${envArg} ${domainPrefix}rosrun fkie_mas_daemon mas-remote-node.py ${nameArg} --node_type=dynamic-reconfigure.py --package=fkie_mas_daemon ${nodeName} `;
+    const cmd = `${envArg}${this.domainPrefix()} rosrun fkie_mas_daemon mas-remote-node.py ${nameArg} --node_type=dynamic-reconfigure.py --package=fkie_mas_daemon ${nodeName} `;
     return { result: true, message: cmd } as TResult;
+  }
+
+  public getEnvPrefix() {
+    const prefix = this.getEnv().join(" ");
+    if (!prefix) return "";
+    return ` ${prefix} `;
+  }
+
+  public getEnv() {
+    const result: string[] = [
+      this.domainPrefix(),
+      this.rmwPrefix(),
+      this.getZenohRouterCheck(),
+      this.getZenohOverride(),
+    ].filter((entry) => !!entry);
+    return result;
   }
 
   public domainPrefix(): string {
     if (this.params.domainId >= 0) {
-      return `ROS_DOMAIN_ID=${this.params.domainId} `;
+      return `ROS_DOMAIN_ID=${this.params.domainId}`;
     }
     return "";
   }
 
   public rmwPrefix(): string {
     if (this.params.rmw.forceUse && this.params.rmw.selected !== "RMW_IMPLEMENTATION") {
-      return ` RMW_IMPLEMENTATION=${this.params.rmw.selected} `;
+      return `RMW_IMPLEMENTATION=${this.params.rmw.selected}`;
     }
     return "";
   }
 
-  public getZenohPrefix(): string {
+  public getZenohRouterCheck(): string {
     if (!this.params.rmw.overrideZeno || this.params.rmw.current !== "rmw_zenoh_cpp") return "";
 
-    return ` ZENOH_ROUTER_CHECK_ATTEMPTS=-1 ${this.getZenohOverride()} `;
+    return "ZENOH_ROUTER_CHECK_ATTEMPTS=-1";
   }
 
   public getZenohOverride(): string {

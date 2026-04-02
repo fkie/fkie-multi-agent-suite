@@ -3,10 +3,10 @@ import React, { createContext, useCallback, useMemo, useState } from "react";
 
 import { getBaseName } from "@/renderer/models";
 import {
-    EVENT_EDITOR_SELECT_RANGE,
-    EVENT_OPEN_COMPONENT,
-    eventEditorSelectRange,
-    eventOpenComponent,
+  EVENT_EDITOR_SELECT_RANGE,
+  EVENT_OPEN_COMPONENT,
+  eventEditorSelectRange,
+  eventOpenComponent,
 } from "@/renderer/pages/NodeManager/layout/events";
 import FileEditorPanel from "@/renderer/pages/NodeManager/panels/FileEditorPanel";
 import { xor } from "@/renderer/utils/index";
@@ -61,7 +61,8 @@ export interface INavigationContext {
     screen: string,
     cmd: string,
     externalKeyModifier: boolean,
-    forceOpenTerminal: boolean
+    forceOpenTerminal: boolean,
+    noPopout?: boolean
   ) => Promise<void>;
 }
 
@@ -204,7 +205,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
 
       if (forceOpenTerminal) {
         try {
-          const terminalCmd = await provider.cmdForType(CmdType.PUB, "", topic, "", "");
+          const env = provider.startConfiguration?.getEnv() || [];
+          const terminalCmd = await provider.cmdForType(CmdType.PUB, "", topic, "", "", env);
           const result = await window.commandExecutor?.execTerminal(null, `"pub ${topic}"`, terminalCmd.cmd);
           if (!result?.result) {
             logCtx.error(
@@ -263,7 +265,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
 
       if (forceOpenTerminal) {
         try {
-          const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic, "", "");
+          const env = provider.startConfiguration?.getEnv() || [];
+          const terminalCmd = await provider.cmdForType(CmdType.ECHO, "", topic, "", "", env);
           const result = await window.commandExecutor?.execTerminal(null, `"echo ${topic}"`, terminalCmd.cmd);
           if (!result?.result) {
             logCtx.error(
@@ -325,7 +328,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
       screen: string,
       cmd: string,
       externalKeyModifier: boolean,
-      forceOpenTerminal: boolean
+      forceOpenTerminal: boolean,
+      noPopout?: boolean
     ): Promise<void> => {
       logCtx.debug(`Start terminal ${type}@${providerId} for ${node}`);
       const provider = rosCtx.getProviderById(providerId);
@@ -337,9 +341,10 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
           ? xor(settingsCtx.get("screenOpenExternal") as boolean, externalKeyModifier)
           : xor(settingsCtx.get("logOpenExternal") as boolean, externalKeyModifier) && !layoutModel?.getNodeById(id);
 
+      const env = provider.startConfiguration?.getEnv() || [];
       if (forceOpenTerminal) {
         try {
-          const terminalCmd = await provider.cmdForType(type, node, "", screen, cmd);
+          const terminalCmd = await provider.cmdForType(type, node, "", screen, cmd, env);
           const result = await window.commandExecutor?.execTerminal(
             provider.isLocalHost ? null : { host: provider.host() },
             `"${type.toLocaleUpperCase()} ${node}@${provider.host()}"`,
@@ -366,7 +371,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
           `${type}`,
           node,
           screen,
-          cmd
+          cmd,
+          env
         );
         return;
       }
@@ -376,18 +382,29 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         eventOpenComponent(
           id,
           node || `${type}_${provider.connection.host}`,
-          <SingleTerminalPanel id={id} type={type} provider={provider} nodeName={node} screen={screen} cmd={cmd} />,
+          <SingleTerminalPanel
+            id={id}
+            type={type}
+            provider={provider}
+            nodeName={node}
+            screen={screen}
+            cmd={cmd}
+            env={env}
+          />,
           true,
           LAYOUT_TAB_SETS.BORDER_BOTTOM,
-          new LayoutTabConfig(true, type, null, null, null, {
-            id,
-            host: provider.connection.host,
-            port: provider.connection.port,
-            cmdType: type,
-            node,
-            screen,
-            cmd,
-          })
+          noPopout
+            ? undefined
+            : new LayoutTabConfig(true, type, null, null, null, {
+                id,
+                host: provider.connection.host,
+                port: provider.connection.port,
+                cmdType: type,
+                node,
+                screen,
+                cmd,
+                env,
+              })
         )
       );
     },

@@ -37,6 +37,7 @@ import {
   IJsonRowNode,
   IJsonTabSetNode,
   ITabAttributes,
+  ITabRenderValues,
   ITabSetRenderValues,
   Layout,
   Model,
@@ -171,7 +172,7 @@ export default function NodeManager(): JSX.Element {
     []
   );
 
-  const hasTab = useCallback((layout: any, editorId: string): boolean => {
+  const hasTab = useCallback((layout: IJsonRowNode, editorId: string): boolean => {
     if (!layout.children) return false;
     const found = layout.children.filter((item: any) => {
       if (item.type === "tab" && item.id === editorId) {
@@ -486,7 +487,8 @@ export default function NodeManager(): JSX.Element {
       config.nodeName,
       config.topicName,
       config.screen,
-      config.cmd
+      config.cmd,
+      config.env
     );
 
     try {
@@ -505,7 +507,8 @@ export default function NodeManager(): JSX.Element {
     }
   }
 
-  function onRenderTab(node: TabNode, renderValues: any): void {
+  function onRenderTab(node: TabNode, renderValues: ITabRenderValues): void {
+    const renderNameValues = renderValues as ITabRenderValues & { name: string };
     // add tooltip to abbreviations
     if (
       ![
@@ -519,19 +522,19 @@ export default function NodeManager(): JSX.Element {
         "Logging",
         "Settings",
         "About",
-      ].includes(renderValues.name)
+      ].includes(renderNameValues.name)
     ) {
-      renderValues.content = (
-        <Tooltip title={renderValues.name} placement="bottom" disableInteractive>
-          <Typography>{tabFullName ? renderValues.name : basename(renderValues.name)}</Typography>
+      renderNameValues.content = (
+        <Tooltip title={renderNameValues.name} placement="bottom" disableInteractive>
+          <Typography>{tabFullName ? renderNameValues.name : basename(renderNameValues.name)}</Typography>
         </Tooltip>
       );
     }
 
     switch (node.getId()) {
       case LAYOUT_TABS.LOGGING:
-        renderValues.content = "";
-        renderValues.leading = (
+        renderNameValues.content = "";
+        renderNameValues.leading = (
           <Tooltip title="Logging (mas gui)" placement="top" enterDelay={tooltipDelay} disableInteractive>
             <Badge
               color="info"
@@ -549,42 +552,42 @@ export default function NodeManager(): JSX.Element {
             </Badge>
           </Tooltip>
         );
-        renderValues.name = "Option";
+        renderNameValues.name = "Option";
         break;
 
       default:
         // add leading icons depending on tab type
         switch (node.getConfig()?.tabType) {
           case CmdType.LOG:
-            renderValues.leading = <WysiwygIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = <WysiwygIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case CmdType.SCREEN:
-            renderValues.leading = <DvrIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = <DvrIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case CmdType.TERMINAL:
-            renderValues.leading = <TerminalIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = <TerminalIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "echo":
           case CmdType.ECHO:
-            renderValues.leading = <ChatBubbleOutlineIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = <ChatBubbleOutlineIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "publish":
-            renderValues.leading = <PlayCircleOutlineIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = <PlayCircleOutlineIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case LAYOUT_TABS.SERVICES:
-            renderValues.leading = <SyncAltOutlinedIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = <SyncAltOutlinedIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "info":
-            renderValues.leading = <InfoOutlinedIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = <InfoOutlinedIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "parameter":
-            renderValues.leading = <TuneIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = <TuneIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "editor":
-            renderValues.leading = <BorderColorIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = <BorderColorIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           case "node-logger":
-            renderValues.leading = (
+            renderNameValues.leading = (
               <SettingsInputCompositeOutlinedIcon
                 sx={{ fontSize: (theme) => theme.typography.fontSize, rotate: "90deg" }}
               />
@@ -596,7 +599,7 @@ export default function NodeManager(): JSX.Element {
 
         // add "open externally" button if supported
         if (node.getConfig()?.openExternal && window.commandExecutor) {
-          renderValues.buttons.push(
+          renderNameValues.buttons.push(
             <Tooltip
               key={`button-close-${node.getId()}`}
               title="Open in external window"
@@ -653,7 +656,8 @@ export default function NodeManager(): JSX.Element {
                       tcfg.cmdType,
                       tcfg.node,
                       tcfg.screen,
-                      tcfg.cmd
+                      tcfg.cmd,
+                      tcfg.env
                     );
                     deleteTab(node.getId());
                   }
