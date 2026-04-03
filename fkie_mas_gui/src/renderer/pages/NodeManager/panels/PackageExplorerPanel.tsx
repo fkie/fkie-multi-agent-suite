@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
-import React, { HTMLAttributes, useCallback, useEffect, useMemo, useState } from "react";
+import { HTMLAttributes, useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import LaunchFileModal from "@/renderer/components/LaunchFileModal/LaunchFileModal";
@@ -159,7 +159,11 @@ export default function PackageExplorerPanel(): JSX.Element {
    * Reset all states considering launch file history.
    */
   const updateStates = useCallback(() => {
-    // if (selectedPackage) return;
+    // if package selected, do not switch to history
+    if (selectedPackage) {
+      setPackageListFiltered(sortedPackageList);
+      return;
+    }
     const provPackageHistory: TPackageItemsTree = {};
     for (const prov of rosCtx.providers) {
       const provHistory = launchFileHistory.filter((file) => file.providerId === prov.id);
@@ -192,13 +196,16 @@ export default function PackageExplorerPanel(): JSX.Element {
     setIgnoringNonRelevantPackageFiles(false);
 
     setPackageListFiltered(sortedPackageList);
-  }, [packageList, rosCtx, selectedPackage, launchFileHistory, sortedPackageList]);
+  }, [rosCtx.providers, launchFileHistory, selectedPackage, sortedPackageList]);
 
   // Reset states upon packageList or history modification.
   useEffect(() => {
     updateStates();
-    setSelectedFile(undefined);
-  }, [packageList, selectedPackage, launchFileHistory]);
+    // delete selection only if no package is selected
+    if (!selectedPackage) {
+      setSelectedFile(undefined);
+    }
+  }, [packageList, selectedPackage, launchFileHistory, updateStates]);
 
   /**
    * Callback function when a package is selected.
