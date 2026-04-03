@@ -26,7 +26,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import HostTreeView from "@/renderer/components/HostTreeView/HostTreeView";
@@ -96,7 +96,7 @@ type TMenuOptionsScreen = {
   callback?: () => void;
 };
 
-const queueActionMeta = {
+const queueActionMeta: Record<TQueueAction["action"], { successText: string }> = {
   STOP: { successText: "stopped" },
   START: { successText: "started" },
   KILL: { successText: "killed" },
@@ -116,20 +116,18 @@ export default function HostTreeViewPanel(): JSX.Element {
   const [showButtonsForKeyModifiers, setShowButtonsForKeyModifiers] = useState<boolean>(
     settingsCtx.get("showButtonsForKeyModifiers") as boolean
   );
-  const [tooltipDelay, setTooltipDelay] = useState(settingsCtx.get("tooltipEnterDelay") as number);
+  const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
 
-  const [filterText, setFilterText] = useState("");
+  const [filterText, setFilterText] = useState<string>("");
   const [providerNodes, setProviderNodes] = useState<TProviderNodes[]>([]);
-  const [visibleNodes, setVisibleNodes] = useState<RosNode[]>([]);
-  const [countFilteredNodes, setCountFilteredNodes] = useState<number>(0);
   const [nodesToStart, setNodesToStart] = useState<RosNode[]>();
   const [progressQueueMain, setProgressQueueMain] = useState<number>(0);
   const queue = useQueue<TQueueAction>(setProgressQueueMain);
 
   // variables with show dialog actions
-  const [rosCleanPurge, setRosCleanPurge] = useState(false);
+  const [rosCleanPurge, setRosCleanPurge] = useState<boolean>(false);
   const [nodeScreens, setNodeScreens] = useState<TMenuOptionsScreen[]>([]);
   const [nodeParams, setNodeParams] = useState<TMenuOptionsParam[]>([]);
   const [nodeLogs, setNodeLogs] = useState<TMenuOptionsNode[]>([]);
@@ -139,22 +137,25 @@ export default function HostTreeViewPanel(): JSX.Element {
   const [nodesAwaitModal, setNodesAwaitModal] = useState<RosNode[]>([]);
   const [editNodeWithMultipleLaunchInfos, setEditNodeWithMultipleLaunchInfos] = useState<TMenuOptionsEditor>();
   const [killProcessQuestion, setKillProcessQuestion] = useState<
-    { node: string; pid: number; cmdLine: string; callback?: () => void }[]
+    { node: string; pid: number; cmdLine: string; callback?: () => Promise<void> }[]
   >([]);
+  // remember last processed queue index to avoid double execution (e.g. in StrictMode)
+  const lastProcessedIndexRef = useRef<number | null>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // keep UI-related settings in sync with SettingsContext
   useEffect(() => {
     setShowButtonsForKeyModifiers(settingsCtx.get("showButtonsForKeyModifiers") as boolean);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
     setButtonLocation(settingsCtx.get("buttonLocation") as string);
-  }, [settingsCtx.changed]);
+  }, [settingsCtx.changed, settingsCtx]);
 
   /**
    * Get list of nodes from a list of node.idGlobal
+
    */
   const getNodesFromIds = useCallback(
-    (itemIds: string[]) => {
+    (itemIds: string[]): RosNode[] => {
       const nodeList: RosNode[] = [];
       for (const item of itemIds) {
         const node = rosCtx.nodeMap.get(item);
@@ -167,48 +168,16 @@ export default function HostTreeViewPanel(): JSX.Element {
     [rosCtx.nodeMap]
   );
 
-  const getSelectedNodes = useCallback(() => {
+  const getSelectedNodes = useCallback((): RosNode[] => {
     return getNodesFromIds(navCtx.selectedNodes);
-  }, [navCtx.selectedNodes, providerNodes]);
+  }, [navCtx.selectedNodes, getNodesFromIds]);
 
-  // debounced search callback
-  // search in the origin node list and create a new tree
-  const onSearch = useCallback(
-    (searchTerm: string) => {
-      let nodeCount = 0;
-      let nodeFilteredCount = 0;
-      const newVisibleNodes: RosNode[] = [];
-      for (const item of providerNodes) {
-        const { nodes } = item;
-        nodeCount += nodes.length;
-        const filteredNodes = nodes.filter((node) => {
-          // filter nodes by user text
-          if (searchTerm.length > 0) {
-            const isMatch = findIn(searchTerm, [node.name, node.group, node.providerName, node.guid || ""]);
-            return isMatch;
-          }
-          return true;
-        });
-        nodeFilteredCount += filteredNodes.length;
-        // remove nodes which are local in remote hosts
-        newVisibleNodes.push(
-          ...filteredNodes.filter(
-            (node) =>
-              node.isLocalRunningNode() ||
-              node.launchInfo.size > 0 ||
-              rosCtx.localNodes.filter((lNode) => lNode.node === node.name && lNode.providerId !== node.providerId)
-                .length === 0
-          )
-        );
-      }
-      setCountFilteredNodes(nodeCount - nodeFilteredCount);
-      setVisibleNodes(newVisibleNodes);
-    },
-    [providerNodes]
-  );
+  /**
+   * Update internal providerNodes state and local nodes list in RosContext
 
+   */
   const updateNodes = useCallback(
-    (provider: Provider, nodes: RosNode[]) => {
+    (provider: Provider, nodes: RosNode[]): void => {
       rosCtx.updateLocalNodes(
         provider.id,
         nodes.filter((node) => node.isLocalRunningNode() || node.launchInfo.size > 0).map((node) => node.name)
@@ -223,47 +192,119 @@ export default function HostTreeViewPanel(): JSX.Element {
         },
       ]);
     },
-    [rosCtx.updateLocalNodes]
+    [rosCtx]
   );
 
-  useCustomEventListener(EVENT_PROVIDER_ROS_NODES, (data: EventProviderRosNodes) => {
-    // put in our providerNodes list
-    const { provider, nodes } = data;
-    // TODO: should we remove closed/lost provider infos
-    // Update local nodes in RosContext
-    updateNodes(provider, nodes);
-  });
+  /**
+   * Synchronizes providerNodes with the current provider list.
+   * Removes all entries whose providerId is no longer present.
 
-  useCustomEventListener(EVENT_PROVIDER_RESTART_NODES, (data: EventProviderRestartNodes) => {
-    restartNodes(data.nodes, true);
-  });
+   */
+  const readNodes = useCallback((): void => {
+    const providerIds = rosCtx.providers.map((p) => p.id);
+    setProviderNodes((oldValues) => oldValues.filter((item) => providerIds.includes(item.providerId)));
+  }, [rosCtx.providers]);
 
-  useCustomEventListener(EVENT_FILTER_NODES, (data: TEventId) => {
-    setFilterText(data.id);
-  });
+  /**
+   * Compute visibleNodes and countFilteredNodes based on providerNodes and filterText.
+   * This replaces explicit state for these derived values.
 
-  useCustomEventListener(EVENT_KILL_NODES, (data: TEventKillNodes) => {
-    queue.update(
-      data.nodes.map((node) => {
-        return { node, action: "KILL" };
-      })
-    );
-  });
+   */
+  const { visibleNodes, countFilteredNodes } = useMemo(() => {
+    let nodeCount = 0;
+    let nodeFilteredCount = 0;
+    const newVisibleNodes: RosNode[] = [];
 
-  useCustomEventListener(EVENT_SHOW_SCREENS, (data: TEventShowScreens) => {
-    for (const node of data.nodes) {
-      for (const screen of node.screens || []) {
-        createSingleTerminalPanel(CmdType.SCREEN, node.providerId, node.name, screen, false, false);
+    for (const item of providerNodes) {
+      const { nodes } = item;
+      nodeCount += nodes.length;
+
+      const filteredNodes = nodes.filter((node) => {
+        if (filterText.length === 0) {
+          return true;
+        }
+        return findIn(filterText, [node.name, node.group, node.providerName, node.guid || ""]);
+      });
+
+      nodeFilteredCount += filteredNodes.length;
+
+      // remove nodes which are local in remote hosts
+      for (const node of filteredNodes) {
+        const isLocal = node.isLocalRunningNode() || node.launchInfo.size > 0;
+        const existsAsRemoteLocal =
+          rosCtx.localNodes.filter((lNode) => lNode.node === node.name && lNode.providerId !== node.providerId).length >
+          0;
+
+        if (isLocal || !existsAsRemoteLocal) {
+          newVisibleNodes.push(node);
+        }
       }
     }
-  });
+
+    return {
+      visibleNodes: newVisibleNodes,
+      countFilteredNodes: nodeCount - nodeFilteredCount,
+    };
+  }, [providerNodes, filterText, rosCtx.localNodes]);
+
+  // Event listeners -----------------------------------------------------------------------------------
+
+  const onProviderRosNodes = useCallback(
+    (data: EventProviderRosNodes): void => {
+      const { provider, nodes } = data;
+      // Update local nodes in RosContext and providerNodes state
+      updateNodes(provider, nodes);
+    },
+    [updateNodes]
+  );
+
+  const onProviderRestartNodes = useCallback(
+    (data: EventProviderRestartNodes): void => {
+      restartNodes(data.nodes, true);
+    },
+    [] // restartNodes is defined later but does not depend on props/state captured here
+  );
+
+  const onFilterNodes = useCallback((data: TEventId): void => {
+    setFilterText(data.id);
+  }, []);
+
+  const onKillNodes = useCallback(
+    (data: TEventKillNodes): void => {
+      queue.update(
+        data.nodes.map((node) => {
+          return { node, action: "KILL" };
+        })
+      );
+    },
+    [queue]
+  );
+
+  const onShowScreens = useCallback(
+    (data: TEventShowScreens): void => {
+      for (const node of data.nodes) {
+        for (const screen of node.screens || []) {
+          createSingleTerminalPanel(CmdType.SCREEN, node.providerId, node.name, screen, false, false);
+        }
+      }
+    },
+    [] // uses createSingleTerminalPanel which is defined later but does not capture mutable state
+  );
+
+  useCustomEventListener(EVENT_PROVIDER_ROS_NODES, onProviderRosNodes);
+  useCustomEventListener(EVENT_PROVIDER_RESTART_NODES, onProviderRestartNodes);
+  useCustomEventListener(EVENT_FILTER_NODES, onFilterNodes);
+  useCustomEventListener(EVENT_KILL_NODES, onKillNodes);
+  useCustomEventListener(EVENT_SHOW_SCREENS, onShowScreens);
+
   // Register Callbacks ----------------------------------------------------------------------------------
 
   /**
    * Callback when nodes on the tree are selected by the user
+
    */
   const handleNodesSelect = useCallback(
-    (itemIds: string[]) => {
+    (itemIds: string[]): void => {
       const selectedNodes: string[] = [];
       for (const id of itemIds) {
         const n = rosCtx.nodeMap.get(id);
@@ -277,52 +318,62 @@ export default function HostTreeViewPanel(): JSX.Element {
   );
 
   /**
-   * Callback when provides on the tree are selected by the user
+   * Callback when providers on the tree are selected by the user
+
    */
-  function handleProviderSelect(providerIds: string[]): void {
-    // set the selected nodes
-    const selectedProvidersLocal: string[] = [];
-    // update setSelectedNodes based on trees selectedItems
-    for (const id of providerIds) {
-      // search selected host
-      if (rosCtx.getProviderById(id)) {
-        selectedProvidersLocal.push(id);
+  const handleProviderSelect = useCallback(
+    (providerIds: string[]): void => {
+      const selectedProvidersLocal: string[] = [];
+      for (const id of providerIds) {
+        if (rosCtx.getProviderById(id)) {
+          selectedProvidersLocal.push(id);
+        }
       }
-    }
-    navCtx.setSelectedProviders(selectedProvidersLocal);
-  }
+      navCtx.setSelectedProviders(selectedProvidersLocal);
+    },
+    [navCtx, rosCtx]
+  );
 
   /**
    * Create and open a new panel with a [NodeLoggerPanel] for a given node
+
    */
-  function createLoggerPanel(node: RosNode): void {
-    const id = `node-logger-${node.idGlobal}`;
-    const title = node.name;
-    emitCustomEvent(
-      EVENT_OPEN_COMPONENT,
-      eventOpenComponent(
-        id,
-        title,
-        <NodeLoggerPanel node={node} />,
-        true,
-        LAYOUT_TAB_SETS[settingsCtx.get("nodeLoggerOpenLocation") as string],
-        new LayoutTabConfig(false, "node-logger")
-      )
-    );
-  }
+  const createLoggerPanel = useCallback(
+    (node: RosNode): void => {
+      const id = `node-logger-${node.idGlobal}`;
+      const title = node.name;
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(
+          id,
+          title,
+          <NodeLoggerPanel node={node} />,
+          true,
+          LAYOUT_TAB_SETS[settingsCtx.get("nodeLoggerOpenLocation") as string],
+          new LayoutTabConfig(false, "node-logger")
+        )
+      );
+    },
+    [settingsCtx]
+  );
 
   /**
-   * Start nodes from a list of itemIds
+   * Create and open a new panel with a [NodeLoggerPanel] for selected nodes
+
    */
-  function createLoggerPanelFromId(itemIds: string[]): void {
-    const nodeList = getNodesFromIds(itemIds);
-    if (nodeList.length > 0) {
-      createLoggerPanel(nodeList[0]);
-    }
-  }
+  const createLoggerPanelFromId = useCallback(
+    (itemIds: string[]): void => {
+      const nodeList = getNodesFromIds(itemIds);
+      if (nodeList.length > 0) {
+        createLoggerPanel(nodeList[0]);
+      }
+    },
+    [createLoggerPanel, getNodesFromIds]
+  );
 
   /**
    * Create and open a new panel with a [SingleTerminalPanel] for a given node
+
    */
   async function createSingleTerminalPanel(
     type: CmdType,
@@ -337,11 +388,13 @@ export default function HostTreeViewPanel(): JSX.Element {
   }
 
   /**
-   * Create and open a new panel with a [createFileEditorPanel] for selected nodes
+   * Create and open a new panel with a file editor for selected nodes
+
    */
-  function createFileEditorPanel(nodes: RosNode[], external: boolean): void {
-    if (nodes.length > 0) {
-      // open only for first node
+  const createFileEditorPanel = useCallback(
+    (nodes: RosNode[], external: boolean): void => {
+      if (nodes.length === 0) return;
+
       const node = nodes[0];
       if (node.launchInfo.size === 0) {
         logCtx.error(
@@ -366,45 +419,29 @@ export default function HostTreeViewPanel(): JSX.Element {
           external
         );
       }
-    }
-  }
+    },
+    [logCtx, navCtx]
+  );
 
   /**
-   * Create and open a new panel with a [ParameterPanel] for selected nodes
+   * Create and open a new panel with a [ParameterPanel] for selected nodes and/or providers
+
    */
-  function createParameterPanel(nodes: RosNode[], providers: string[]): void {
-    const openLocation: string = LAYOUT_TAB_SETS[settingsCtx.get("nodeParamOpenLocation") as string];
-    const params: { name: string; callback: () => void }[] = [];
-    for (const node of nodes) {
-      params.push({
-        name: node.name,
-        callback: () => {
-          emitCustomEvent(
-            EVENT_OPEN_COMPONENT,
-            eventOpenComponent(
-              `parameter-node-${node.idGlobal}`,
-              `${node.name}`,
-              <ParameterPanel nodes={[node]} providers={[]} />,
-              true,
-              openLocation,
-              new LayoutTabConfig(false, "parameter")
-            )
-          );
-        },
-      });
-    }
-    for (const providerId of providers) {
-      const provider = rosCtx.getProviderById(providerId);
-      if (provider) {
+  const createParameterPanel = useCallback(
+    (nodes: RosNode[], providers: string[]): void => {
+      const openLocation: string = LAYOUT_TAB_SETS[settingsCtx.get("nodeParamOpenLocation") as string];
+      const params: TMenuOptionsParam[] = [];
+
+      for (const node of nodes) {
         params.push({
-          name: provider.name(),
+          name: node.name,
           callback: () => {
             emitCustomEvent(
               EVENT_OPEN_COMPONENT,
               eventOpenComponent(
-                `parameter-provider-${provider}`,
-                `${provider.name()}`,
-                <ParameterPanel nodes={[]} providers={[providerId]} />,
+                `parameter-node-${node.idGlobal}`,
+                `${node.name}`,
+                <ParameterPanel nodes={[node]} providers={[]} />,
                 true,
                 openLocation,
                 new LayoutTabConfig(false, "parameter")
@@ -413,15 +450,39 @@ export default function HostTreeViewPanel(): JSX.Element {
           },
         });
       }
-    }
-    if (params.length >= 3) {
-      setNodeParams(params);
-    } else {
-      for (const item of params) {
-        item.callback();
+
+      for (const providerId of providers) {
+        const provider = rosCtx.getProviderById(providerId);
+        if (provider) {
+          params.push({
+            name: provider.name(),
+            callback: () => {
+              emitCustomEvent(
+                EVENT_OPEN_COMPONENT,
+                eventOpenComponent(
+                  `parameter-provider-${provider}`,
+                  `${provider.name()}`,
+                  <ParameterPanel nodes={[]} providers={[providerId]} />,
+                  true,
+                  openLocation,
+                  new LayoutTabConfig(false, "parameter")
+                )
+              );
+            },
+          });
+        }
       }
-    }
-  }
+
+      if (params.length >= 3) {
+        setNodeParams(params);
+      } else {
+        for (const item of params) {
+          item.callback();
+        }
+      }
+    },
+    [rosCtx, settingsCtx]
+  );
 
   async function startNodeQueued(node: RosNode | undefined): Promise<void> {
     if (!node) return;
@@ -445,6 +506,10 @@ export default function HostTreeViewPanel(): JSX.Element {
     }
   }
 
+  /**
+   * Extend node list with associated nodes (e.g. composable containers).
+
+   */
   function updateWithAssociations(nodes: RosNode[]): RosNode[] {
     const newNodeList: RosNode[] = [];
 
@@ -458,23 +523,23 @@ export default function HostTreeViewPanel(): JSX.Element {
     return newNodeList;
   }
 
+  /**
+   * Get the nodelet manager / composable container node for a node if needed.
+
+   */
   function getNodeLetManager(node: RosNode, ignoreRunState: boolean, nodes2start: RosNode[]): RosNode | null {
     if (!node) return null;
     const composableParent = node.getLaunchComposableContainer();
     if (composableParent) {
       const provider = rosCtx.getProviderById(node.providerId);
-      const nodeNms = provider?.rosNodes.filter((node) => node.name === composableParent) || [];
+      const nodeNms = provider?.rosNodes.filter((n) => n.name === composableParent) || [];
       const nodeNm = nodeNms.length > 0 ? nodeNms[0] : null;
-      // not running or ignoreRunState and in the list with nodes to start
-      // and not already in the start queue
       if (
         nodeNm &&
         (nodeNm.status !== RosNodeStatus.RUNNING ||
           (ignoreRunState && nodes2start.filter((item) => item.id === nodeNm.id).length > 0)) &&
         queue.queue &&
-        queue.queue.find((elem) => {
-          return elem.action === "START" && elem.node?.name === nodeNm.name;
-        }) === undefined
+        queue.queue.find((elem) => elem.action === "START" && elem.node?.name === nodeNm.name) === undefined
       ) {
         return nodeNm;
       }
@@ -482,6 +547,11 @@ export default function HostTreeViewPanel(): JSX.Element {
     return null;
   }
 
+  /**
+   * Prepare nodes for start, respecting launch files, associations and skip conditions.
+   * If multiple launch files are involved, the user gets a selection dialog.
+
+   */
   function startNodesWithLaunchCheck(
     nodes: RosNode[],
     ignoreRunState: boolean = false,
@@ -492,33 +562,38 @@ export default function HostTreeViewPanel(): JSX.Element {
     const node2Start: RosNode[] = [];
     const withNoLaunch: string[] = [];
     const skippedNodes: Map<string, string> = new Map();
-    // update nodes with launchFile if they are provided (on multiple launch files for a node)
+
     let nodeList = nodes.map((node) => {
       node.launchPath = useLaunchFiles[node.name];
       return node;
     });
-    // check nodes for associations and extend start node list
+
+    // extend list with associated nodes (e.g. containers)
     nodeList = updateWithAssociations(nodeList);
-    const add2start: (node: RosNode | null) => void = (node) => {
-      // add only valid node and if it is not already added
+
+    const add2start = (node: RosNode | null): void => {
       if (node && node2Start.filter((item) => item.id === node.id).length === 0) {
         node.ignore_timer = ignoreTimer;
         node2Start.push(node);
       }
     };
+
     for (const node of nodeList) {
-      // ignore running and nodes already in the queue
       if (!ignoreRunState && node.status === RosNodeStatus.RUNNING) {
         skippedNodes.set(node.name, "already running");
-      } else if (
+        continue;
+      }
+
+      if (
         queue.queue?.find((elem) => {
           return elem.action === "START" && elem.node?.name === node.name;
         })
       ) {
         skippedNodes.set(node.name, "already in the start queue");
-      } else if (node.launchInfo.size > 0) {
-        // prepend nodeLet manager to the start list if it is not already added,
-        // not running or in the list with started nodes
+        continue;
+      }
+
+      if (node.launchInfo.size > 0) {
         const managerNode = getNodeLetManager(node, ignoreRunState, nodes);
         if (managerNode) {
           managerNode.launchPath = node.launchPath;
@@ -526,14 +601,13 @@ export default function HostTreeViewPanel(): JSX.Element {
         add2start(managerNode);
         add2start(node);
         if (node.launchInfo.size > 1 && !node.launchPath) {
-          // Multiple launch files available
           withMultiLaunch.push(node);
         }
       } else if (!node.system_node) {
-        // no launch files
         withNoLaunch.push(node.name);
       }
     }
+
     if (skippedNodes.size > 0) {
       logCtx.debug(`Skipped ${skippedNodes.size} nodes`, JSON.stringify(Object.fromEntries(skippedNodes)));
     }
@@ -543,6 +617,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       }
       logCtx.debug(`No launch file for ${withNoLaunch.length} nodes found`, JSON.stringify(node2Start));
     }
+
     if (withMultiLaunch.length > 0) {
       // let the user select the launch files.
       setNodesAwaitModal(node2Start);
@@ -554,6 +629,7 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /**
    * Start nodes in the selected list
+
    */
   function startSelectedNodes(ignoreTimer: boolean = false): void {
     startNodesWithLaunchCheck(getSelectedNodes(), false, {}, ignoreTimer);
@@ -561,6 +637,7 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /**
    * Start nodes from a list of itemIds
+
    */
   function startNodesFromId(itemIds: string[]): void {
     const nodeList = getNodesFromIds(itemIds);
@@ -569,58 +646,64 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /** Stop node from queue and trigger the next one. */
   async function stopNodeQueued(node: RosNode | undefined): Promise<void> {
-    if (node !== undefined) {
-      logCtx.debug(`stop: ${node.name}`, "");
-      const provider = rosCtx.getProviderById(node.providerId);
-      if (!provider || !provider.isAvailable()) {
-        queue.addStatus("STOP", node.name, false, `Provider ${node.providerName} not available`);
-      } else {
-        if (node.status === RosNodeStatus.RUNNING) {
-          // stop node and store result for message
-          const resultStopNode = await provider.stopNode(node.id);
-          if (!resultStopNode.result) {
-            if (queue.queue.length <= 1) {
-              const getProcessResult = await provider.findNodeProcess(node.name);
-              if (getProcessResult.processes.length > 0) {
-                setKillProcessQuestion(
-                  getProcessResult.processes.map((p) => {
-                    return {
-                      node: node.name,
-                      pid: p.pid,
-                      cmdLine: p.cmdLine,
-                      callback: async (): Promise<void> => {
-                        await provider.killProcess(p.pid);
-                      },
-                    };
-                  })
-                );
-              }
-            }
-            queue.addStatus("STOP", node.name, false, resultStopNode.message);
-          } else {
-            queue.addStatus("STOP", node.name, true, "stopped");
-          }
-        } else if ((node.screens || []).length > 0) {
-          // terminate screen and store result for message
-          const resultTermNode = await provider.screenKillNode(node.id, "SIGTERM");
-          if (!resultTermNode.result) {
-            queue.addStatus("STOP", node.name, false, resultTermNode.message);
-          } else {
-            queue.addStatus("STOP", node.name, true, "sent SIGTERM to executable");
-          }
-        } else {
-          queue.addStatus("STOP", node.name, false, "no screen to stop");
-        }
-      }
-    } else {
+    if (node === undefined) {
       queue.addStatus("STOP", "undefined", false, "invalid node");
+      return;
     }
 
-    return Promise.resolve();
+    logCtx.debug(`stop: ${node.name}`, "");
+    const provider = rosCtx.getProviderById(node.providerId);
+
+    if (!provider || !provider.isAvailable()) {
+      queue.addStatus("STOP", node.name, false, `Provider ${node.providerName} not available`);
+      return;
+    }
+
+    if (node.status === RosNodeStatus.RUNNING) {
+      const resultStopNode = await provider.stopNode(node.id);
+      if (!resultStopNode.result) {
+        // If this is the last item in the queue, offer killing the process
+        if (queue.queue.length <= 1) {
+          const getProcessResult = await provider.findNodeProcess(node.name);
+          if (getProcessResult.processes.length > 0) {
+            const questions: {
+              node: string;
+              pid: number;
+              cmdLine: string;
+              callback?: () => Promise<void>;
+            }[] = [];
+            for (const p of getProcessResult.processes) {
+              questions.push({
+                node: node.name,
+                pid: p.pid,
+                cmdLine: p.cmdLine,
+                callback: async (): Promise<void> => {
+                  await provider.killProcess(p.pid);
+                },
+              });
+            }
+            setKillProcessQuestion(questions);
+          }
+        }
+        queue.addStatus("STOP", node.name, false, resultStopNode.message);
+      } else {
+        queue.addStatus("STOP", node.name, true, "stopped");
+      }
+    } else if ((node.screens || []).length > 0) {
+      const resultTermNode = await provider.screenKillNode(node.id, "SIGTERM");
+      if (!resultTermNode.result) {
+        queue.addStatus("STOP", node.name, false, resultTermNode.message);
+      } else {
+        queue.addStatus("STOP", node.name, true, "sent SIGTERM to executable");
+      }
+    } else {
+      queue.addStatus("STOP", node.name, false, "no screen to stop");
+    }
   }
 
   /**
-   * Stops the given nodes.
+   * Stops the given nodes, optionally only those with launch files, and optionally restarts them.
+
    */
   function stopNodes(
     nodes: RosNode[],
@@ -631,9 +714,8 @@ export default function HostTreeViewPanel(): JSX.Element {
     const skipped: Record<string, string> = {};
     const nodeList = updateWithAssociations(nodes);
 
-    // Precompute STOP items already in queue (O(1) lookup)
     const stopQueuedNames = new Set(
-      (queue.queue ?? []).filter((q) => q.action === "STOP" && q.node?.name).map((q) => q.node?.name)
+      (queue.queue ?? []).filter((q) => q.action === "STOP" && q.node?.name).map((q) => q.node?.name as string)
     );
 
     const nodesToStop: RosNode[] = [];
@@ -655,7 +737,6 @@ export default function HostTreeViewPanel(): JSX.Element {
       }
 
       const isRunning = node.status === RosNodeStatus.RUNNING || (node.screens?.length ?? 0) > 0;
-
       if (!isRunning) {
         skipped[node.name] = "not running";
         continue;
@@ -671,14 +752,16 @@ export default function HostTreeViewPanel(): JSX.Element {
     let maxKillTime = 0;
 
     if (nodesToStop.length > 0) {
-      // Enqueue STOP
-      queue.update(nodesToStop.map((node) => ({ node, action: "STOP" })));
+      queue.update(
+        nodesToStop.map((node) => ({
+          node,
+          action: "STOP",
+        }))
+      );
 
-      // Determine global max kill timeout (instead of per-node timer bug)
       const nodesKillTimeout: RosNode[] = [];
       for (const node of nodesToStop) {
         if (!node.pid) continue;
-
         for (const launchInfo of node.launchInfo.values()) {
           if (launchInfo.sigkill_timeout) {
             nodesKillTimeout.push(node);
@@ -687,19 +770,22 @@ export default function HostTreeViewPanel(): JSX.Element {
         }
       }
 
-      // Add KILL step once after max timeout
       if (maxKillTime > 0) {
-        setTimeout(() => {
-          queue.update(nodesKillTimeout.map((node) => ({ node, action: "KILL" })));
+        window.setTimeout(() => {
+          queue.update(
+            nodesKillTimeout.map((node) => ({
+              node,
+              action: "KILL",
+            }))
+          );
         }, maxKillTime);
       }
     }
 
-    // Restart logic
     if (restart) {
       const restartDelay = maxKillTime > 0 ? maxKillTime + 500 : 0;
 
-      setTimeout(() => {
+      window.setTimeout(() => {
         startNodesWithLaunchCheck(nodeList, true, {}, ignoreTimer);
       }, restartDelay);
     }
@@ -707,6 +793,7 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /**
    * Stop nodes in the selected list
+
    */
   function stopSelectedNodes(): void {
     stopNodes(getSelectedNodes());
@@ -714,6 +801,7 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /**
    * Stop nodes from a list of itemIds
+
    */
   function stopNodesFromId(itemIds: string[]): void {
     const nodeList = getNodesFromIds(itemIds);
@@ -722,13 +810,15 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /**
    * Restart nodes given in the arguments
+
    */
   function restartNodes(nodeList: RosNode[], onlyWithLaunch: boolean, ignoreTimer: boolean = false): void {
-    stopNodes(nodeList, onlyWithLaunch, true, ignoreTimer); // => true, for restart
+    stopNodes(nodeList, onlyWithLaunch, true, ignoreTimer);
   }
 
   /**
    * Restart nodes in the selected list
+
    */
   function restartSelectedNodes(ignoreTimer: boolean = false): void {
     restartNodes(getSelectedNodes(), true, ignoreTimer);
@@ -736,22 +826,21 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /**
    * Kill selected nodes using provider
+
    */
   function killSelectedNodes(): void {
     const nodes2kill: RosNode[] = [];
-    getSelectedNodes().map(async (node) => {
-      // we kill system nodes only when they are individually selected
-      if (node.system_node && navCtx.selectedNodes.length > 1) return;
+    for (const node of getSelectedNodes()) {
+      if (node.system_node && navCtx.selectedNodes.length > 1) continue;
       if (
         queue.queue?.find((elem) => {
           return elem.action === "KILL" && elem.node?.name === node.name;
         })
       ) {
-        // TODO: skippedNodes.set(node.name, 'already in queue');
-      } else {
-        nodes2kill.push(node);
+        continue;
       }
-    });
+      nodes2kill.push(node);
+    }
     queue.update(
       nodes2kill.map((node) => {
         return { node, action: "KILL" };
@@ -783,24 +872,22 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /**
    * Unregister selected nodes using provider
+
    */
   function unregisterSelectedNodes(): void {
     const nodes2unregister: RosNode[] = [];
-    getSelectedNodes().map(async (node) => {
-      // we unregister system nodes only when they are individually selected
-      if (node.system_node && navCtx.selectedNodes.length > 1) return;
-      // not supported for ROS2
-      if (!node.masteruri) return;
+    for (const node of getSelectedNodes()) {
+      if (node.system_node && navCtx.selectedNodes.length > 1) continue;
+      if (!node.masteruri) continue;
       if (
         queue.queue?.find((elem) => {
           return elem.action === "UNREGISTER" && elem.node?.name === node.name;
         })
       ) {
-        // TODO: skippedNodes.set(node.name, 'already in queue');
-      } else {
-        nodes2unregister.push(node);
+        continue;
       }
-    });
+      nodes2unregister.push(node);
+    }
     queue.update(
       nodes2unregister.map((node) => {
         return { node, action: "UNREGISTER" };
@@ -832,6 +919,7 @@ export default function HostTreeViewPanel(): JSX.Element {
 
   /**
    * Start dynamic reconfigure GUI for selected nodes
+
    */
   function startDynamicReconfigure(service: string, masteruri: string): void {
     if (
@@ -839,16 +927,14 @@ export default function HostTreeViewPanel(): JSX.Element {
         return elem.action === "DYNAMIC_RECONFIGURE" && elem.service === service && elem.masteruri === masteruri;
       })
     ) {
-      // TODO: skippedNodes.set(service, 'already in queue');
-    } else {
-      queue.update([{ action: "DYNAMIC_RECONFIGURE", service: service, masteruri: masteruri }]);
+      return;
     }
+    queue.update([{ action: "DYNAMIC_RECONFIGURE", service: service, masteruri: masteruri }]);
   }
 
   /** start dynamic reconfigure in the queue and trigger the next one. */
   async function dynamicReconfigureQueued(service: string | undefined, masteruri: string | undefined): Promise<void> {
     if (service) {
-      // store result for message
       const result = await rosCtx.startDynamicReconfigureClient(service, masteruri || "");
       if (!result.result) {
         queue.addStatus("DYNAMIC_RECONFIGURE", service, false, result.message);
@@ -856,24 +942,24 @@ export default function HostTreeViewPanel(): JSX.Element {
         queue.addStatus("DYNAMIC_RECONFIGURE", service, true, "dynamic reconfigure started");
       }
     }
-    return Promise.resolve();
   }
 
   /**
    * Remove log files from ROS nodes using [rosclean purge] for a given provider
+
    */
   async function clearProviderLogs(providers: string[]): Promise<void> {
     if (!providers || providers.length === 0) return;
 
     try {
-      await Promise.all(
-        providers.map(async (providerId) => {
-          const provider = rosCtx.getProviderById(providerId);
-          if (!provider || !provider.isAvailable()) return;
+      const promises: Promise<void>[] = [];
+      for (const providerId of providers) {
+        const provider = rosCtx.getProviderById(providerId);
+        if (!provider || !provider.isAvailable()) continue;
 
-          try {
-            const result: Result = await provider.rosCleanPurge();
-
+        const promise = provider
+          .rosCleanPurge()
+          .then((result: Result) => {
             if (!result.result) {
               logCtx.error("Could not delete logs", result.message, "logs not deleted");
             } else if (!result.message.includes("Purging ROS node logs")) {
@@ -881,35 +967,39 @@ export default function HostTreeViewPanel(): JSX.Element {
             } else {
               logCtx.success("Logs removed successfully", result.message, "logs removed");
             }
-          } catch (err) {
+          })
+          .catch((err: unknown) => {
             const message = err instanceof Error ? err.message : String(err);
             logCtx.error(`Error purging logs for provider ${providerId}`, message, "logs not deleted");
-          }
-        })
-      );
+          });
+
+        promises.push(promise);
+      }
+
+      await Promise.all(promises);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       logCtx.error("Could not clear logs for providers", message, "could not clear logs");
     }
   }
+
   /**
    * Delete log file of given nodes.
+
    */
   function clearLogs(nodes: RosNode[]): void {
     const nodes2clear: RosNode[] = [];
-    nodes.map(async (node) => {
-      // we unregister system nodes only when they are individually selected
-      if (node.system_node && nodes.length > 1) return;
+    for (const node of nodes) {
+      if (node.system_node && nodes.length > 1) continue;
       if (
         queue.queue?.find((elem) => {
           return elem.action === "CLEAR_LOG" && elem.node?.name === node.name;
         })
       ) {
-        // TODO: skippedNodes.set(node.name, 'already in queue');
-      } else {
-        nodes2clear.push(node);
+        continue;
       }
-    });
+      nodes2clear.push(node);
+    }
     queue.update(
       nodes2clear.map((node) => {
         return { node, action: "CLEAR_LOG" };
@@ -965,20 +1055,9 @@ export default function HostTreeViewPanel(): JSX.Element {
     }
   }
 
-  /**
-   * Synchronizes providerNodes with the current provider list.
-   *
-   * Removes all nodes whose providerId is no longer present in
-   * rosCtx.providers. This prevents orphaned nodes from remaining
-   * in state when providers are removed or replaced.
-   */
-  const readNodes = useCallback(() => {
-    const providerIds = rosCtx.providers.map((p) => p.id);
-    setProviderNodes((oldValues) => oldValues.filter((item) => providerIds.includes(item.providerId)));
-  }, [rosCtx.providers]);
-
   // Register useEffect Callbacks ----------------------------------------------------------------------------------
 
+  // Initialize providerNodes once at mount based on existing providers
   useEffect(() => {
     for (const p of rosCtx.providers) {
       updateNodes(p, p.rosNodes);
@@ -986,13 +1065,8 @@ export default function HostTreeViewPanel(): JSX.Element {
   }, []);
 
   useEffect(() => {
-    // apply filter to nodes if search text was changed by user or nodes are updated by provider
-    onSearch(filterText);
-  }, [filterText, providerNodes]);
-
-  useEffect(() => {
     readNodes();
-  }, [rosCtx.providers]);
+  }, [readNodes]);
 
   useEffect(() => {
     if (!nodesToStart) return;
@@ -1001,68 +1075,95 @@ export default function HostTreeViewPanel(): JSX.Element {
     queue.update(nodesToStart.map((node) => ({ node, action: "START" })));
 
     setNodesToStart(undefined);
-  }, [nodesToStart]);
+  }, [nodesToStart, queue]);
 
-  const queueActionHandlers: Record<string, (item: TQueueAction) => Promise<void>> = {
-    START: (item) => startNodeQueued(item.node),
-    STOP: (item) => stopNodeQueued(item.node),
-    UNREGISTER: (item) => unregisterNodeQueued(item.node),
-    KILL: (item) => killNodeQueued(item.node),
-    CLEAR_LOG: (item) => clearNodeLogQueued(item.node),
-    DYNAMIC_RECONFIGURE: (item) => dynamicReconfigureQueued(item.service, item.masteruri),
-  };
+  /**
+   * Queue action handlers for all supported queue actions.
+   * Memoized to avoid unnecessary re-creations.
+   */
+  const queueActionHandlers = useMemo<Record<string, (item: TQueueAction) => Promise<void>>>(
+    () => ({
+      START: (item: TQueueAction) => startNodeQueued(item.node),
+      STOP: (item: TQueueAction) => stopNodeQueued(item.node),
+      UNREGISTER: (item: TQueueAction) => unregisterNodeQueued(item.node),
+      KILL: (item: TQueueAction) => killNodeQueued(item.node),
+      CLEAR_LOG: (item: TQueueAction) => clearNodeLogQueued(item.node),
+      DYNAMIC_RECONFIGURE: (item: TQueueAction) => dynamicReconfigureQueued(item.service, item.masteruri),
+    }),
+    []
+  );
 
-  async function performQueueMain(index: number): Promise<void> {
-    if (index < 0) return;
+  /**
+   * Execute the next item in the main queue and handle completion summary.
+   */
+  const performQueueMain = useCallback(
+    async (index: number): Promise<void> => {
+      if (index < 0) return;
 
-    const queueItem = queue.get();
+      const queueItem = queue.get();
 
-    if (queueItem) {
-      const handler = queueActionHandlers[queueItem.action];
-
-      if (handler) {
-        await handler(queueItem);
-      } else {
-        console.warn(`Unknown queue action: ${JSON.stringify(queueItem)}`);
-      }
-      return;
-    }
-
-    // ---- Queue finished ----
-    for (const action of Object.keys(queueActionMeta)) {
-      const failed = queue.failed(action);
-      if (failed.length > 0) {
-        const infoDict = Object.fromEntries(failed.map((item) => [item.itemName, item.message]));
-
-        logCtx.warn(
-          `Failed to ${action.toLowerCase()} ${failed.length} nodes`,
-          JSON.stringify(infoDict),
-          `Failed to ${action.toLowerCase()} ${failed.length} nodes`
-        );
+      if (queueItem) {
+        const handler = queueActionHandlers[queueItem.action];
+        if (handler) {
+          await handler(queueItem);
+        } else {
+          // This should not happen; log for debugging.
+          console.warn(`Unknown queue action: ${JSON.stringify(queueItem)}`);
+        }
+        return;
       }
 
-      const success = queue.success(action);
-      if (success.length > 0) {
-        const infoDict = Object.fromEntries(success.map((item) => [item.itemName, item.message]));
+      // ---- Queue finished ----
+      for (const action of Object.keys(queueActionMeta)) {
+        const failed = queue.failed(action);
+        if (failed.length > 0) {
+          const infoDict = Object.fromEntries(failed.map((item) => [item.itemName, item.message]));
+          logCtx.warn(
+            `Failed to ${action.toLowerCase()} ${failed.length} nodes`,
+            JSON.stringify(infoDict),
+            `Failed to ${action.toLowerCase()} ${failed.length} nodes`
+          );
+        }
 
-        logCtx.success(
-          `${success.length} nodes ${queueActionMeta[action].successText}`,
-          JSON.stringify(infoDict),
-          `${success.length} nodes ${queueActionMeta[action].successText}`
-        );
+        const success = queue.success(action);
+        if (success.length > 0) {
+          const infoDict = Object.fromEntries(success.map((item) => [item.itemName, item.message]));
+          logCtx.success(
+            `${success.length} nodes ${queueActionMeta[action].successText}`,
+            JSON.stringify(infoDict),
+            `${success.length} nodes ${queueActionMeta[action].successText}`
+          );
+        }
       }
-    }
 
-    queue.clear();
-  }
+      queue.clear();
+    },
+    [logCtx, queue, queueActionHandlers]
+  );
 
   // update queue
   useEffect(() => {
-    performQueueMain(queue.currentIndex);
-  }, [queue.currentIndex]);
+    // Prevent processing the same index multiple times.
+    // This can happen in development, e.g. with React StrictMode.
+    if (queue.currentIndex === lastProcessedIndexRef.current) {
+      return;
+    }
 
+    lastProcessedIndexRef.current = queue.currentIndex;
+
+    performQueueMain(queue.currentIndex);
+  }, [queue.currentIndex, performQueueMain]);
+
+  /**
+   * Build the button group UI.
+   * Kept as a memoized value to avoid unnecessary re-renders when unrelated state changes.
+
+   */
   const createButtonBox = useMemo(() => {
     const selectedNodes = getSelectedNodes();
+    const hasDynamicReconfigure =
+      selectedNodes.filter((node) => node.dynamicReconfigureServices?.length > 0).length > 0;
+
     return (
       <ButtonGroup orientation="vertical" aria-label="ros node control group">
         <Tooltip
@@ -1241,13 +1342,7 @@ export default function HostTreeViewPanel(): JSX.Element {
             </IconButton>
           </span>
         </Tooltip>
-        <Tooltip
-          title="Parameters"
-          placement="left"
-          // enterDelay={tooltipDelay}
-          // enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
+        <Tooltip title="Parameters" placement="left" disableInteractive>
           <span>
             <IconButton
               size="medium"
@@ -1265,9 +1360,7 @@ export default function HostTreeViewPanel(): JSX.Element {
             </IconButton>
           </span>
         </Tooltip>
-        {selectedNodes.filter((node) => {
-          return node.dynamicReconfigureServices?.length > 0;
-        }).length > 0 && (
+        {hasDynamicReconfigure && (
           <Tooltip title="Dynamic reconfigure for ROS1 nodes" placement="left" disableInteractive>
             <span>
               <IconButton
@@ -1290,11 +1383,6 @@ export default function HostTreeViewPanel(): JSX.Element {
                     }
                   }
                 }}
-                // disabled={
-                //   selectedNodes.filter((node) => {
-                //     return node.dynamicReconfigureServices?.length > 0;
-                //   }).length === 0
-                // }
               >
                 <SettingsSuggestIcon fontSize="inherit" />
               </IconButton>
@@ -1326,7 +1414,7 @@ export default function HostTreeViewPanel(): JSX.Element {
               disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
                 if (navCtx.selectedProviders?.length > 0) {
-                  const screens: TMenuOptionsScreen[] = []; // {node : string, screen: string, callback: () => void, external: boolean}
+                  const screens: TMenuOptionsScreen[] = [];
                   for (const providerId of navCtx.selectedProviders || []) {
                     const prov = rosCtx.getProviderById(providerId);
                     for (const screenMap of prov?.screens || []) {
@@ -1345,10 +1433,9 @@ export default function HostTreeViewPanel(): JSX.Element {
                     }
                   }
                 } else {
-                  const screens: TMenuOptionsScreen[] = []; // {node : string, screen: string, callback: () => void, external: boolean}
+                  const screens: TMenuOptionsScreen[] = [];
                   for (const node of getSelectedNodes()) {
                     if (node.screens && node.screens.length === 1) {
-                      // 1 screen available
                       screens.push({
                         nodeName: node.name,
                         providerId: node.providerId,
@@ -1367,8 +1454,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                         },
                       });
                     } else if (node.screens && node.screens.length > 1) {
-                      // Multiple screens available
-                      node.screens.map((screen) => {
+                      for (const screen of node.screens) {
                         screens.push({
                           nodeName: node.name,
                           providerId: node.providerId,
@@ -1384,9 +1470,8 @@ export default function HostTreeViewPanel(): JSX.Element {
                             );
                           },
                         });
-                      });
+                      }
                     } else {
-                      // no screens, try to find by node name instead
                       screens.push({
                         nodeName: node.name,
                         providerId: node.providerId,
@@ -1455,7 +1540,7 @@ export default function HostTreeViewPanel(): JSX.Element {
               aria-label="Log"
               disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
               onClick={(event) => {
-                const logs: TMenuOptionsNode[] = []; // {node : string, callback: () => void}
+                const logs: TMenuOptionsNode[] = [];
                 for (const node of getSelectedNodes()) {
                   logs.push({
                     node: node,
@@ -1491,7 +1576,7 @@ export default function HostTreeViewPanel(): JSX.Element {
               aria-label="Log Level"
               disabled={selectedNodes.length === 0}
               onClick={() => {
-                const loggers: TMenuOptionsNode[] = []; // {node : string, callback: () => void}
+                const loggers: TMenuOptionsNode[] = [];
                 for (const node of getSelectedNodes()) {
                   loggers.push({
                     node: node,
@@ -1550,8 +1635,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                 aria-label="Open Terminal on selected host"
                 disabled={navCtx.selectedProviders?.length === 0}
                 onClick={(event) => {
-                  // open a new terminal for each selected provider
-                  for (const providerId of navCtx.selectedProviders) {
+                  for (const providerId of navCtx.selectedProviders || []) {
                     createSingleTerminalPanel(
                       CmdType.TERMINAL,
                       providerId,
@@ -1571,16 +1655,27 @@ export default function HostTreeViewPanel(): JSX.Element {
         )}
       </ButtonGroup>
     );
-  }, [navCtx.selectedNodes, navCtx.selectedProviders, providerNodes, tooltipDelay]);
+  }, [
+    createFileEditorPanel,
+    createLoggerPanel,
+    // clearLogs,
+    createParameterPanel,
+    getSelectedNodes,
+    logCtx,
+    navCtx.selectedNodes,
+    navCtx.selectedProviders,
+    rosCtx.getProviderById,
+    showButtonsForKeyModifiers,
+    // startSelectedNodes,
+    // stopSelectedNodes,
+    // restartSelectedNodes,
+    // unregisterSelectedNodes,
+    // killSelectedNodes,
+    tooltipDelay,
+  ]);
 
   return (
-    <Box
-      // ref={panelRef}
-      width="100%"
-      height="100%"
-      overflow="auto"
-      sx={{ backgroundColor: backgroundColor }}
-    >
+    <Box width="100%" height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
       <Stack spacing={0.5} direction="column" width="100%" height="100%">
         {queue.currentIndex < 0 && (
           <Stack direction="row" spacing={0.5} alignItems="center">
@@ -1657,7 +1752,6 @@ export default function HostTreeViewPanel(): JSX.Element {
         <Stack direction="row" height="100%" overflow="auto">
           {buttonLocation === BUTTON_LOCATIONS.LEFT && <Box height="100%">{createButtonBox}</Box>}
           <HostTreeView
-            // providerNodeTree={providerNodeTree}
             visibleNodes={visibleNodes}
             isFiltered={filterText.length > 0}
             onNodeSelect={handleNodesSelect}
@@ -1676,7 +1770,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           message="Confirm to remove all ros log files."
           onConfirmCallback={() => {
             setRosCleanPurge(false);
-            clearProviderLogs(navCtx.selectedProviders);
+            clearProviderLogs(navCtx.selectedProviders || []);
           }}
           onCancelCallback={() => {
             setRosCleanPurge(false);
@@ -1788,7 +1882,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           }, [])}
           useRadioGroup
           onConfirmCallback={(items) => {
-            const useLaunchFiles = {};
+            const useLaunchFiles: { [key: string]: string } = {};
             for (const item of items) {
               for (const launch of item.list) {
                 const node = nodeMultiLaunches.find((n) => n.name.includes(item.title));
@@ -1797,7 +1891,6 @@ export default function HostTreeViewPanel(): JSX.Element {
                 }
               }
             }
-            // setNodesToStart(nodesAwaitModal);
             startNodesWithLaunchCheck(nodesAwaitModal, false, useLaunchFiles);
             setNodeMultiLaunches([]);
             setNodesAwaitModal([]);
@@ -1851,7 +1944,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           }, [])}
           onConfirmCallback={(items) => {
             for (const item of items) {
-              const node = dynamicReconfigureItems.find((node) => node.name === item.title);
+              const node = dynamicReconfigureItems.find((n) => n.name === item.title);
               for (const dri of item.list) {
                 startDynamicReconfigure(dri, node?.masteruri || "");
               }
@@ -1872,14 +1965,16 @@ export default function HostTreeViewPanel(): JSX.Element {
             return prev;
           }, [])}
           onConfirmCallback={(items) => {
+            const promises: Promise<void>[] = [];
             for (const item of items) {
               const listWithOpt = killProcessQuestion.find(
                 (listItem) => `${listItem.pid}: ${listItem.cmdLine}` === item
               );
               if (listWithOpt?.callback) {
-                listWithOpt.callback();
+                promises.push(listWithOpt.callback());
               }
             }
+            Promise.all(promises);
             setKillProcessQuestion([]);
           }}
           onCancelCallback={() => {
