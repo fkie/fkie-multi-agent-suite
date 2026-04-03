@@ -387,35 +387,57 @@ export default function PackageExplorerPanel(): JSX.Element {
    * Keep history of latest launched files.
    */
   const updateHistory = useCallback(() => {
+    // Get provider for the currently selected launch file
     const provider = rosCtx.getProviderById(selectedLaunchFile?.providerId || "", true);
     if (!provider) {
       return;
     }
+
     setLaunchFileHistory((prevHistory: PathItem[]) => {
       const launchFile = selectedLaunchFile;
-      if (launchFile) {
-        // Separate the history of the selected host from the rest.
-        const hostHistory = prevHistory.filter((file) => file.host === provider.host());
-        const otherHistory = prevHistory.filter((file) => file.host !== provider.host());
-        // Find if the launch file was already in the host history.
-        const foundIdx = hostHistory.findIndex((file) => file.path === launchFile.path);
-        if (foundIdx > -1) {
-          // Delete the old history entry.
-          hostHistory.splice(foundIdx, 1);
-        }
-        // Add the currently launched file to the front of the array.
-        hostHistory.unshift(launchFile);
-        // Cap host history length
-        hostHistory.slice(0, settingsCtx.get("launchHistoryLength") as number);
-        // Ensure that no two items with the same ID are inserted.
-        // return the merged histories.
-        return [...hostHistory, ...otherHistory].filter(
-          (value, index, self) => index === self.findIndex((t) => t.id === value.id)
-        );
+      if (!launchFile) {
+        return prevHistory;
       }
-      return prevHistory;
+
+      // History entries for this provider on this host
+      const hostHistory = prevHistory.filter(
+        (file) => file.host === provider.host() && file.providerId === provider.id
+      );
+
+      // All entries that belong to other hosts or other providers
+      const otherHistory = prevHistory.filter(
+        (file) => file.host !== provider.host() || file.providerId !== provider.id
+      );
+
+      // Check if this launch file (same provider + same path) already exists in host history
+      const foundIdx = hostHistory.findIndex(
+        (file) => file.path === launchFile.path && file.providerId === launchFile.providerId
+      );
+      if (foundIdx > -1) {
+        // Remove old occurrence so we can re‑insert it at the front
+        hostHistory.splice(foundIdx, 1);
+      }
+
+      // Insert the currently launched file at the front
+      hostHistory.unshift(launchFile);
+
+      // Limit history length per provider/host
+      const max = settingsCtx.get("launchHistoryLength") as number;
+      const trimmedHostHistory = hostHistory.slice(0, max);
+
+      // Merge provider/host‑specific history with all other entries
+      const merged = [...trimmedHostHistory, ...otherHistory];
+
+      // Ensure uniqueness by (providerId + path) across the whole merged list
+      const unique = merged.filter((value, index, self) => {
+        const key = `${value.providerId}:${value.path}`;
+        return index === self.findIndex((t) => `${t.providerId}:${t.path}` === key);
+      });
+
+      return unique;
     });
-    // inform host panel tab about loaded launch file
+
+    // Notify other components that a launch file has been opened
     emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.NODES, "default"));
   }, [rosCtx, selectedLaunchFile, settingsCtx]);
 
