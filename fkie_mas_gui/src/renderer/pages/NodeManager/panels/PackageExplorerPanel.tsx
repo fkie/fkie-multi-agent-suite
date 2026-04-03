@@ -24,6 +24,7 @@ import TreeDirectory from "@/renderer/components/PackageExplorer/TreeDirectory";
 import { TPackageItemsTree, TPackageTree, TPackageTreeItem } from "@/renderer/components/PackageExplorer/types";
 import { Tag } from "@/renderer/components/UI";
 import { colorFromHostname } from "@/renderer/components/UI/Colors";
+import VirtualizedListboxComponent from "@/renderer/components/UI/VirtualizedListboxComponent";
 import { BUTTON_LOCATIONS, LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
@@ -86,6 +87,9 @@ export default function PackageExplorerPanel(): JSX.Element {
 
   const [packageList, setPackageList] = useState<ProviderPackage[]>([]);
   const [packageListFiltered, setPackageListFiltered] = useState<ProviderPackage[]>([]);
+  const sortedPackageList = useMemo<ProviderPackage[]>(() => {
+    return [...packageList].sort(comparePackageItems);
+  }, [packageList]);
   const [ignoringNonRelevantPackageFiles, setIgnoringNonRelevantPackageFiles] = useState<boolean>(false);
   const [packageItemsTree, setPackageItemsTree] = useState<TPackageItemsTree>({});
   const [packageItemList, setPackageItemList] = useState<PathItem[]>([]);
@@ -130,11 +134,10 @@ export default function PackageExplorerPanel(): JSX.Element {
         }
       }
     }
-    setPackageList(newPackageList.sort(comparePackageItems));
-    if (!selectedPackage) {
-      setPackageListFiltered(newPackageList);
-    } else {
-      handleOnSelectPackage(selectedPackage);
+    setPackageList(newPackageList);
+
+    if (selectedPackage) {
+      void handleOnSelectPackage(selectedPackage);
     }
     setLoading(false);
   }
@@ -159,9 +162,7 @@ export default function PackageExplorerPanel(): JSX.Element {
     // if (selectedPackage) return;
     const provPackageHistory: TPackageItemsTree = {};
     for (const prov of rosCtx.providers) {
-      const provHistory = launchFileHistory.filter(
-        (file) => file.providerId === prov.id
-      );
+      const provHistory = launchFileHistory.filter((file) => file.providerId === prov.id);
       if (provHistory.length > 0) {
         const pit: TPackageTreeItem[] = provHistory.map((curr) => {
           // update id of provider files
@@ -190,33 +191,8 @@ export default function PackageExplorerPanel(): JSX.Element {
     setPackageItemList(launchFileHistory);
     setIgnoringNonRelevantPackageFiles(false);
 
-    const sortedPackages = packageList.sort(comparePackageItems);
-    setPackageListFiltered(sortedPackages);
-  }, [packageList, rosCtx, selectedPackage, launchFileHistory]);
-
-  /**
-   * Callback function when the search box is used.
-   */
-  function searchCallback(searchText: string): void {
-    if (!searchText || (searchText && searchText.length === 0)) {
-      setPackageListFiltered(packageList);
-      return;
-    }
-
-    const searchResult: ProviderPackage[] = [];
-    const includedPackages: string[] = [];
-    for (const p of packageList) {
-      if (
-        p.rosPackage.name.indexOf(searchText) !== -1 &&
-        !includedPackages.includes(p.id) // prevent duplicates
-      ) {
-        searchResult.push(p);
-        includedPackages.push(p.id);
-      }
-    }
-
-    setPackageListFiltered(searchResult);
-  }
+    setPackageListFiltered(sortedPackageList);
+  }, [packageList, rosCtx, selectedPackage, launchFileHistory, sortedPackageList]);
 
   // Reset states upon packageList or history modification.
   useEffect(() => {
@@ -296,7 +272,7 @@ export default function PackageExplorerPanel(): JSX.Element {
           const fItem = pathItemMap.get(name);
           if (fItem) {
             // file
-            if (a[a.length-2] === "launch") {
+            if (a[a.length - 2] === "launch") {
               launchDirId = item.id;
             }
             prev.packageTree.push({
@@ -327,7 +303,6 @@ export default function PackageExplorerPanel(): JSX.Element {
     }
 
     const pit: TPackageItemsTree = {};
-    // eslint-disable-next-line prefer-destructuring
     pit[`${packageName}`] = packageTree;
     setPackageItemsTree(pit);
     setPackageItemList(itemList);
@@ -443,84 +418,6 @@ export default function PackageExplorerPanel(): JSX.Element {
     }
   }, [selectedLaunchFile]);
 
-  const createPackageSelector = useMemo(() => {
-    return (
-      <Autocomplete
-        id="autocomplete-package-search"
-        size="small"
-        fullWidth={true}
-        autoHighlight
-        clearOnEscape
-        disableListWrap
-        handleHomeEndKeys={false}
-        noOptionsText="Package not found"
-        options={packageListFiltered}
-        // loading={loading}
-        getOptionLabel={(option) => `${option.rosPackage.name}`}
-        isOptionEqualToValue={(option, value) => option.rosPackage.name === value.rosPackage.name}
-        // sx={{ flexGrow: 1 }}
-        // This prevents warnings on invalid autocomplete values
-        value={selectedPackage}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Search Package"
-            color="info"
-            variant="outlined"
-            margin="dense"
-            size="small"
-            // autoFocus
-            sx={{ fontSize: "inherit" }}
-            slotProps={{
-              input: {
-                ...params.InputProps,
-                endAdornment: (
-                  <React.Fragment>
-                    {loading ? <CircularProgress color="inherit" size={20} /> : null}
-                    {params.InputProps.endAdornment}
-                  </React.Fragment>
-                ),
-              },
-            }}
-          />
-        )}
-        renderOption={(props, option) => {
-          return (
-            <Stack
-              {...(props as HTMLAttributes<HTMLDivElement>)}
-              key={option.id}
-              direction="row"
-              style={getHostStyle(option.providerName)}
-            >
-              <Tooltip title={`${option.rosPackage.name} | ${option.providerName}`} placement="top" disableInteractive>
-                <Typography
-                  sx={{ ml: 0, fontWeight: "bold" }}
-                  noWrap
-                  // width="stretch"
-                >
-                  {option.rosPackage.name}
-                </Typography>
-              </Tooltip>
-              {/* <Typography color="grey" sx={{ ml: 1 }} noWrap>
-                | {option.providerName.slice(0, option.providerName.indexOf("["))}
-              </Typography> */}
-            </Stack>
-          );
-        }}
-        onChange={(_event, newSelectedPackage: ProviderPackage | null) => {
-          if (!newSelectedPackage) {
-            setSelectedPackage(null);
-          }
-          setSelectedPackage(newSelectedPackage);
-          handleOnSelectPackage(newSelectedPackage);
-        }}
-        onInputChange={(_event, newInputValue) => {
-          searchCallback(newInputValue);
-        }}
-      />
-    );
-  }, [packageListFiltered, selectedPackage, loading]);
-
   const getHostStyle = useCallback(
     function getHostStyle(providerName: string): object {
       if (colorizeHosts) {
@@ -539,6 +436,75 @@ export default function PackageExplorerPanel(): JSX.Element {
     },
     [colorizeHosts]
   );
+
+  const createPackageSelector = useMemo(() => {
+    return (
+      <Autocomplete
+        id="autocomplete-package-search"
+        size="small"
+        fullWidth
+        autoHighlight
+        clearOnEscape
+        disableListWrap
+        handleHomeEndKeys={false}
+        noOptionsText="Package not found"
+        options={packageListFiltered}
+        slots={{
+          listbox: VirtualizedListboxComponent,
+        }}
+        getOptionLabel={(option) => option.rosPackage.name}
+        isOptionEqualToValue={(option, value) => option.rosPackage.name === value.rosPackage.name}
+        value={selectedPackage}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Search Package"
+            color="info"
+            variant="outlined"
+            margin="dense"
+            size="small"
+            sx={{ fontSize: "inherit" }}
+            slotProps={{
+              input: {
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {loading ? <CircularProgress color="inherit" size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              },
+            }}
+          />
+        )}
+        renderOption={(props, option) => (
+          <Stack
+            {...(props as HTMLAttributes<HTMLDivElement>)}
+            key={option.id}
+            direction="row"
+            alignItems="center"
+            style={getHostStyle(option.providerName)}
+            sx={{ cursor: "pointer" }}
+          >
+            <Tooltip title={`${option.rosPackage.name} | ${option.providerName}`} placement="top" disableInteractive>
+              <Typography sx={{ ml: 0, fontWeight: "bold" }} noWrap>
+                {option.rosPackage.name}
+              </Typography>
+            </Tooltip>
+          </Stack>
+        )}
+        onChange={(_event, newSelectedPackage: ProviderPackage | null) => {
+          if (!newSelectedPackage) {
+            setSelectedPackage(null);
+            return;
+          }
+          setSelectedPackage(newSelectedPackage);
+          void handleOnSelectPackage(newSelectedPackage);
+        }}
+      />
+    );
+  }, [packageListFiltered, selectedPackage, loading, getHostStyle]);
+
   const createReloadButton = useMemo(() => {
     return (
       <Tooltip title="Reload package list" placement="bottom" enterDelay={tooltipDelay} enterNextDelay={tooltipDelay}>
