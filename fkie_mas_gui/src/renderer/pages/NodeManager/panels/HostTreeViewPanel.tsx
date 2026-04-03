@@ -96,6 +96,13 @@ type TMenuOptionsScreen = {
   callback?: () => void;
 };
 
+type TPendingRestart = {
+  nodes: RosNode[];
+  onlyWithLaunch: boolean;
+  ignoreTimer: boolean;
+  notBefore: number; // timestamp in ms since epoch
+};
+
 const queueActionMeta: Record<TQueueAction["action"], { successText: string }> = {
   STOP: { successText: "stopped" },
   START: { successText: "started" },
@@ -136,6 +143,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   const [dynamicReconfigureItems, setDynamicReconfigureItems] = useState<RosNode[]>([]);
   const [nodesAwaitModal, setNodesAwaitModal] = useState<RosNode[]>([]);
   const [editNodeWithMultipleLaunchInfos, setEditNodeWithMultipleLaunchInfos] = useState<TMenuOptionsEditor>();
+  const [pendingRestart, setPendingRestart] = useState<TPendingRestart | null>(null);
   const [killProcessQuestion, setKillProcessQuestion] = useState<
     { node: string; pid: number; cmdLine: string; callback?: () => Promise<void> }[]
   >([]);
@@ -710,7 +718,7 @@ export default function HostTreeViewPanel(): JSX.Element {
     onlyWithLaunch?: boolean,
     restart?: boolean,
     ignoreTimer: boolean = false
-  ): void {
+  ): number {
     const skipped: Record<string, string> = {};
     const nodeList = updateWithAssociations(nodes);
 
@@ -782,13 +790,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       }
     }
 
-    if (restart) {
-      const restartDelay = maxKillTime > 0 ? maxKillTime + 500 : 0;
-
-      window.setTimeout(() => {
-        startNodesWithLaunchCheck(nodeList, true, {}, ignoreTimer);
-      }, restartDelay);
-    }
+    return maxKillTime;
   }
 
   /**
@@ -813,7 +815,33 @@ export default function HostTreeViewPanel(): JSX.Element {
 
    */
   function restartNodes(nodeList: RosNode[], onlyWithLaunch: boolean, ignoreTimer: boolean = false): void {
-    stopNodes(nodeList, onlyWithLaunch, true, ignoreTimer);
+    // Stop nodes, but do not restart immediately.
+    const maxKillTime = stopNodes(nodeList, onlyWithLaunch, false, ignoreTimer);
+
+    setPendingRestart((prev) => {
+      // Merge node lists (unique by id)
+      const nodeMap = new Map<string, RosNode>();
+      for (const n of prev?.nodes || []) {
+        nodeMap.set(n.id, n);
+      }
+      for (const n of nodeList) {
+        nodeMap.set(n.id, n);
+      }
+      const mergedNodes = Array.from(nodeMap.values());
+
+      const now = Date.now();
+      const thisNotBefore = now + (maxKillTime > 0 ? maxKillTime + 500 : 0); // wait at least maxKillTime (+ small buffer)
+      const mergedNotBefore = Math.max(prev?.notBefore ?? 0, thisNotBefore);
+
+      return {
+        nodes: mergedNodes,
+        // If any restart requires "onlyWithLaunch", keep it restrictive
+        onlyWithLaunch: prev ? prev.onlyWithLaunch && onlyWithLaunch : onlyWithLaunch,
+        // If any restart ignores the timer, ignore the timer for all
+        ignoreTimer: prev ? prev.ignoreTimer || ignoreTimer : ignoreTimer,
+        notBefore: mergedNotBefore,
+      };
+    });
   }
 
   /**
@@ -1076,6 +1104,29 @@ export default function HostTreeViewPanel(): JSX.Element {
 
     setNodesToStart(undefined);
   }, [nodesToStart, queue]);
+
+  useEffect(() => {
+    if (!pendingRestart) return;
+
+    // queue still processing (STOP/KILL/UNREGISTER/... in progress)
+    if (queue.currentIndex >= 0) return;
+
+    // wait until all kill process questions have been handled by the user
+    if (killProcessQuestion.length > 0) return;
+
+    // ensure that at least maxKillTime has passed since the last stop
+    if (Date.now() < pendingRestart.notBefore) return;
+
+    // Now everything is done, we can safely restart the nodes.
+    startNodesWithLaunchCheck(
+      pendingRestart.nodes,
+      true, // ignoreRunState: we really want to restart
+      {},
+      pendingRestart.ignoreTimer
+    );
+
+    setPendingRestart(null);
+  }, [pendingRestart, queue.currentIndex, killProcessQuestion]);
 
   /**
    * Queue action handlers for all supported queue actions.
@@ -1958,7 +2009,7 @@ export default function HostTreeViewPanel(): JSX.Element {
       )}
       {killProcessQuestion.length > 0 && (
         <ListSelectionModal
-          title={`Kill selected processes for node ${killProcessQuestion[0].node}`}
+          title={`Node process not found. Selected processes to kill for node ${killProcessQuestion[0].node}`}
           selectOnOpen={0}
           list={killProcessQuestion.reduce((prev: string[], item) => {
             prev.push(`${item.pid}: ${item.cmdLine}`);
