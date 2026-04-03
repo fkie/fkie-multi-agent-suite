@@ -1,3 +1,5 @@
+import { parse } from "shell-quote";
+
 import { TResult } from "@/types";
 import { generateUniqueId } from "../utils";
 
@@ -291,6 +293,29 @@ export default class ProviderLaunchConfiguration {
     return `${prefix} `;
   }
 
+  splitEnv(envStr: string) {
+    // Parse the string into shell-style tokens (respects quotes, spaces, etc.)
+    const tokens = parse(envStr).filter((t) => typeof t === "string") as string[];
+
+    // Helper: quote a value safely for Bash using single quotes
+    function bashQuote(value: string): string {
+      // In Bash, inside single quotes you cannot escape directly,
+      // so we close the quote, add an escaped single quote, and reopen it: '\''.
+      if (/[\s="]/.test(value)) return `'${value.replace(/'/g, `'\\''`)}'`;
+      return value;
+    }
+
+    const exportLines = tokens
+      .filter((kv) => kv.includes("="))
+      .map((kv) => {
+        const [name, ...rest] = kv.split("=");
+        // Join the rest back in case the value also contains '='
+        const value = rest.join("=");
+        return `${name}=${bashQuote(value)}`;
+      });
+    return exportLines;
+  }
+
   public getEnv() {
     const result: string[] = [this.domainPrefix(), this.rmwPrefix()];
     if (this.params.rmw.overrideZenoEnv === "multicast") {
@@ -299,7 +324,9 @@ export default class ProviderLaunchConfiguration {
     } else if (this.params.rmw.overrideZenoEnv === "remote") {
       result.push(this.getZenohRemoteRouter());
     } else if (this.params.rmw.overrideZenoEnv !== "local") {
-      result.push(this.params.rmw.overrideZenoEnv);
+      for (const token of this.splitEnv(this.params.rmw.overrideZenoEnv)) {
+        result.push(token);
+      }
     }
     return result.filter((entry) => !!entry);
   }
