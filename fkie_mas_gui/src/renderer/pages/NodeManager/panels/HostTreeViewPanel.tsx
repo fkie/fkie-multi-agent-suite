@@ -1948,7 +1948,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           }, [])}
           onConfirmCallback={(items) => {
             for (const item of items) {
-              const nodeWithOpt = nodeLogs.find((nodeItem) => `${nodeItem.node.name}` === item);
+              const nodeWithOpt = nodeLoggers.find((nodeItem) => `${nodeItem.node.name}` === item);
               if (nodeWithOpt?.callback) {
                 nodeWithOpt.callback();
               }
