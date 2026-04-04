@@ -113,7 +113,9 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
             nodeIds.push(id);
           }
         }
-        if (!providerIds) setHistory((prev) => (addToHistory && prevSelection ? [...prev, prevSelection] : []));
+        if (providerIds.length === 0 && addToHistory) {
+          setHistory((prev) => (prevSelection ? [...prev, prevSelection] : []));
+        }
         return { triggerId: triggerId, selected: ids, selectedNodes: nodeIds, selectedProviders: providerIds };
       });
     },
@@ -129,7 +131,7 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
       const newHistory = history.slice(0, -1);
       const last = history[history.length - 1];
       setHistory(newHistory);
-      setSelected(triggerId, last.selected);
+      setSelected(triggerId, last.selected, false);
       return last;
     },
     [history]
