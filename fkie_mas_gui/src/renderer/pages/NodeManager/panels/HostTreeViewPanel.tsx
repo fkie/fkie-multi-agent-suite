@@ -67,8 +67,16 @@ type TProviderNodes = {
   nodes: RosNode[];
 };
 
+type QueueActionType =
+  | "STOP"
+  | "START"
+  | "KILL"
+  | "UNREGISTER"
+  | "CLEAR_LOG"
+  | "DYNAMIC_RECONFIGURE";
+
 interface TQueueAction {
-  action: string;
+  action: QueueActionType;
   node?: RosNode;
   service?: string;
   masteruri?: string;
@@ -109,7 +117,7 @@ type TDomainGroup = {
   providers: Provider[];
 };
 
-const queueActionMeta: Record<TQueueAction["action"], { successText: string }> = {
+const queueActionMeta: Record<QueueActionType, { successText: string }> = {
   STOP: { successText: "stopped" },
   START: { successText: "started" },
   KILL: { successText: "killed" },
@@ -1142,7 +1150,7 @@ export default function HostTreeViewPanel(): JSX.Element {
    * Queue action handlers for all supported queue actions.
    * Memoized to avoid unnecessary re-creations.
    */
-  const queueActionHandlers = useMemo<Record<string, (item: TQueueAction) => Promise<void>>>(
+  const queueActionHandlers = useMemo<Record<QueueActionType, (item: TQueueAction) => Promise<void>>>(
     () => ({
       START: (item: TQueueAction) => startNodeQueued(item.node),
       STOP: (item: TQueueAction) => stopNodeQueued(item.node),
