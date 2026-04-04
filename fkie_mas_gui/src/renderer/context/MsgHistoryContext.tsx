@@ -1,8 +1,8 @@
 import { DBSchema, IDBPDatabase, openDB } from "idb";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
+import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { TRosMessageStruct } from "@/types";
-import useLocalStorage from "../hooks/useLocalStorage";
 
 /* ======================== Types =========================== */
 

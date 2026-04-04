@@ -4,6 +4,9 @@ import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConnectConfig } from "ssh2";
 
 import { ErrorAlertComponent, ReloadFileAlertComponent, RestartNodesAlertComponent } from "@/renderer/components/UI";
+import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import {
   LaunchArgument,
   LaunchLoadReply,
@@ -42,9 +45,6 @@ import {
   EventProviderWarnings,
 } from "@/renderer/providers/events";
 import { TResult, TRosInfo, TSystemInfo } from "@/types";
-import { useAlwaysCurrentRef } from "../hooks/useAlwaysCurrentRef";
-import { useLoggingContext } from "../hooks/useLoggingContext";
-import { useSettingsContext } from "../hooks/useSettingsContext";
 import { RmwSelection, TProviderLaunchParams } from "../models/ProviderLaunchConfiguration";
 import { LAUNCH_FILE_EXTENSIONS, getDefaultPortFromRos } from "./SettingsContext";
 
@@ -1051,41 +1051,31 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   useCustomEventListener(
     EVENT_PROVIDER_ROS_NODES,
     (data: EventProviderRosNodes) => {
-      const currentProviders = providersRef.current;
-      const availableIds = new Set(currentProviders.map((p) => p.id));
-      const currentMap = mapProviderRosNodesRef.current;
-      const currentNodeMap = nodeMapRef.current;
+      setMapProviderRosNodes((prevMap) => {
+        // Create a shallow copy of the previous provider → nodes map
+        const newMap = new Map<string, RosNode[]>(prevMap);
 
-      const newMap = new Map<string, RosNode[]>();
-      const newNodeMap = new Map<string, RosNode>();
-      const removedIds = new Set<string>();
+        // Update the node list for the current provider
+        newMap.set(data.provider.id, data.nodes);
 
-      // Carry over existing entries; drop providers no longer in the list.
-      currentMap.forEach((nodes, provId) => {
-        if (availableIds.has(provId)) {
-          newMap.set(provId, nodes);
-        } else {
-          removedIds.add(provId);
+        // Rebuild the global nodeMap from the updated provider map
+        const newNodeMap = new Map<string, RosNode>();
+
+        // Iterate over all providers and collect their nodes
+        for (const [, nodes] of newMap) {
+          for (const node of nodes) {
+            // Use node.idGlobal as unique key
+            newNodeMap.set(node.idGlobal, node);
+          }
         }
+        // Update the separate nodeMap state (used by other parts of the app)
+        setNodeMap(newNodeMap);
+
+        // Return the updated provider → nodes map
+        return newMap;
       });
-
-      // Carry over existing node entries; skip the current provider and removed ones.
-      currentNodeMap.forEach((node, id) => {
-        if (!id.startsWith(data.provider.id) && ![...removedIds].some((rid) => id.startsWith(rid))) {
-          newNodeMap.set(id, node);
-        }
-      });
-
-      // Insert updated nodes for this provider.
-      newMap.set(data.provider.id, data.nodes);
-      for (const node of data.nodes) {
-        newNodeMap.set(node.idGlobal, node);
-      }
-
-      setNodeMap(newNodeMap);
-      setMapProviderRosNodes(newMap);
     },
-    [providers]
+    []
   );
 
   useCustomEventListener(EVENT_PROVIDER_STATE, (data: EventProviderState) => {
@@ -1132,6 +1122,28 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         break;
       default:
         break;
+    }
+    const isDisconnectedState =
+      newState === ConnectionState.STATES.CLOSED || newState === ConnectionState.STATES.UNSUPPORTED;
+    if (isDisconnectedState) {
+      setMapProviderRosNodes((prev) => {
+        // Copy previous provider → nodes map
+        const newMap = new Map<string, RosNode[]>(prev);
+
+        // Remove entries for this provider
+        newMap.delete(provider.id);
+
+        // Rebuild global nodeMap from remaining providers
+        const newNodeMap = new Map<string, RosNode>();
+        for (const [, nodes] of newMap) {
+          for (const node of nodes) {
+            newNodeMap.set(node.idGlobal, node);
+          }
+        }
+
+        setNodeMap(newNodeMap);
+        return newMap;
+      });
     }
   });
 

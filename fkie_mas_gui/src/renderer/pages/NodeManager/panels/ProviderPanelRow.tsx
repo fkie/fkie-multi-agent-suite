@@ -122,8 +122,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
         .map((value) => {
           return value[0];
         });
-      navCtx.setSelectedProviders([provider.id], true);
-      navCtx.setSelectedNodes(nodes, false);
+      navCtx.setSelected("provider-panel", [provider.id, ...nodes], true);
       return;
     }
     if (actionType === EMenuProvider.DELETE) {

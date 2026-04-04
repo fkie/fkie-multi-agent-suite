@@ -30,6 +30,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import HostTreeView from "@/renderer/components/HostTreeView/HostTreeView";
+import { DomainFlexLayout } from "@/renderer/components/layout/DomainFlexLayout";
 import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
 import ListSelectionModal from "@/renderer/components/SelectionModal/ListSelectionModal";
 import MapSelectionModal, { MapSelectionItem } from "@/renderer/components/SelectionModal/MapSelectionModal";
@@ -41,7 +42,7 @@ import useQueue from "@/renderer/hooks/useQueue";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
-import { LAYOUT_TAB_SETS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
+import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "@/renderer/pages/NodeManager/layout";
 import {
   EVENT_FILTER_NODES,
   EVENT_KILL_NODES,
@@ -103,6 +104,11 @@ type TPendingRestart = {
   notBefore: number; // timestamp in ms since epoch
 };
 
+type TDomainGroup = {
+  domainId: string; // stringified domainId
+  providers: Provider[];
+};
+
 const queueActionMeta: Record<TQueueAction["action"], { successText: string }> = {
   STOP: { successText: "stopped" },
   START: { successText: "started" },
@@ -149,6 +155,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   >([]);
   // remember last processed queue index to avoid double execution (e.g. in StrictMode)
   const lastProcessedIndexRef = useRef<number | null>(null);
+  // const layoutInitializedRef = useRef(false);
 
   // keep UI-related settings in sync with SettingsContext
   useEffect(() => {
@@ -177,8 +184,8 @@ export default function HostTreeViewPanel(): JSX.Element {
   );
 
   const getSelectedNodes = useCallback((): RosNode[] => {
-    return getNodesFromIds(navCtx.selectedNodes);
-  }, [navCtx.selectedNodes, getNodesFromIds]);
+    return getNodesFromIds(navCtx.selection.selectedNodes);
+  }, [navCtx.selection.selectedNodes, getNodesFromIds]);
 
   /**
    * Update internal providerNodes state and local nodes list in RosContext
@@ -218,7 +225,7 @@ export default function HostTreeViewPanel(): JSX.Element {
    * This replaces explicit state for these derived values.
 
    */
-  const { visibleNodes, countFilteredNodes } = useMemo(() => {
+  const { visibleNodesGlobal, countFilteredNodes } = useMemo(() => {
     let nodeCount = 0;
     let nodeFilteredCount = 0;
     const newVisibleNodes: RosNode[] = [];
@@ -250,10 +257,53 @@ export default function HostTreeViewPanel(): JSX.Element {
     }
 
     return {
-      visibleNodes: newVisibleNodes,
+      visibleNodesGlobal: newVisibleNodes,
       countFilteredNodes: nodeCount - nodeFilteredCount,
     };
   }, [providerNodes, filterText, rosCtx.localNodes]);
+
+  const domainGroups = useMemo<TDomainGroup[]>(() => {
+    const map = new Map<string, TDomainGroup>();
+
+    for (const provider of rosCtx.providers) {
+      // adapt this line if your Provider type stores domainId differently
+      const raw = provider.connection?.domainId ?? "default";
+      const key = String(raw);
+
+      if (!map.has(key)) {
+        map.set(key, { domainId: key, providers: [] });
+      }
+      map.get(key)?.providers.push(provider);
+    }
+
+    return Array.from(map.values());
+  }, [rosCtx.providers]);
+
+  const domainVisibleNodes = useMemo<Record<string, RosNode[]>>(() => {
+    // if there is only one domain group, per-domain mapping is not needed
+    if (domainGroups.length <= 1) {
+      return {};
+    }
+
+    const result: Record<string, RosNode[]> = {};
+    for (const group of domainGroups) {
+      result[group.domainId] = [];
+    }
+
+    for (const node of visibleNodesGlobal) {
+      const provider = rosCtx.getProviderById(node.providerId);
+      const raw = provider?.connection?.domainId ?? "default";
+      const key = String(raw);
+      if (!result[key]) {
+        result[key] = [];
+      }
+      result[key].push(node);
+    }
+
+    return result;
+  }, [domainGroups, visibleNodesGlobal, rosCtx]);
+
+  const domainIds = useMemo(() => domainGroups.map((g) => g.domainId), [domainGroups]);
 
   // Event listeners -----------------------------------------------------------------------------------
 
@@ -306,41 +356,6 @@ export default function HostTreeViewPanel(): JSX.Element {
   useCustomEventListener(EVENT_SHOW_SCREENS, onShowScreens);
 
   // Register Callbacks ----------------------------------------------------------------------------------
-
-  /**
-   * Callback when nodes on the tree are selected by the user
-
-   */
-  const handleNodesSelect = useCallback(
-    (itemIds: string[]): void => {
-      const selectedNodes: string[] = [];
-      for (const id of itemIds) {
-        const n = rosCtx.nodeMap.get(id);
-        if (n) {
-          selectedNodes.push(id);
-        }
-      }
-      navCtx.setSelectedNodes(selectedNodes, false);
-    },
-    [navCtx, rosCtx.nodeMap]
-  );
-
-  /**
-   * Callback when providers on the tree are selected by the user
-
-   */
-  const handleProviderSelect = useCallback(
-    (providerIds: string[]): void => {
-      const selectedProvidersLocal: string[] = [];
-      for (const id of providerIds) {
-        if (rosCtx.getProviderById(id)) {
-          selectedProvidersLocal.push(id);
-        }
-      }
-      navCtx.setSelectedProviders(selectedProvidersLocal);
-    },
-    [navCtx, rosCtx]
-  );
 
   /**
    * Create and open a new panel with a [NodeLoggerPanel] for a given node
@@ -859,7 +874,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   function killSelectedNodes(): void {
     const nodes2kill: RosNode[] = [];
     for (const node of getSelectedNodes()) {
-      if (node.system_node && navCtx.selectedNodes.length > 1) continue;
+      if (node.system_node && navCtx.selection.selectedNodes.length > 1) continue;
       if (
         queue.queue?.find((elem) => {
           return elem.action === "KILL" && elem.node?.name === node.name;
@@ -905,7 +920,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   function unregisterSelectedNodes(): void {
     const nodes2unregister: RosNode[] = [];
     for (const node of getSelectedNodes()) {
-      if (node.system_node && navCtx.selectedNodes.length > 1) continue;
+      if (node.system_node && navCtx.selection.selectedNodes.length > 1) continue;
       if (!node.masteruri) continue;
       if (
         queue.queue?.find((elem) => {
@@ -1399,13 +1414,13 @@ export default function HostTreeViewPanel(): JSX.Element {
               size="medium"
               aria-label="Parameters"
               onClick={() => {
-                if (navCtx.selectedProviders?.length > 0) {
-                  createParameterPanel([], navCtx.selectedProviders);
+                if (navCtx.selection.selectedProviders.length > 0) {
+                  createParameterPanel([], navCtx.selection.selectedProviders);
                 } else {
                   createParameterPanel(getSelectedNodes(), []);
                 }
               }}
-              disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
+              disabled={selectedNodes.length === 0 && navCtx.selection.selectedProviders.length === 0}
             >
               <TuneIcon fontSize="inherit" />
             </IconButton>
@@ -1462,11 +1477,11 @@ export default function HostTreeViewPanel(): JSX.Element {
             <IconButton
               size="medium"
               aria-label="Screen"
-              disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
+              disabled={selectedNodes.length === 0 && navCtx.selection.selectedProviders.length === 0}
               onClick={(event) => {
-                if (navCtx.selectedProviders?.length > 0) {
+                if (navCtx.selection.selectedProviders.length > 0) {
                   const screens: TMenuOptionsScreen[] = [];
-                  for (const providerId of navCtx.selectedProviders || []) {
+                  for (const providerId of navCtx.selection.selectedProviders) {
                     const prov = rosCtx.getProviderById(providerId);
                     for (const screenMap of prov?.screens || []) {
                       for (const screen of screenMap.screens || []) {
@@ -1560,7 +1575,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                 }
               }}
             >
-              {navCtx.selectedProviders?.length > 0 ? (
+              {navCtx.selection.selectedProviders.length > 0 ? (
                 <AddToQueueIcon fontSize="inherit" />
               ) : (
                 <DvrIcon fontSize="inherit" />
@@ -1589,7 +1604,7 @@ export default function HostTreeViewPanel(): JSX.Element {
             <IconButton
               size="medium"
               aria-label="Log"
-              disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
+              disabled={selectedNodes.length === 0 && navCtx.selection.selectedProviders.length === 0}
               onClick={(event) => {
                 const logs: TMenuOptionsNode[] = [];
                 for (const node of getSelectedNodes()) {
@@ -1650,7 +1665,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           </span>
         </Tooltip>
         <Tooltip
-          title={navCtx.selectedProviders?.length > 0 ? "ros clean purge" : "Clear Logs"}
+          title={navCtx.selection.selectedProviders.length > 0 ? "ros clean purge" : "Clear Logs"}
           placement="left"
           disableInteractive
         >
@@ -1658,9 +1673,9 @@ export default function HostTreeViewPanel(): JSX.Element {
             <IconButton
               size="medium"
               aria-label="Clear Logs"
-              disabled={selectedNodes.length === 0 && navCtx.selectedProviders?.length === 0}
+              disabled={selectedNodes.length === 0 && navCtx.selection.selectedProviders.length === 0}
               onClick={() => {
-                if (navCtx.selectedProviders?.length > 0) {
+                if (navCtx.selection.selectedProviders.length > 0) {
                   setRosCleanPurge(true);
                 } else {
                   clearLogs(getSelectedNodes());
@@ -1671,8 +1686,8 @@ export default function HostTreeViewPanel(): JSX.Element {
             </IconButton>
           </span>
         </Tooltip>
-        {navCtx.selectedProviders?.length > 0 && <Divider />}
-        {navCtx.selectedProviders?.length > 0 && (
+        {navCtx.selection.selectedProviders.length > 0 && <Divider />}
+        {navCtx.selection.selectedProviders.length > 0 && (
           <Tooltip
             title="Open Terminal on selected host (external terminal with shift+click)"
             placement="left"
@@ -1684,9 +1699,9 @@ export default function HostTreeViewPanel(): JSX.Element {
               <IconButton
                 size="medium"
                 aria-label="Open Terminal on selected host"
-                disabled={navCtx.selectedProviders?.length === 0}
+                disabled={navCtx.selection.selectedProviders.length === 0}
                 onClick={(event) => {
-                  for (const providerId of navCtx.selectedProviders || []) {
+                  for (const providerId of navCtx.selection.selectedProviders) {
                     createSingleTerminalPanel(
                       CmdType.TERMINAL,
                       providerId,
@@ -1713,8 +1728,7 @@ export default function HostTreeViewPanel(): JSX.Element {
     createParameterPanel,
     getSelectedNodes,
     logCtx,
-    navCtx.selectedNodes,
-    navCtx.selectedProviders,
+    navCtx.selection,
     rosCtx.getProviderById,
     showButtonsForKeyModifiers,
     // startSelectedNodes,
@@ -1802,15 +1816,42 @@ export default function HostTreeViewPanel(): JSX.Element {
         )}
         <Stack direction="row" height="100%" overflow="auto">
           {buttonLocation === BUTTON_LOCATIONS.LEFT && <Box height="100%">{createButtonBox}</Box>}
-          <HostTreeView
-            visibleNodes={visibleNodes}
-            isFiltered={filterText.length > 0}
-            onNodeSelect={handleNodesSelect}
-            onProviderSelect={handleProviderSelect}
-            showLoggers={createLoggerPanelFromId}
-            startNodes={startNodesFromId}
-            stopNodes={stopNodesFromId}
-          />
+
+          {domainGroups.length <= 1 ? (
+            // Single domain: keep current behavior, show all nodes in one tree
+            <HostTreeView
+              triggerId={`host-tree-${domainGroups[0]?.domainId}`}
+              visibleNodes={visibleNodesGlobal}
+              isFiltered={filterText.length > 0}
+              showLoggers={createLoggerPanelFromId}
+              startNodes={startNodesFromId}
+              stopNodes={stopNodesFromId}
+            />
+          ) : (
+            // Multiple domains: one tab per domain with its own HostTreeView
+            <DomainFlexLayout
+              key="domain-host-layout"
+              storageKey="layoutHostDomains"
+              ids={domainIds}
+              componentName="domainHostTree"
+              configKey="domainId"
+              insideTabId={LAYOUT_TABS.NODES}
+              factory={(_, domainId) => {
+                const nodesForDomain = domainVisibleNodes[domainId] ?? [];
+                return (
+                  <HostTreeView
+                    triggerId={`host-tree-${domainId}`}
+                    visibleNodes={nodesForDomain}
+                    isFiltered={filterText.length > 0}
+                    showLoggers={createLoggerPanelFromId}
+                    startNodes={startNodesFromId}
+                    stopNodes={stopNodesFromId}
+                  />
+                );
+              }}
+            />
+          )}
+
           {buttonLocation === BUTTON_LOCATIONS.RIGHT && <Box height="100%">{createButtonBox}</Box>}
         </Stack>
       </Stack>
@@ -1821,7 +1862,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           message="Confirm to remove all ros log files."
           onConfirmCallback={() => {
             setRosCleanPurge(false);
-            clearProviderLogs(navCtx.selectedProviders || []);
+            clearProviderLogs(navCtx.selection.selectedProviders);
           }}
           onCancelCallback={() => {
             setRosCleanPurge(false);

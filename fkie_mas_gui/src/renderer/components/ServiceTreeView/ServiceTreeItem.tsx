@@ -201,7 +201,7 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelectedNodes([`${item.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
+                        navCtx.setSelected("service-tree", [`${item.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
                       }}
                     >
                       {item.nodeName}
@@ -221,7 +221,7 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
                         <Typography
                           fontSize="small"
                           onClick={() => {
-                            navCtx.setSelectedNodes([`${item.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
+                            navCtx.setSelected("service-tree", [`${item.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
                           }}
                         >
                           {item.nodeName}

@@ -3,10 +3,10 @@ import * as monaco from "monaco-editor";
 import { editor } from "monaco-editor";
 import { createContext, useCallback, useEffect, useMemo, useRef } from "react";
 
-import { useAlwaysCurrentRef } from "../hooks/useAlwaysCurrentRef";
-import { IncludeResolver } from "../hooks/useIncludedFiles";
-import { useLoggingContext } from "../hooks/useLoggingContext";
-import { useRosContext } from "../hooks/useRosContext";
+import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
+import { IncludeResolver } from "@/renderer/hooks/useIncludedFiles";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { FileItem, FileLanguageAssociations } from "../models";
 import { SaveResult, TModelResult } from "../monaco/types";
 import {

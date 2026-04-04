@@ -330,8 +330,7 @@ export default function TopicTreeItem({
                     onClick={(event) => {
                       event.stopPropagation();
                       const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
-                      navCtx.setSelectedProviders([]);
-                      navCtx.setSelectedNodes([id], false);
+                      navCtx.setSelected("topics-tree", [id], false);
                       emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
                     }}
                   >
@@ -357,8 +356,7 @@ export default function TopicTreeItem({
                     onClick={(event) => {
                       event.stopPropagation();
                       const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
-                      navCtx.setSelectedProviders([]);
-                      navCtx.setSelectedNodes([id], false);
+                      navCtx.setSelected("topics-tree", [id], false);
                       emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
                     }}
                   >

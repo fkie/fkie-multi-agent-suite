@@ -65,8 +65,9 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
         }
         const newTopicInfo: TopicExtendedInfo = new TopicExtendedInfo(rosTopic);
         // Get topics from the ros node list of each provider.
-        for (const provider of rosCtx.providers) {
-          for (const rosNode of provider.rosNodes) {
+        for (const prov of rosCtx.providers) {
+          if (prov.connection.domainId !== provider.connection.domainId) continue;
+          for (const rosNode of prov.rosNodes) {
             // add node to publisher and subscriber
             newTopicInfo.add(rosNode);
           }
@@ -431,7 +432,7 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
                 }}
                 onClick={() => {
                   const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
-                  navCtx.setSelectedNodes([id], true);
+                  navCtx.setSelected("topics-panel", [id], true);
                   // inform details panel tab about selected nodes by user
                   emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
                 }}
@@ -477,7 +478,7 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
                 onClick={() => {
                   // ${item.providerId}
                   const id: string = `${item.providerId}${item.info.node_id.replaceAll("/", "#")}`;
-                  navCtx.setSelectedNodes([id], true);
+                  navCtx.setSelected("topics-panel", [id], true);
                   // inform details panel tab about selected nodes by user
                   emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
                 }}

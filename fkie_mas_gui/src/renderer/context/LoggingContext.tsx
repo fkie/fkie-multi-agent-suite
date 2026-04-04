@@ -1,14 +1,14 @@
 import React, { createContext, useCallback, useEffect, useMemo, useState } from "react";
 
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { LogEvent, LoggingLevel } from "@/renderer/models";
 import {
-  sendStateError,
-  sendStateInfo,
-  sendStateSuccess,
-  sendStateWarn,
+    sendStateError,
+    sendStateInfo,
+    sendStateSuccess,
+    sendStateWarn,
 } from "@/renderer/pages/NodeManager/layout/events";
 import { JSONObject, TResult } from "@/types";
-import { useSettingsContext } from "../hooks/useSettingsContext";
 
 export interface ILoggingContext {
   logs: LogEvent[];

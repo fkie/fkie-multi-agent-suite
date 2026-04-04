@@ -213,7 +213,7 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
             <Tag
               color={provider.daemon ? "default" : "error"}
               title="nodes:"
-              text={`${navCtx.selectedNodes.length}`}
+              text={`${navCtx.selection.selectedNodes.length}`}
               wrap
             />
           </Stack>
@@ -353,8 +353,7 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
       </Stack>
     );
   }, [
-    navCtx.selectedProviders,
-    navCtx.selectedNodes,
+    navCtx.selection,
     provider,
     showProviderDetails,
     providerDetails,

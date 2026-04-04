@@ -5,7 +5,7 @@ import LinearProgress from "@mui/material/LinearProgress";
 import PropTypes from "prop-types";
 import { useState } from "react";
 
-import { useAutoUpdateContext } from "@/renderer//context/AutoUpdateContext";
+import { useAutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import licenses from "@/renderer/deps-licenses.json";
 import packageJson from "../../../../package.json";
 import CopyButton from "../UI/CopyButton";

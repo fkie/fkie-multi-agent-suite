@@ -76,13 +76,13 @@ export default function DetailsPanel(): JSX.Element {
   }, [settingsCtx.changed]);
 
   useEffect(() => {
-    const idToShow = navCtx.selectedNodes[indexOfSelected];
+    const idToShow = navCtx.selection.selectedNodes[indexOfSelected];
     setNodeShow(rosCtx.nodeMap.get(idToShow));
-  }, [navCtx.selectedNodes, rosCtx.nodeMap, indexOfSelected]);
+  }, [navCtx.selection, rosCtx.nodeMap, indexOfSelected]);
 
   useEffect(() => {
     setIndexOfSelected(0);
-  }, [navCtx.selectedNodes]);
+  }, [navCtx.selection]);
 
   useEffect(() => {
     if (!nodeShow) return;
@@ -692,10 +692,10 @@ export default function DetailsPanel(): JSX.Element {
         alignItems="left"
         height="100%"
       >
-        {navCtx.selectedNodes.length > 1 && (
+        {(navCtx.selection.selectedNodes?.length ?? 0) > 1 && (
           <Stack direction="row" justifyContent="center">
             <Typography color="grey" variant="body2">
-              selected: {navCtx.selectedNodes.length}, displayed: 1
+              selected: {navCtx.selection.selectedNodes.length}, displayed: 1
             </Typography>
           </Stack>
         )}
@@ -706,12 +706,12 @@ export default function DetailsPanel(): JSX.Element {
           marginBottom={0.5}
           sx={getHostStyle(nodeShow.providerName)}
         >
-          {navCtx.nodesHistory.length > 0 ? (
+          {navCtx.history.length > 0 ? (
             <Tooltip title={"Go back to last node"} placement="bottom">
               <IconButton
                 color="error"
                 onClick={(event) => {
-                  navCtx.setSelectedFromHistory();
+                  navCtx.setSelectedFromHistory("details-panel");
                   event?.stopPropagation();
                 }}
                 size="small"
@@ -761,7 +761,7 @@ export default function DetailsPanel(): JSX.Element {
               </Box>
             </Stack>
           </Typography>
-          {navCtx.selectedNodes.length - 1 > indexOfSelected && (
+          {navCtx.selection.selectedNodes.length - 1 > indexOfSelected && (
             <Tooltip title={"Go to next selected node"} placement="bottom">
               <IconButton
                 color="error"
@@ -811,31 +811,31 @@ export default function DetailsPanel(): JSX.Element {
     // onServiceClick,  <= causes unnecessary rebuilds
     rosCtx,
     logPaths,
-    navCtx.nodesHistory,
-    navCtx.selectedNodes,
+    navCtx.history,
+    navCtx.selection,
     settingsCtx.changed,
   ]);
 
   return (
     <Box width="100%" height="100%" sx={{ backgroundColor: backgroundColor }}>
-      {nodeShow && navCtx.selectedProviders.length > 0 ? (
+      {navCtx.selection.selectedProviders.length > 0 ? (
         <Stack
           // spacing={1}
-          key={nodeShow.idGlobal}
+          key={navCtx.selection.selectedProviders[0]}
           alignItems="left"
           height="100%"
         >
-          {navCtx.selectedProviders.length > 1 && (
+          {navCtx.selection.selectedProviders.length > 1 && (
             <Stack direction="row" justifyContent="center">
               <Typography color="grey" variant="body2">
-                selected: {navCtx.selectedProviders.length}, displayed: 1
+                selected: {navCtx.selection.selectedProviders.length}, displayed: 1
               </Typography>
             </Stack>
           )}
-          <SystemInformationPanel providerId={navCtx.selectedProviders[0]} />
+          <SystemInformationPanel providerId={navCtx.selection.selectedProviders[0]} />
         </Stack>
       ) : (
-        createDetailsView
+        nodeShow && createDetailsView
       )}
 
       {!nodeShow && (

@@ -13,6 +13,7 @@ export const EVENT_FILTER_SERVICES = "EVENT_FILTER_SERVICES" as const;
 export const EVENT_INFO_STATE = "EVENT_INFO_STATE" as const;
 export const EVENT_KILL_NODES = "EVENT_KILL_NODES" as const;
 export const EVENT_SHOW_SCREENS = "EVENT_SHOW_SCREENS" as const;
+export const EVENT_SELECT_TAB = "EVENT_SELECT_TAB" as const;
 
 export type TEventId = {
   id: string;

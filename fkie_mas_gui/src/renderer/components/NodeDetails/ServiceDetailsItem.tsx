@@ -189,7 +189,7 @@ export default function ServiceDetailsItem(props: ServiceDetailsItemsProps): JSX
                 }}
                 onClick={() => {
                   const id: string = `${item.providerId}${item.nodeId.replaceAll("/", "#")}`;
-                  navCtx.setSelectedNodes([id], true);
+                  navCtx.setSelected("service-panel", [id], true);
                   // inform details panel tab about selected nodes by user
                   emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
                 }}
@@ -219,7 +219,7 @@ export default function ServiceDetailsItem(props: ServiceDetailsItemsProps): JSX
                     onClick={() => {
                       // ${item.providerId}
                       const id: string = `${rs.providerId}${item.nodeId.replaceAll("/", "#")}`;
-                      navCtx.setSelectedNodes([id], true);
+                      navCtx.setSelected("service-panel", [id], true);
                       // inform details panel tab about selected nodes by user
                       emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
                     }}

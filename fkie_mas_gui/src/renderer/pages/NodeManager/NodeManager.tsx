@@ -73,6 +73,7 @@ import {
   EVENT_CLOSE_COMPONENT,
   EVENT_INFO_STATE,
   EVENT_OPEN_COMPONENT,
+  EVENT_SELECT_TAB,
   eventOpenComponent,
   TEventId,
   TEventInfoState,
@@ -569,10 +570,14 @@ export default function NodeManager(): JSX.Element {
             break;
           case "echo":
           case CmdType.ECHO:
-            renderNameValues.leading = <ChatBubbleOutlineIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = (
+              <ChatBubbleOutlineIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />
+            );
             break;
           case "publish":
-            renderNameValues.leading = <PlayCircleOutlineIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            renderNameValues.leading = (
+              <PlayCircleOutlineIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />
+            );
             break;
           case LAYOUT_TABS.SERVICES:
             renderNameValues.leading = <SyncAltOutlinedIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
@@ -977,6 +982,10 @@ export default function NodeManager(): JSX.Element {
           if (action.type === Actions.DELETE_TAB) {
             deleteTab(action.data.node);
             return undefined;
+          }
+          if (action.type === Actions.SELECT_TAB) {
+            const tabId = action.data.tabNode as string;
+            emitCustomEvent(EVENT_SELECT_TAB, {tabId: tabId})
           }
           return action;
         }}

@@ -1,8 +1,8 @@
 import { createContext, useEffect, useMemo, useState } from "react";
 
-import { useAlwaysCurrentRef } from "../hooks/useAlwaysCurrentRef";
-import { useMonacoContext } from "../hooks/useMonacoContext";
-import { useRosContext } from "../hooks/useRosContext";
+import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
+import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { disposeMonacoRuntime, initMonacoRuntime } from "../monaco/setup";
 import { IMonacoContext } from "./MonacoContext";
 import { IRosContext } from "./RosContext";

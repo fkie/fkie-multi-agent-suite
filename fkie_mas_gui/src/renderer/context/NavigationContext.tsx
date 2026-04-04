@@ -1,6 +1,9 @@
 import { Model } from "flexlayout-react";
 import React, { createContext, useCallback, useMemo, useState } from "react";
 
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getBaseName } from "@/renderer/models";
 import {
   EVENT_EDITOR_SELECT_RANGE,
@@ -12,9 +15,6 @@ import FileEditorPanel from "@/renderer/pages/NodeManager/panels/FileEditorPanel
 import { xor } from "@/renderer/utils/index";
 import { TFileRange, TLaunchArg } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
-import { useLoggingContext } from "../hooks/useLoggingContext";
-import { useRosContext } from "../hooks/useRosContext";
-import { useSettingsContext } from "../hooks/useSettingsContext";
 import { createEditorId } from "../monaco/utils";
 import { LAYOUT_TAB_SETS, LayoutTabConfig } from "../pages/NodeManager/layout";
 import SingleTerminalPanel from "../pages/NodeManager/panels/SingleTerminalPanel";
@@ -22,13 +22,25 @@ import TopicEchoPanel from "../pages/NodeManager/panels/TopicEchoPanel";
 import TopicPublishPanel from "../pages/NodeManager/panels/TopicPublishPanel";
 import { CmdType } from "../providers";
 
-export interface INavigationContext {
+export type TNavSelection = {
+  triggerId: string;
+  selected: string[];
   selectedNodes: string[];
-  setSelectedNodes: (nodes: string[], addToHistory?: boolean) => void;
-  nodesHistory: string[][];
-  setSelectedFromHistory: () => string[];
   selectedProviders: string[];
-  setSelectedProviders: (providers: string[], forceUpdate?: boolean) => void;
+};
+
+const NO_SELECTION = {
+  triggerId: "",
+  selected: [],
+  selectedNodes: [],
+  selectedProviders: [],
+};
+
+export interface INavigationContext {
+  selection: TNavSelection;
+  setSelected: (triggerId: string, nodes: string[], addToHistory?: boolean) => void;
+  history: TNavSelection[];
+  setSelectedFromHistory: (triggerId: string) => TNavSelection;
   layoutModel: Model | null;
   setLayoutModel: (model: Model | null) => void;
   openEditor: (
@@ -72,53 +84,56 @@ interface INavigationProvider {
   children: React.ReactNode;
 }
 
-function arraysEqual(a: string[], b: string[]): boolean {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
-  return a.every((v, i) => v === b[i]);
-}
-
 export function NavigationProvider({ children }: INavigationProvider): JSX.Element {
   const logCtx = useLoggingContext();
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
 
-  const [selectedNodes, _setSelectedNodes] = useState<string[]>([]);
-  const [nodesHistory, setNodesHistory] = useState<string[][]>([]);
-  const [selectedProviders, _setSelectedProviders] = useState<string[]>([]);
+  const [selection, setSelection] = useState<TNavSelection>(NO_SELECTION);
+
+  const [history, setHistory] = useState<TNavSelection[]>([]);
   const [layoutModel, setLayoutModel] = useState<Model | null>(null);
 
+  const isProviderId = useCallback(
+    (id: string) => {
+      return !!rosCtx.getProviderById(id);
+    },
+    [rosCtx]
+  );
+
   // useCallback keeps stable function references for context consumers
-  const setSelectedProviders = useCallback(
-    (providers: string[], forceUpdate = false): void => {
-      if (forceUpdate || !arraysEqual(selectedProviders, providers)) {
-        _setSelectedProviders(providers);
-      }
+  const setSelected = useCallback(
+    (triggerId: string, ids: string[], addToHistory = true): void => {
+      setSelection((prevSelection) => {
+        const providerIds = ids.filter((id) => isProviderId(id)) || [];
+        const nodeIds: string[] = [];
+        for (const id of ids) {
+          const n = rosCtx.nodeMap.get(id);
+          if (n) {
+            nodeIds.push(id);
+          }
+        }
+        if (!providerIds) setHistory((prev) => (addToHistory && prevSelection ? [...prev, prevSelection] : []));
+        return { triggerId: triggerId, selected: ids, selectedNodes: nodeIds, selectedProviders: providerIds };
+      });
     },
-    [selectedProviders]
+    [isProviderId, rosCtx.nodeMap]
   );
 
-  const setSelectedNodes = useCallback(
-    (nodes: string[], addToHistory = true): void => {
-      if (!arraysEqual(selectedNodes, nodes)) {
-        setNodesHistory((prev) => (addToHistory ? [...prev, selectedNodes] : []));
-        _setSelectedNodes(nodes);
+  const setSelectedFromHistory = useCallback(
+    (triggerId: string): TNavSelection => {
+      if (!history.length) {
+        setSelected(triggerId, []);
+        return NO_SELECTION;
       }
+      const newHistory = history.slice(0, -1);
+      const last = history[history.length - 1];
+      setHistory(newHistory);
+      setSelected(triggerId, last.selected);
+      return last;
     },
-    [selectedNodes]
+    [history]
   );
-
-  const setSelectedFromHistory = useCallback((): string[] => {
-    if (!nodesHistory.length) {
-      _setSelectedNodes([]);
-      return [];
-    }
-    const newHistory = nodesHistory.slice(0, -1);
-    const last = nodesHistory[nodesHistory.length - 1];
-    setNodesHistory(newHistory);
-    _setSelectedNodes(last);
-    return last;
-  }, [nodesHistory]);
 
   const openEditor = useCallback(
     async (
@@ -413,12 +428,10 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
 
   const value = useMemo<INavigationContext>(
     () => ({
-      selectedNodes,
-      setSelectedNodes,
-      nodesHistory,
+      selection,
+      setSelected,
+      history,
       setSelectedFromHistory,
-      selectedProviders,
-      setSelectedProviders,
       layoutModel,
       setLayoutModel,
       openEditor,
@@ -427,13 +440,11 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
       startPublisher,
     }),
     [
-      selectedNodes,
-      nodesHistory,
-      selectedProviders,
-      layoutModel,
+      selection,
+      setSelected,
+      history,
       setSelectedFromHistory,
-      setSelectedNodes,
-      setSelectedProviders,
+      layoutModel,
       openEditor,
       openSubscriber,
       openTerminal,

@@ -1,7 +1,7 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { SimpleTreeView } from "@mui/x-tree-view";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
@@ -49,10 +49,9 @@ function compareTreeProvider(a: NodeTreeItem, b: NodeTreeItem): number {
 }
 
 type HostTreeViewProps = {
+  triggerId: string;
   visibleNodes: RosNode[];
   isFiltered: boolean;
-  onNodeSelect: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
-  onProviderSelect: (providerIds: string[]) => void; // id of the providers in rosCtx
   startNodes: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
   stopNodes: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
   showLoggers: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
@@ -60,10 +59,9 @@ type HostTreeViewProps = {
 
 export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   const {
+    triggerId,
     visibleNodes,
     isFiltered = false,
-    onNodeSelect = (): void => {},
-    onProviderSelect = (): void => {},
     startNodes = (): void => {},
     stopNodes = (): void => {},
     showLoggers = (): void => {},
@@ -90,6 +88,20 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     settingsCtx.get("openScreenByDefault") as string
   );
   const [spamNodesRegExp, setSpamNodesRegExp] = useState<RegExp | undefined>(getSpamNodesRegExp());
+
+  /**
+   * List of providerIds that are present in this tree (top-level items).
+   * We use this to decide whether an external navCtx.selectedProviders
+   * update is relevant for this HostTreeView.
+
+   */
+  const providerIdsInTree = useMemo(
+    () =>
+      providerNodeTree
+        .map((item) => item.providerId)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    [providerNodeTree]
+  );
 
   function getSpamNodesRegExp(): RegExp | undefined {
     const spamNodes = (settingsCtx.get("spamNodes") as string)
@@ -474,7 +486,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   /**
    * Get providers for selected ids
    */
-  function getProvidersFromIds(itemIds: string[]): string[] {
+  const getProvidersFromIds = useCallback((itemIds: string[]): string[] => {
     const provList: string[] = [];
     for (const item of itemIds) {
       if (!item.includes("#") && !item.includes("/")) {
@@ -482,14 +494,14 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       }
     }
     return provList;
-  }
+  }, []);
 
   /**
    * Callback when items on the tree are selected by the user
    */
   const handleSelect = useCallback(
-    (_event: React.SyntheticEvent | null, itemIds: string[]): void => {
-      // update selected state
+    (event: React.SyntheticEvent | null, itemIds: string[], notifyNavCtx: boolean = true): void => {
+      let newSelectedItems: string[] = [];
       setSelectedItems((prevSelected) => {
         // start with the clicked items, preserving the previous order
         let selectedIds = prevSelected.filter((prevId) => itemIds.includes(prevId));
@@ -515,10 +527,19 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           }
         }
         // add child items for selected groups
-        return getParentAndChildrenIds(selectedIds);
+        newSelectedItems = getParentAndChildrenIds(selectedIds);
+        return newSelectedItems;
       });
-      // inform details panel tab about selected nodes by user
-      emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
+
+      // Only fire this event for user selections
+      if (event) {
+        emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
+      }
+      if (notifyNavCtx) {
+        const providerIds = getProvidersFromIds(newSelectedItems);
+        const nodeIds = getNodeIdsFromTreeIds(newSelectedItems);
+        navCtx.setSelected(triggerId, [...providerIds, ...nodeIds], false);
+      }
     },
     [getParentAndChildrenIds]
   );
@@ -595,27 +616,35 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   ]);
 
   /**
-   * effect to update parent selected nodes when the tree selection changes
+   * Synchronize the tree selection when navCtx.selected is changed from outside.
+   * Rules:
+   * - select items
+   * - deselect own selection if no items are found in own tree.
    */
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
-    if (onNodeSelect) {
-      onNodeSelect(getNodeIdsFromTreeIds(selectedItems));
-    }
-    if (onProviderSelect) {
-      onProviderSelect(getProvidersFromIds(selectedItems));
-    }
-  }, [selectedItems]);
+    if (navCtx.selection.triggerId === triggerId) return;
+    const selectedProviders = navCtx.selection.selectedProviders;
 
-  useEffect(() => {
-    if (
-      navCtx.selectedProviders.length === 1 &&
-      (selectedItems.length !== 1 || !selectedItems.includes(navCtx.selectedProviders[0]))
-    ) {
-      handleSelect(null, navCtx.selectedProviders);
+    // Filter providers that actually exist in this tree
+    const matchingProviders = selectedProviders.filter((id) => providerIdsInTree.includes(id));
+
+    if (matchingProviders.length > 0) {
+      handleSelect(null, matchingProviders, false);
+      return;
     }
-  }, [navCtx.selectedProviders]);
+
+    // Filter nodes that actually exist in this tree
+    const selectedNodes: string[] = [];
+    for (const sel of navCtx.selection.selectedNodes) {
+      selectedNodes.push(...keyNodeList.filter((keyNode) => keyNode.idGlobal === sel).map((kn) => kn.key));
+    }
+    if (selectedNodes.length > 0) {
+      setSelectedItems(selectedNodes);
+      return;
+    }
+
+    setSelectedItems([]);
+  }, [navCtx.selection, handleSelect, providerIdsInTree, triggerId, keyNodeList]);
 
   /**
    * Callback when the event of removing a launch file is triggered
