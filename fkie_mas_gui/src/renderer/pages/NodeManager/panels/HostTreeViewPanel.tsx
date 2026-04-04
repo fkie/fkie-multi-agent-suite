@@ -728,12 +728,7 @@ export default function HostTreeViewPanel(): JSX.Element {
    * Stops the given nodes, optionally only those with launch files, and optionally restarts them.
 
    */
-  function stopNodes(
-    nodes: RosNode[],
-    onlyWithLaunch?: boolean,
-    restart?: boolean,
-    ignoreTimer: boolean = false
-  ): number {
+  function stopNodes(nodes: RosNode[], onlyWithLaunch?: boolean): number {
     const skipped: Record<string, string> = {};
     const nodeList = updateWithAssociations(nodes);
 
@@ -831,7 +826,7 @@ export default function HostTreeViewPanel(): JSX.Element {
    */
   function restartNodes(nodeList: RosNode[], onlyWithLaunch: boolean, ignoreTimer: boolean = false): void {
     // Stop nodes, but do not restart immediately.
-    const maxKillTime = stopNodes(nodeList, onlyWithLaunch, false, ignoreTimer);
+    const maxKillTime = stopNodes(nodeList, onlyWithLaunch);
 
     setPendingRestart((prev) => {
       // Merge node lists (unique by id)
