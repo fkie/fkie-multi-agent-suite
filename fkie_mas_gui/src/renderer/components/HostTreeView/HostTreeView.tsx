@@ -496,6 +496,15 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     return provList;
   }, []);
 
+  const notifyNavCtxSelection = useCallback(
+    (newSelectedItems: string[]) => {
+      const providerIds = getProvidersFromIds(newSelectedItems);
+      const nodeIds = getNodeIdsFromTreeIds(newSelectedItems);
+      navCtx.setSelected(triggerId, [...providerIds, ...nodeIds], false);
+    },
+    [triggerId, getProvidersFromIds, getNodeIdsFromTreeIds, navCtx.setSelected]
+  );
+
   /**
    * Callback when items on the tree are selected by the user
    */
@@ -528,9 +537,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         // add child items for selected groups
         const newSelectedItems = getParentAndChildrenIds(selectedIds);
         if (notifyNavCtx) {
-          const providerIds = getProvidersFromIds(newSelectedItems);
-          const nodeIds = getNodeIdsFromTreeIds(newSelectedItems);
-          navCtx.setSelected(triggerId, [...providerIds, ...nodeIds], false);
+          notifyNavCtxSelection(newSelectedItems);
         }
         return newSelectedItems;
       });
@@ -540,7 +547,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
       }
     },
-    [getParentAndChildrenIds]
+    [getParentAndChildrenIds, notifyNavCtxSelection]
   );
 
   function keyToNodeName(key: string): { isValidNode: boolean; provider: string; node_name: string } {
@@ -727,10 +734,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         .map((kNode) => kNode.key);
       const newSelectedItems = getParentAndChildrenIds(newSelItems, true);
       setSelectedItems(newSelectedItems);
-      // notify navCtx
-      const providerIds = getProvidersFromIds(newSelectedItems);
-      const nodeIds = getNodeIdsFromTreeIds(newSelectedItems);
-      navCtx.setSelected(triggerId, [...providerIds, ...nodeIds], false);
+      notifyNavCtxSelection(newSelectedItems);
     },
     [keyNodeList, rosCtx.mapProviderRosNodes, getParentAndChildrenIds]
   );
@@ -812,6 +816,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       onClick={() => {
         // deselect topics
         setSelectedItems([]);
+        notifyNavCtxSelection([]);
       }}
     >
       {(!rosCtx.providers || rosCtx.providers.length === 0) && (
