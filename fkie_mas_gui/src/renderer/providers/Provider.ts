@@ -125,6 +125,14 @@ export interface IProvider {
   updateDaemonInit: () => void;
 }
 
+export function equalProvider(p1: Provider, p2: Provider): boolean {
+  if (p1.connection.domainId !== p2.connection.domainId) {
+    return false;
+  }
+
+  return p1.hostnames.some((h) => p2.hostnames.includes(h));
+}
+
 /**
  * Provider base class to connect with a MAS daemon
  */
@@ -429,7 +437,7 @@ export default class Provider implements IProvider {
   }
 
   public toEnvExportPrefix(env: string[]) {
-    const prefix = env.map((entry) => `export ${entry};`).join(' ');
+    const prefix = env.map((entry) => `export ${entry};`).join(" ");
     if (!prefix) return "";
     return prefix;
   }
@@ -671,7 +679,7 @@ export default class Provider implements IProvider {
           if (
             this.connection.host !== "localhost" &&
             this.connection.host !== p.host &&
-            !p.hostnames.includes(this.connection.host)
+            !p.hostnames.some((h) => this.hostnames.includes(h))
           ) {
             // connected to remote using address which is not in hostnames received from remote provider.
             // we add it to local stats

@@ -21,7 +21,7 @@ import {
   getFileName,
 } from "@/renderer/models";
 import ConnectionState from "@/renderer/providers/ConnectionState";
-import Provider from "@/renderer/providers/Provider";
+import Provider, { equalProvider } from "@/renderer/providers/Provider";
 import {
   EVENT_PROVIDER_AUTH_REQUEST,
   EVENT_PROVIDER_DISCOVERED,
@@ -949,12 +949,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         configParams.domainId,
         configParams.useSSL
       );
-      provider.isLocalHost = isLocalHost(provider.connection.host);
-      provider.init();
-      provider.startConfiguration = new ProviderLaunchConfiguration(configParams);
       setHiddenProviders((prev) => [...prev, provider]);
+      provider.isLocalHost = isLocalHost(provider.connection.host);
+      provider.startConfiguration = new ProviderLaunchConfiguration(configParams);
+      provider.init();
     },
-    [logCtxRef, settingsCtxRef]
+    [logCtxRef, settingsCtxRef, isLocalHost]
   );
 
   // ─────────────────────────────────────────────
@@ -1077,74 +1077,84 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     []
   );
 
-  useCustomEventListener(EVENT_PROVIDER_STATE, (data: EventProviderState) => {
-    const { provider, newState, oldState, details } = data;
-    console.log(
-      `trigger connection state ${provider.id}: new: ${newState}, old: ${oldState}, ${JSON.stringify(details)}`
-    );
-    const hiddenProv = hiddenProviders.find((p) => {
-      return p.startConfiguration?.params.id === provider.startConfiguration?.params.id;
-    });
-    switch (newState) {
-      case ConnectionState.STATES.CONNECTED:
-        clearProviders();
-        if (hiddenProv) {
-          if (!providers.find((p) => p.hostnames.findIndex((h) => h === hiddenProv.host()) !== -1))
-            setProviders((prev) => [...prev, hiddenProv]);
-          setHiddenProviders((prev) =>
-            prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
-          );
-        }
-        break;
-      case ConnectionState.STATES.CLOSED:
-        mapProviderRosNodesRef.current.set(provider.id, []);
-        if (hiddenProv) {
-          hiddenProv.close();
-          setHiddenProviders((prev) =>
-            prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
-          );
-        }
-        clearProviders();
-        break;
-      case ConnectionState.STATES.AUTHZ:
-      case ConnectionState.STATES.LOST:
-      case ConnectionState.STATES.UNSUPPORTED:
-      case ConnectionState.STATES.UNREACHABLE:
-      case ConnectionState.STATES.ERRORED:
-        if (hiddenProv) {
-          hiddenProv.close();
-          setHiddenProviders((prev) =>
-            prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
-          );
-        }
-        clearProviders();
-        break;
-      default:
-        break;
-    }
-    const isDisconnectedState =
-      newState === ConnectionState.STATES.CLOSED || newState === ConnectionState.STATES.UNSUPPORTED;
-    if (isDisconnectedState) {
-      setMapProviderRosNodes((prev) => {
-        // Copy previous provider → nodes map
-        const newMap = new Map<string, RosNode[]>(prev);
-
-        // Remove entries for this provider
-        newMap.delete(provider.id);
-
-        // Rebuild global nodeMap from remaining providers
-        const newNodeMap = new Map<string, RosNode>();
-        for (const [, nodes] of newMap) {
-          for (const node of nodes) {
-            newNodeMap.set(node.idGlobal, node);
-          }
-        }
-
-        setNodeMap(newNodeMap);
-        return newMap;
+  useCustomEventListener(
+    EVENT_PROVIDER_STATE,
+    (data: EventProviderState) => {
+      const { provider, newState, oldState, details } = data;
+      console.log(
+        `trigger connection state ${provider.id}: new: ${newState}, old: ${oldState}, ${JSON.stringify(details)}`
+      );
+      const hiddenProv = hiddenProviders.find((p) => {
+        return p.startConfiguration?.params.id === provider.startConfiguration?.params.id;
       });
-    }
-  });
+      switch (newState) {
+        case ConnectionState.STATES.CONNECTED:
+          if (hiddenProv) {
+            setProviders((prev) => {
+              const exists = prev.some((p) => equalProvider(p, hiddenProv));
+              if (!exists) {
+                return [...prev, hiddenProv];
+              }
+
+              return prev;
+            });
+            setHiddenProviders((prev) =>
+              prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
+            );
+          }
+          clearProviders();
+          break;
+        case ConnectionState.STATES.CLOSED:
+          mapProviderRosNodesRef.current.set(provider.id, []);
+          if (hiddenProv) {
+            hiddenProv.close();
+            setHiddenProviders((prev) =>
+              prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
+            );
+          }
+          clearProviders();
+          break;
+        case ConnectionState.STATES.AUTHZ:
+        case ConnectionState.STATES.LOST:
+        case ConnectionState.STATES.UNSUPPORTED:
+        case ConnectionState.STATES.UNREACHABLE:
+        case ConnectionState.STATES.ERRORED:
+          if (hiddenProv) {
+            hiddenProv.close();
+            setHiddenProviders((prev) =>
+              prev.filter((p) => p.startConfiguration?.params.id !== provider.startConfiguration?.params.id)
+            );
+          }
+          clearProviders();
+          break;
+        default:
+          break;
+      }
+      const isDisconnectedState =
+        newState === ConnectionState.STATES.CLOSED || newState === ConnectionState.STATES.UNSUPPORTED;
+      if (isDisconnectedState) {
+        setMapProviderRosNodes((prev) => {
+          // Copy previous provider → nodes map
+          const newMap = new Map<string, RosNode[]>(prev);
+
+          // Remove entries for this provider
+          newMap.delete(provider.id);
+
+          // Rebuild global nodeMap from remaining providers
+          const newNodeMap = new Map<string, RosNode>();
+          for (const [, nodes] of newMap) {
+            for (const node of nodes) {
+              newNodeMap.set(node.idGlobal, node);
+            }
+          }
+
+          setNodeMap(newNodeMap);
+          return newMap;
+        });
+      }
+    },
+    [hiddenProviders, setProviders]
+  );
 
   useCustomEventListener(EVENT_PROVIDER_WARNINGS, (data: EventProviderWarnings) => {
     logCtx.debugInterface(URI.ROS_PROVIDER_WARNINGS, JSON.stringify(data.warnings), "", data.provider.id);
