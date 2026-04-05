@@ -726,7 +726,12 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           return kNode.idGlobal && treeNodes.includes(kNode.idGlobal);
         })
         .map((kNode) => kNode.key);
-      setSelectedItems(getParentAndChildrenIds(newSelItems, true));
+      const newSelectedItems = getParentAndChildrenIds(newSelItems, true);
+      setSelectedItems(newSelectedItems);
+      // notify navCtx
+      const providerIds = getProvidersFromIds(newSelectedItems);
+      const nodeIds = getNodeIdsFromTreeIds(newSelectedItems);
+      navCtx.setSelected(triggerId, [...providerIds, ...nodeIds], false);
     },
     [keyNodeList, rosCtx.mapProviderRosNodes, getParentAndChildrenIds]
   );
