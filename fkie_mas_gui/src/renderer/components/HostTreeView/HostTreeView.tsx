@@ -501,7 +501,6 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    */
   const handleSelect = useCallback(
     (event: React.SyntheticEvent | null, itemIds: string[], notifyNavCtx: boolean = true): void => {
-      let newSelectedItems: string[] = [];
       setSelectedItems((prevSelected) => {
         // start with the clicked items, preserving the previous order
         let selectedIds = prevSelected.filter((prevId) => itemIds.includes(prevId));
@@ -527,18 +526,18 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           }
         }
         // add child items for selected groups
-        newSelectedItems = getParentAndChildrenIds(selectedIds);
+        const newSelectedItems = getParentAndChildrenIds(selectedIds);
+        if (notifyNavCtx) {
+          const providerIds = getProvidersFromIds(newSelectedItems);
+          const nodeIds = getNodeIdsFromTreeIds(newSelectedItems);
+          navCtx.setSelected(triggerId, [...providerIds, ...nodeIds], false);
+        }
         return newSelectedItems;
       });
 
       // Only fire this event for user selections
       if (event) {
         emitCustomEvent(EVENT_OPEN_COMPONENT, eventOpenComponent(LAYOUT_TABS.DETAILS, "default"));
-      }
-      if (notifyNavCtx) {
-        const providerIds = getProvidersFromIds(newSelectedItems);
-        const nodeIds = getNodeIdsFromTreeIds(newSelectedItems);
-        navCtx.setSelected(triggerId, [...providerIds, ...nodeIds], false);
       }
     },
     [getParentAndChildrenIds]
