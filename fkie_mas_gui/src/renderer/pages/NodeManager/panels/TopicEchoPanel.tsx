@@ -321,15 +321,23 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
               </Typography>
             </Stack>
           </Button>
-          <IconButton
-            size="small"
-            onClick={(event) => {
-              event.stopPropagation();
-              resetStats();
-            }}
+          <Tooltip
+            title="reset stats"
+            placement="bottom"
+            enterDelay={tooltipDelay}
+            enterNextDelay={tooltipDelay}
+            disableInteractive
           >
-            <RestartAltIcon sx={{ fontSize: "inherit" }} />
-          </IconButton>
+            <IconButton
+              size="small"
+              onClick={(event) => {
+                event.stopPropagation();
+                resetStats();
+              }}
+            >
+              <RestartAltIcon sx={{ fontSize: "inherit" }} />
+            </IconButton>
+          </Tooltip>
         </Stack>
         {showStatistics && (
           <Stack marginLeft="0.7em" spacing={0} direction="column">
