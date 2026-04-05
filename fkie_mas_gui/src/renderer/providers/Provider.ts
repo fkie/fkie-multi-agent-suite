@@ -2812,10 +2812,12 @@ export default class Provider implements IProvider {
     };
 
   private onCloseConnection: (reason: string, details: string) => void = (_reason, details) => {
-    this.setConnectionState(ConnectionState.STATES.CLOSED, details);
+    if (this.connectionState !== ConnectionState.STATES.STARTING) {
+      this.setConnectionState(ConnectionState.STATES.CLOSED, details);
+      emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ""));
+    }
     // clear all activities
     this.currentRequestList.clear();
-    emitCustomEvent(EVENT_PROVIDER_ACTIVITY, new EventProviderActivity(this, false, ""));
   };
 
   private onOpenConnection: () => void = () => {

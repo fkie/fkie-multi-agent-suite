@@ -67,10 +67,8 @@ export interface IRosContext {
   localNodes: TLocalNode[];
   createProvider(host: string, rosVersion: string, port?: number, domainId?: number, useSSL?: boolean): Provider;
   connectToProvider: (provider: Provider) => Promise<boolean>;
-  startProvider: (provider: Provider, forceStartWithDefault: boolean) => Promise<boolean>;
   startMasterSync: (host: string, rosVersion: string, masteruri?: string) => void;
   startDynamicReconfigureClient: (nodeName: string, masteruri: string) => Promise<TResult>;
-  startConfig: (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig | null) => Promise<boolean>;
   removeProvider: (providerId: string) => void;
   getProviderName: (providerId: string) => string;
   refreshProviderList: () => void;
@@ -484,7 +482,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
   /** Connect to a provider (adds it to the list if not already registered). */
   const connectToProvider = useCallback(
-    async (prov: Provider): Promise<boolean> => {
+    async (prov: Provider, stateOnError: ConnectionState = ConnectionState.STATES.UNREACHABLE): Promise<boolean> => {
       const provider = getProviderByHosts(prov.hostnames, prov.connection.port, prov) as Provider;
 
       if (provider.connection.connected()) {
@@ -520,13 +518,13 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         const error = `Could not initialize provider [${provider.name()}] (${provider.type}) in [ws://${provider.connection.host}:${provider.connection.port}]`;
         logCtx.error(error, hintMsg, "connection failed");
         provider.errorDetails = error;
-        provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, error);
+        provider.setConnectionState(stateOnError, error);
       } catch (error: unknown) {
         logCtx.debug(
           `Could not initialize provider [${provider.name()}] (${provider.type}) in [ws://${provider.connection.host}:${provider.connection.port}]`,
           `Error: ${JSON.stringify(error)}\n${hintMsg}`
         );
-        provider.setConnectionState(ConnectionState.STATES.UNREACHABLE, JSON.stringify(error));
+        provider.setConnectionState(stateOnError, JSON.stringify(error));
       }
       return false;
     },
@@ -634,8 +632,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             config.params.domainId
           );
 
-        // ── Resolve / create provider ─────────────
-        let provider = getProviderByHosts([config.params.host], port, null) as Provider | null;
+        // ── Resolve or create provider ─────────────────────────
+        let provider: Provider | null = getProviderByHosts([config.params.host], port, null) as Provider | null;
         if (!provider) {
           provider = new Provider(
             logCtxRef,
@@ -648,6 +646,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           );
           provider.isLocalHost = isLocal;
           provider.startConfiguration = config;
+
           if (isLocal) {
             const info = systemInfoRef.current;
             if (info?.osInfo?.hostname) provider.addHosts([info.osInfo.hostname]);
@@ -656,10 +655,22 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               if (iface.ip6) provider.addHosts([iface.ip6]);
             }
           }
+          // enqueue provider; will later be added to providers state
           setProvidersAddQueue((prev) => [...prev, provider as Provider]);
+        } else {
+          // make sure the start configuration is stored on existing providers as well
+          provider.startConfiguration = config;
         }
 
-        // Default to daemon + discovery + terminal if nothing is enabled.
+        // ── Try to connect first; only start services if that fails ──────────
+        provider.connectionState = ConnectionState.STATES.CONNECTING;
+        const connectedBeforeStart = await connectToProvider(provider, ConnectionState.STATES.STARTING);
+        if (connectedBeforeStart) {
+          logCtx.info(`Provider '${provider.name()}' is already reachable – skipping service start.`, "");
+          return true;
+        }
+
+        // If no service is enabled, default to daemon + discovery + terminal
         if (
           !(
             config.params.daemon.enable ||
@@ -677,7 +688,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           provider.setConnectionState(ConnectionState.STATES.STARTING, "");
         }
 
-        // ── Stop running system nodes if requested ─
+        // ── Stop running system nodes if requested ────────────────────────────
         const systemNodes = provider.rosNodes.filter((n) => n.system_node);
         if (config.params.force.stop && systemNodes.length > 0) {
           const pick = (key: string) => systemNodes.find((n) => n.id.includes(key));
@@ -716,7 +727,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           config.params.force.stop = false;
         }
 
-        // ── Start services ─────────────────────────
+        // ── Start services ────────────────────────────────────────────────────
         if (config.params.daemon.enable) {
           const sr = await startService(credential, config.daemonStartCmd(), provider, config, "daemon");
           if (sr.authRequested) return false;
@@ -741,8 +752,11 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           if (!sr.started) allStarted = false;
         }
 
-        // Connect after giving services time to start.
-        setTimeout(() => connectToProvider(provider as Provider), 2000);
+        // ── After a short delay try to connect again (daemon should be up) ───
+
+        setTimeout(() => {
+          connectToProvider(provider as Provider);
+        }, 2000);
       } catch (error) {
         logCtx.error(`Error starting host: ${config.params.host}`, `${error}`, `${config.params.host} start failed`);
         allStarted = false;
@@ -766,34 +780,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   );
 
   // ─────────────────────────────────────────────
-  // startProvider / startMasterSync / startDynamicReconfigureClient
+  // startMasterSync / startDynamicReconfigureClient
   // ─────────────────────────────────────────────
-
-  const startProvider = useCallback(
-    async (provider: Provider, forceStartWithDefault = true): Promise<boolean> => {
-      provider.setConnectionState(ConnectionState.STATES.STARTING, "");
-      if (provider.startConfiguration) {
-        return startConfig(provider.startConfiguration, null);
-      }
-      if (!forceStartWithDefault) return false;
-
-      const defaultCfg = new ProviderLaunchConfiguration();
-      defaultCfg.params.host = provider.host();
-      defaultCfg.params.rosVersion = provider.rosVersion;
-      defaultCfg.params.port = provider.connection?.port;
-      const domainId = provider.rosState?.ros_domain_id;
-      if (domainId !== undefined) defaultCfg.params.domainId = Number.parseInt(domainId);
-      defaultCfg.params.daemon.enable = true;
-      defaultCfg.params.discovery.enable = true;
-      defaultCfg.params.terminal.enable = true;
-      defaultCfg.params.autoConnect = true;
-      defaultCfg.params.autostart = false;
-      defaultCfg.params.rmw.current = (provider.rosState?.rmw_implementation || "") as RmwSelection;
-      defaultCfg.params.zenohConfigOverride = settingsCtx.get("zenohConfigOverride") as string;
-      return startConfig(defaultCfg, null);
-    },
-    [startConfig]
-  );
 
   const startMasterSync = useCallback(
     async (host: string, rosVersion: string, masteruri?: string): Promise<boolean> => {
@@ -1167,7 +1155,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   /** Auto-connect newly added providers that have no configuration yet. */
   useEffect(() => {
     for (const p of providers) {
-      if (p.connectionState === ConnectionState.STATES.UNKNOWN) {
+      // Auto-connect only providers that were not started via startConfig
+      if (p.connectionState === ConnectionState.STATES.UNKNOWN && !p.startConfiguration) {
         connectToProvider(p);
       }
     }
@@ -1197,7 +1186,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         if (existing.isDiscovered() && prov.isDiscovered()) {
           existing.addDiscoverer(prov.discoveredBy?.at(0));
         }
-        connectToProvider(existing);
+        if (existing.connectionState === ConnectionState.STATES.UNKNOWN) {
+          connectToProvider(existing);
+        }
       }
 
       return next;
@@ -1219,7 +1210,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       localNodes,
       createProvider,
       connectToProvider,
-      startProvider,
       startConfig,
       startMasterSync,
       startDynamicReconfigureClient,
@@ -1252,7 +1242,6 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       localNodes,
       createProvider,
       connectToProvider,
-      startProvider,
       startConfig,
       startMasterSync,
       startDynamicReconfigureClient,
