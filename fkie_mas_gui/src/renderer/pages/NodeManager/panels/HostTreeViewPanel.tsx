@@ -1,30 +1,14 @@
-import AddToQueueIcon from "@mui/icons-material/AddToQueue";
-import BorderColorIcon from "@mui/icons-material/BorderColor";
-import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
-import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
-import DvrIcon from "@mui/icons-material/Dvr";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
-import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import StopIcon from "@mui/icons-material/Stop";
-import TerminalIcon from "@mui/icons-material/Terminal";
-import TuneIcon from "@mui/icons-material/Tune";
-import WysiwygIcon from "@mui/icons-material/Wysiwyg";
 import {
   Alert,
   Box,
-  ButtonGroup,
-  Divider,
   FormLabel,
   IconButton,
   LinearProgress,
   Paper,
   Stack,
   Tooltip,
-  Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";

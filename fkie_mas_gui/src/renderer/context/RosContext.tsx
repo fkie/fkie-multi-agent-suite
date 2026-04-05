@@ -45,7 +45,7 @@ import {
   EventProviderWarnings,
 } from "@/renderer/providers/events";
 import { TResult, TRosInfo, TSystemInfo } from "@/types";
-import { RmwSelection, TProviderLaunchParams } from "../models/ProviderLaunchConfiguration";
+import { TProviderLaunchParams } from "../models/ProviderLaunchConfiguration";
 import { LAUNCH_FILE_EXTENSIONS, getDefaultPortFromRos } from "./SettingsContext";
 
 // ─────────────────────────────────────────────
@@ -67,6 +67,7 @@ export interface IRosContext {
   localNodes: TLocalNode[];
   createProvider(host: string, rosVersion: string, port?: number, domainId?: number, useSSL?: boolean): Provider;
   connectToProvider: (provider: Provider) => Promise<boolean>;
+  startConfig: (config: ProviderLaunchConfiguration, connectConfig: ConnectConfig | null) => void;
   startMasterSync: (host: string, rosVersion: string, masteruri?: string) => void;
   startDynamicReconfigureClient: (nodeName: string, masteruri: string) => Promise<TResult>;
   removeProvider: (providerId: string) => void;
