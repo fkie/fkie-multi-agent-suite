@@ -20,8 +20,8 @@ interface TopicTreeItemProps {
   itemId: string;
   rootPath: string;
   topicInfo: TopicExtendedInfo;
-  selectedItem: string | null;
-  selected: boolean; // ignore prop from parent, we use our own selection logic
+  selectedItem: string | null; // ID of last selected topic (for soft highlight)
+  selected: boolean; // true only in the domain where this item is actively selected
   depth: number;
   onSelect: () => void;
 }
@@ -31,6 +31,7 @@ export default function TopicTreeItem({
   rootPath,
   topicInfo,
   selectedItem,
+  selected,
   depth,
   onSelect,
 }: TopicTreeItemProps): JSX.Element {
@@ -41,7 +42,6 @@ export default function TopicTreeItem({
   const [name, setName] = useState("");
   const [namespace, setNamespace] = useState("");
   const [showExtendedInfo, setShowExtendedInfo] = useState(false);
-  const [selectedLocal, setSelectedLocal] = useState(false);
   const [incompatibleQos, setIncompatibleQos] = useState<IncompatibleQos[]>([]);
   const [ignoreNextClick, setIgnoreNextClick] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
@@ -52,23 +52,17 @@ export default function TopicTreeItem({
     setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
   }, [settingsCtx.changed]);
 
-  // Original logic: control selection / extended info via selectedItem
+  /**
+   * Reset local click/extended-info state when this item is no longer selected
+   * in its domain (selection moved to another item or another domain).
+
+   */
   useEffect(() => {
-    if (selectedItem !== itemId) {
-      if (selectedLocal) {
-        setSelectedLocal(false);
-        setIgnoreNextClick(true);
-      }
-    } else {
-      if (selectedLocal) {
-        // already selected -> toggle extended info
-        setShowExtendedInfo((prev) => !prev);
-      } else {
-        // first selection -> only set selected
-        setSelectedLocal(true);
-      }
+    if (!selected) {
+      setIgnoreNextClick(true);
+      setShowExtendedInfo(false);
     }
-  }, [selectedItem, itemId]);
+  }, [selected]);
 
   // parse topic name, namespace, incompatible qos
   useEffect(() => {
@@ -204,9 +198,26 @@ export default function TopicTreeItem({
     [logCtx]
   );
 
+  /**
+   * Click behavior:
+   * - If not selected in this domain: select item and reset extended info.
+   * - If already selected:
+   *   - first click only arms the next click (ignoreNextClick -> false)
+   *   - second click toggles extended info.
+
+   */
   const handleRowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Original logic: first click only selects, second click toggles extendedInfo
+
+    if (!selected) {
+      // first click in this domain: select, collapse extended info
+      setIgnoreNextClick(true);
+      setShowExtendedInfo(false);
+      onSelect();
+      return;
+    }
+
+    // already selected in this domain -> handle extended info toggling
     if (ignoreNextClick) {
       setIgnoreNextClick(false);
     } else {
@@ -215,19 +226,26 @@ export default function TopicTreeItem({
     onSelect();
   };
 
-  const isSelected = selectedItem === itemId;
+  const hardSelected = selected;
+  const softSelected = !selected && selectedItem === itemId;
+
   const lineKeys = Array.from({ length: depth }, (_, i) => `${itemId}-line-${i}`);
 
   return (
     <Box
-      sx={{
+      sx={(theme) => ({
         display: "flex",
         alignItems: "stretch",
         cursor: "pointer",
         borderRadius: 0,
-        bgcolor: isSelected ? "var(--color-select-bg)" : "transparent",
+        // strong selection in active domain vs. soft selection in other domains
+        bgcolor: hardSelected
+          ? alpha(theme.palette.primary.main, 0.18)
+          : softSelected
+            ? alpha(theme.palette.primary.main, 0.06)
+            : "transparent",
         color: "text.secondary",
-      }}
+      })}
       onClick={handleRowClick}
       onContextMenu={handleContextMenu}
     >
@@ -297,19 +315,27 @@ export default function TopicTreeItem({
                   title="publishers"
                   color={topicInfo.publishers.length > 0 ? "default" : "warning"}
                   label={topicInfo.publishers.length}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowExtendedInfo((prev) => !prev);
+                  }}
                 />
                 <Chip
                   size="small"
                   title="subscribers"
                   color={topicInfo.subscribers.length > 0 ? "default" : "warning"}
                   label={topicInfo.subscribers.length}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowExtendedInfo((prev) => !prev);
+                  }}
                 />
               </Stack>
             )}
           </Stack>
         </Box>
 
-        {/* Extended info – remains visible until topic is clicked again */}
+        {/* Extended info – remains visible until topic is clicked again in this domain */}
         {showExtendedInfo && topicInfo && (
           <Stack paddingLeft={3}>
             {/* Publisher / Subscriber / QoS details */}

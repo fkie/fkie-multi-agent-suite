@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { Virtuoso } from "react-virtuoso";
 
+import { DomainFlexLayout } from "@/renderer/components/layout/DomainFlexLayout";
 import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
 import TopicTreeItem from "@/renderer/components/TopicTreeView/TopicTreeItem";
 import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
@@ -19,6 +20,7 @@ import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { TopicExtendedInfo } from "@/renderer/models";
+import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import { findIn } from "@/renderer/utils/index";
 import { EVENT_FILTER_TOPICS, TFilterText } from "../layout/events";
@@ -59,7 +61,9 @@ interface TopicsPanelProps {
 
 const EXPAND_ON_SEARCH_MIN_CHARS = 2;
 
-// flacher Eintrag für Virtuoso
+type TSelected = { id: string; domainId: string } | null;
+
+// Flat entry for Virtuoso
 type FlatRow = {
   id: string;
   type: "group" | "topic";
@@ -74,11 +78,12 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
 
-  const [topics, setTopics] = useState<TopicExtendedInfo[]>([]);
+  // topics grouped by domainId
+  const [topicsByDomain, setTopicsByDomain] = useState<Record<string, TopicExtendedInfo[]>>({});
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [rootDataList, setRootDataList] = useState<TTreeItem[]>([]);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [selectedItem, setSelectedItem] = useState("");
+  const [selected, setSelected] = useState<TSelected>(null);
   const [topicForSelected, setTopicForSelected] = useState<TopicExtendedInfo | undefined>();
   const [availableProviders, setAvailableProviders] = useState<TProviderDescription[]>([]);
   const [settings, setSettings] = useState<TSettings>({
@@ -90,7 +95,7 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
 
   const genKey = useCallback((items: string[]) => items.join("#"), []);
 
-  const getAvailableProviders = useCallback(() => {
+  const getAvailableProviders = useCallback((): TProviderDescription[] => {
     const providers: TProviderDescription[] = [];
     for (const item of rosCtx.providers) {
       providers.push({
@@ -101,19 +106,38 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
     return providers;
   }, [rosCtx.providers]);
 
-  const updateTopicList = useCallback(async () => {
-    if (!rosCtx.initialized) return;
+  /**
+   * Build per-domain TopicExtendedInfo lists.
+   * For each domainId we collect topics from all providers in that domain.
 
-    const newTopicsMap = new Map<string, TopicExtendedInfo>();
+   */
+  const updateTopicList = useCallback(async () => {
+    if (!rosCtx.initialized) {
+      return;
+    }
+
+    // domainId -> (topicKey -> TopicExtendedInfo)
+    const domainTopicMaps = new Map<string, Map<string, TopicExtendedInfo>>();
 
     for (const provider of rosCtx.providers) {
+      const rawDomainId = provider.connection?.domainId ?? "default";
+      const domainId = String(rawDomainId);
+
+      let topicMap = domainTopicMaps.get(domainId);
+      if (!topicMap) {
+        topicMap = new Map<string, TopicExtendedInfo>();
+        domainTopicMaps.set(domainId, topicMap);
+      }
+
       for (const topic of provider.rosTopics) {
+        // keep original logic: add all rosNodes of provider
         for (const rosNode of provider.rosNodes) {
           const key = genKey([topic.name, topic.msg_type]);
-          let topicInfo = newTopicsMap.get(key);
-          if (topicInfo === undefined) {
+          let topicInfo = topicMap.get(key);
+
+          if (!topicInfo) {
             topicInfo = new TopicExtendedInfo(topic, rosNode);
-            newTopicsMap.set(key, topicInfo);
+            topicMap.set(key, topicInfo);
           } else {
             topicInfo.add(rosNode);
           }
@@ -121,14 +145,28 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
       }
     }
 
-    const newTopics = Array.from(newTopicsMap.values()).sort((a, b) => {
-      const aSeps = (a.name.match(/\//g) || []).length;
-      const bSeps = (b.name.match(/\//g) || []).length;
-      return aSeps === bSeps ? a.name.localeCompare(b.name) : bSeps - aSeps;
-    });
+    const nextTopicsByDomain: Record<string, TopicExtendedInfo[]> = {};
+    const domainIdsFromMap = Array.from(domainTopicMaps.keys());
 
-    setTopics(newTopics);
-  }, [rosCtx.initialized, rosCtx.providers, rosCtx.mapProviderRosNodes, genKey]);
+    for (let i = 0; i < domainIdsFromMap.length; i += 1) {
+      const domainId = domainIdsFromMap[i];
+      const topicMap = domainTopicMaps.get(domainId);
+      if (!topicMap) {
+        continue;
+      }
+      const list = Array.from(topicMap.values()).sort((a, b) => {
+        const aSeps = (a.name.match(/\//g) || []).length;
+        const bSeps = (b.name.match(/\//g) || []).length;
+        if (aSeps === bSeps) {
+          return a.name.localeCompare(b.name);
+        }
+        return bSeps - aSeps;
+      });
+      nextTopicsByDomain[domainId] = list;
+    }
+
+    setTopicsByDomain(nextTopicsByDomain);
+  }, [rosCtx.initialized, rosCtx.providers, genKey]);
 
   const getTopicList = useCallback(() => {
     for (const provider of rosCtx.providers) {
@@ -136,17 +174,20 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
     }
   }, [rosCtx.providers]);
 
-  // Baumstruktur wie bisher
+  /**
+   * Tree structure builder (same logic as before, just commented in English).
+
+   */
   const buildTree = useCallback((topicsList: TopicExtendedInfo[], avoidSingle: boolean): TTreeResult => {
     const nodes = new Map<string, TTreeItem>();
     const rootNodes: TTreeItem[] = [];
 
-    // Phase 1: Knoten erzeugen
+    // Phase 1: create nodes for all path segments
     for (const topic of topicsList) {
       const parts = topic.name.split("/").filter(Boolean);
       let currentPath = "";
 
-      for (let i = 0; i < parts.length; i++) {
+      for (let i = 0; i < parts.length; i += 1) {
         const path = parts.slice(0, i + 1).join("/");
         currentPath = `/${path}`;
 
@@ -173,7 +214,7 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
       }
     }
 
-    // Phase 2: Verknüpfen, QoS nach oben propagieren
+    // Phase 2: connect nodes and propagate QoS flags upwards
     nodes.forEach((node, path) => {
       const parentPath = path.substring(0, path.lastIndexOf("/"));
 
@@ -194,14 +235,16 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
       }
     });
 
-    // Sortierung: Gruppen vor Topics, dann alphabetisch
+    // Sort: groups before leaf topics, then alphabetically
     rootNodes.sort((a, b) => {
-      if (a.topics.length > 0 && b.topics.length === 0) return -1;
-      if (b.topics.length > 0 && a.topics.length === 0) return 1;
+      const aIsGroup = a.topics.length > 0;
+      const bIsGroup = b.topics.length > 0;
+      if (aIsGroup && !bIsGroup) return -1;
+      if (!aIsGroup && bIsGroup) return 1;
       return a.groupName.localeCompare(b.groupName);
     });
 
-    // Optional: Single-Child-Gruppen flatten
+    // Optionally flatten groups with a single child
     if (avoidSingle) {
       const flattenedRoots: TTreeItem[] = [];
       for (const node of rootNodes) {
@@ -231,15 +274,35 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
         return flattenSingleChildGroups(node);
       }
     } else {
-      node.topics = node.topics.map(flattenSingleChildGroups);
+      const nextChildren: TTreeItem[] = [];
+      for (let i = 0; i < node.topics.length; i += 1) {
+        nextChildren.push(flattenSingleChildGroups(node.topics[i]));
+      }
+      node.topics = nextChildren;
     }
 
     return node;
   }, []);
 
+  /**
+   * All topics across all domains (used for filtering and selection).
+
+   */
+  const allTopics = useMemo(() => {
+    const result: TopicExtendedInfo[] = [];
+    const domainIds = Object.keys(topicsByDomain);
+    for (let i = 0; i < domainIds.length; i += 1) {
+      const list = topicsByDomain[domainIds[i]] || [];
+      for (let j = 0; j < list.length; j += 1) {
+        result.push(list[j]);
+      }
+    }
+    return result;
+  }, [topicsByDomain]);
+
   const filteredTopics = useMemo(() => {
-    if (!searchTerm.trim()) return topics;
-    return topics.filter((topic) =>
+    if (!searchTerm.trim()) return allTopics;
+    return allTopics.filter((topic) =>
       findIn(searchTerm, [
         topic.name,
         topic.msgType,
@@ -247,7 +310,7 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
         ...topic.subscribers.map((s) => `${s.info.node_id} ${s.providerName}`),
       ])
     );
-  }, [topics, searchTerm]);
+  }, [allTopics, searchTerm]);
 
   const treeData = useMemo(() => {
     const treeResult = buildTree(
@@ -263,11 +326,11 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
 
   useEffect(() => {
     updateTopicList();
-  }, [rosCtx.mapProviderRosNodes]);
+  }, [rosCtx.mapProviderRosNodes, updateTopicList]);
 
   useEffect(() => {
     updateTopicList();
-  }, []);
+  }, []); // initial
 
   useEffect(() => {
     setSettings({
@@ -277,11 +340,6 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
       buttonLocation: settingsCtx.get("buttonLocation") as string,
     });
   }, [settingsCtx.changed]);
-
-  useEffect(() => {
-    const selectedTopic = filteredTopics.find((item) => genKey([item.name, item.msgType]) === selectedItem);
-    setTopicForSelected(selectedTopic);
-  }, [filteredTopics, selectedItem, genKey]);
 
   useEffect(() => {
     setRootDataList(treeData);
@@ -294,7 +352,14 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
     (topic: TopicExtendedInfo | undefined, external: boolean, openInTerminal = false, providerId = "") => {
       if (!topic) return;
 
-      const provId = providerId || topic.publishers[0]?.providerId || topic.subscribers[0]?.providerId;
+      let provId = providerId;
+      if (!provId) {
+        if (topic.publishers.length > 0) {
+          provId = topic.publishers[0].providerId;
+        } else if (topic.subscribers.length > 0) {
+          provId = topic.subscribers[0].providerId;
+        }
+      }
 
       if (provId) {
         navCtx.openSubscriber(provId, topic.name, true, false, external, openInTerminal);
@@ -308,7 +373,14 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
   const onPublishClick = useCallback(
     (topic: TopicExtendedInfo | undefined, external: boolean, openInTerminal = false) => {
       if (!topic) return;
-      const provId = topic.subscribers[0]?.providerId || topic.publishers[0]?.providerId || "";
+
+      let provId = "";
+      if (topic.subscribers.length > 0) {
+        provId = topic.subscribers[0].providerId;
+      } else if (topic.publishers.length > 0) {
+        provId = topic.publishers[0].providerId;
+      }
+
       navCtx.startPublisher(provId, topic.name, topic.msgType, external, openInTerminal);
     },
     [navCtx]
@@ -401,23 +473,56 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
     [getTopicList]
   );
 
-  // expand/collapse für Gruppen
+  // expand/collapse for groups
   const toggleExpanded = useCallback((id: string) => {
     setExpandedItems((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }, []);
 
-  // Auswahl
-  const handleSelect = useCallback((itemId: string) => {
-    setSelectedItem(itemId);
+  useEffect(() => {
+    if (!selected) {
+      setTopicForSelected(undefined);
+      return;
+    }
+    const domainTopics = topicsByDomain[selected.domainId] ?? [];
+    const t = domainTopics.find((item) => genKey([item.name, item.msgType]) === selected.id);
+    setTopicForSelected(t);
+  }, [selected, topicsByDomain, genKey]);
+
+  // selection
+  // we keep track of which domain the selection belongs to
+  const handleSelect = useCallback((itemId: string, domainId: string) => {
+    setSelected({ id: itemId, domainId });
   }, []);
 
-  // Baum -> flache Liste (sichtbare Zeilen) wie bisherige topicTreeToStyledItems-Logik
+  // Map provider -> domain
+  const providerDomainMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of rosCtx.providers) {
+      const raw = p.connection?.domainId ?? "default";
+      m.set(p.id, String(raw));
+    }
+    return m;
+  }, [rosCtx.providers]);
+
+  // list of domainIds
+  const domainIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const domainId of providerDomainMap.values()) {
+      set.add(domainId);
+    }
+    return Array.from(set.values());
+  }, [providerDomainMap]);
+
+  // eine sinnvolle Domain-ID für den Single-Domain-Fall
+  const singleDomainId = domainIds.length === 1 ? domainIds[0] : "default";
+
+  // flat rows for single-domain case (same as before, but based on rootDataList)
   const flatRows = useMemo<FlatRow[]>(() => {
     const expandedSet = new Set(expandedItems);
     const rows: FlatRow[] = [];
 
     const walk = (node: TTreeItem, depth: number, rootPath: string) => {
-      // Leaf-Topic
+      // leaf topic
       if (node.topicInfo) {
         rows.push({
           id: genKey([node.topicInfo.name, node.topicInfo.msgType]),
@@ -429,14 +534,14 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
         return;
       }
 
-      // Optional: Single-Child-Gruppen flatten (Anzeige)
+      // optionally flatten groups with a single child
       if (settings.avoidGroupWithOneItem && node.topics.length === 1) {
         const nextRoot = rootPath ? `${rootPath}/${node.groupName}` : node.groupName;
         walk(node.topics[0], depth, nextRoot);
         return;
       }
 
-      // Gruppen-Eintrag
+      // group entry
       rows.push({
         id: node.groupKey,
         type: "group",
@@ -445,9 +550,8 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
         rootPath,
       });
 
-      // Kinder nur einfügen, wenn expanded
+      // add children only if group is expanded
       if (expandedSet.has(node.groupKey)) {
-        // Sortierung: Gruppen vor Topics, dann alphabetisch
         const sortedChildren = [...node.topics].sort((a, b) => {
           const aIsGroup = !a.topicInfo;
           const bIsGroup = !b.topicInfo;
@@ -456,14 +560,14 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
           return a.groupName.localeCompare(b.groupName);
         });
 
-        for (const child of sortedChildren) {
-          // wie im Original: rootPath für Kinder auf "" zurücksetzen
+        for (let i = 0; i < sortedChildren.length; i += 1) {
+          const child = sortedChildren[i];
           walk(child, depth + 1, "");
         }
       }
     };
 
-    // Root-Ebene ebenfalls sortieren
+    // sort root level
     const sortedRoots = [...rootDataList].sort((a, b) => {
       const aIsGroup = !a.topicInfo;
       const bIsGroup = !b.topicInfo;
@@ -472,60 +576,228 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
       return a.groupName.localeCompare(b.groupName);
     });
 
-    for (const root of sortedRoots) {
-      walk(root, 0, "");
+    for (let i = 0; i < sortedRoots.length; i += 1) {
+      walk(sortedRoots[i], 0, "");
     }
 
     return rows;
   }, [rootDataList, expandedItems, settings.avoidGroupWithOneItem, genKey]);
 
+  /**
+   * Tree view:
+   * - Single-domain: one Virtuoso (same behavior as before).
+   * - Multi-domain: DomainFlexLayout with one Virtuoso per domain.
+   */
   const treeView = useMemo(
-    () => (
-      <Virtuoso
-        style={{ height: "100%" }}
-        totalCount={flatRows.length}
-        itemContent={(index) => {
-          const row = flatRows[index];
+    () =>
+      domainIds.length <= 1 ? (
+        <Virtuoso
+          style={{ height: "100%" }}
+          totalCount={flatRows.length}
+          itemContent={(index) => {
+            const row = flatRows[index];
 
-          if (row.type === "group") {
-            const node = row.treeItem;
+            if (row.type === "group") {
+              const node = row.treeItem;
+              const isSelected = selected?.id === row.id && selected?.domainId === singleDomainId;
+
+              return (
+                <TopicGroupTreeItem
+                  key={row.id}
+                  itemId={row.id}
+                  rootPath={row.rootPath}
+                  groupName={node.groupName}
+                  countChildren={node.count}
+                  hasIncompatibleQos={node.hasIncompatibleQos}
+                  depth={row.depth}
+                  expanded={expandedItems.includes(row.id)}
+                  selected={isSelected}
+                  onToggle={() => toggleExpanded(row.id)}
+                  onSelect={() => handleSelect(row.id, singleDomainId)}
+                />
+              );
+            }
+
+            const topicInfo = row.treeItem.topicInfo;
+            if (!topicInfo) return null;
+            const id = row.id;
+            const isSelected = selected?.id === id && selected?.domainId === singleDomainId;
+
             return (
-              <TopicGroupTreeItem
-                key={row.id}
-                itemId={row.id}
+              <TopicTreeItem
+                key={id}
+                itemId={id}
                 rootPath={row.rootPath}
-                groupName={node.groupName}
-                countChildren={node.count}
-                hasIncompatibleQos={node.hasIncompatibleQos}
+                topicInfo={topicInfo}
+                selectedItem={selected?.id ?? ""} // light highlight by id
+                selected={isSelected} // only strong selection in this domain
                 depth={row.depth}
-                expanded={expandedItems.includes(row.id)}
-                selected={selectedItem === row.id}
-                onToggle={() => toggleExpanded(row.id)}
-                onSelect={() => handleSelect(row.id)}
+                onSelect={() => handleSelect(id, singleDomainId)}
               />
             );
-          }
+          }}
+        />
+      ) : (
+        <DomainFlexLayout
+          key="domain-topic-layout"
+          storageKey="layoutTopicDomains"
+          ids={domainIds}
+          componentName="domainTopicTree"
+          configKey="domainId"
+          insideTabId={LAYOUT_TABS.TOPICS}
+          factory={(_, domainId) => {
+            // topics which appear in this domain (based on publishers/subscribers)
+            const topicsInDomain = filteredTopics.filter((topic) => {
+              const providerIds = new Set<string>();
 
-          const topicInfo = row.treeItem.topicInfo;
-          if (!topicInfo) return;
-          const id = row.id;
+              for (let i = 0; i < topic.publishers.length; i += 1) {
+                providerIds.add(topic.publishers[i].providerId);
+              }
+              for (let i = 0; i < topic.subscribers.length; i += 1) {
+                providerIds.add(topic.subscribers[i].providerId);
+              }
 
-          return (
-            <TopicTreeItem
-              key={id}
-              itemId={id}
-              rootPath={row.rootPath}
-              topicInfo={topicInfo}
-              selectedItem={selectedItem}
-              selected={selectedItem === id}
-              depth={row.depth}
-              onSelect={() => handleSelect(id)}
-            />
-          );
-        }}
-      />
-    ),
-    [flatRows, expandedItems, selectedItem, toggleExpanded, handleSelect]
+              const arr = Array.from(providerIds.values());
+              for (let i = 0; i < arr.length; i += 1) {
+                const pid = arr[i];
+                if (providerDomainMap.get(pid) === domainId) {
+                  return true;
+                }
+              }
+              return false;
+            });
+
+            // IMPORTANT: no flattening here, we do it only in walkDomain
+            const treeResult = buildTree(topicsInDomain, false);
+            const roots = treeResult.topics;
+
+            const expandedSet = new Set(expandedItems);
+            const rows: FlatRow[] = [];
+            const avoidSingle = searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? settings.avoidGroupWithOneItem : false;
+
+            const walkDomain = (node: TTreeItem, depth: number, rootPath: string) => {
+              // leaf topic
+              if (node.topicInfo) {
+                rows.push({
+                  id: genKey([node.topicInfo.name, node.topicInfo.msgType]),
+                  type: "topic",
+                  depth,
+                  treeItem: node,
+                  rootPath,
+                });
+                return;
+              }
+
+              // optional single-child group flattening for display only
+              if (avoidSingle && node.topics.length === 1) {
+                const nextRoot = rootPath ? `${rootPath}/${node.groupName}` : node.groupName;
+                walkDomain(node.topics[0], depth, nextRoot);
+                return;
+              }
+
+              // group entry
+              rows.push({
+                id: node.groupKey,
+                type: "group",
+                depth,
+                treeItem: node,
+                rootPath,
+              });
+
+              if (expandedSet.has(node.groupKey)) {
+                const sortedChildren = [...node.topics].sort((a, b) => {
+                  const aIsGroup = !a.topicInfo;
+                  const bIsGroup = !b.topicInfo;
+                  if (aIsGroup && !bIsGroup) return -1;
+                  if (!aIsGroup && bIsGroup) return 1;
+                  return a.groupName.localeCompare(b.groupName);
+                });
+
+                for (let i = 0; i < sortedChildren.length; i += 1) {
+                  const child = sortedChildren[i];
+                  walkDomain(child, depth + 1, "");
+                }
+              }
+            };
+
+            const sortedRoots = [...roots].sort((a, b) => {
+              const aIsGroup = !a.topicInfo;
+              const bIsGroup = !b.topicInfo;
+              if (aIsGroup && !bIsGroup) return -1;
+              if (!aIsGroup && bIsGroup) return 1;
+              return a.groupName.localeCompare(b.groupName);
+            });
+
+            for (let i = 0; i < sortedRoots.length; i += 1) {
+              walkDomain(sortedRoots[i], 0, "");
+            }
+
+            return (
+              <Virtuoso
+                style={{ height: "100%" }}
+                totalCount={rows.length}
+                itemContent={(index) => {
+                  const row = rows[index];
+
+                  if (row.type === "group") {
+                    const node = row.treeItem;
+                    const isSelected = selected?.id === row.id && selected?.domainId === domainId;
+
+                    return (
+                      <TopicGroupTreeItem
+                        key={row.id}
+                        itemId={row.id}
+                        rootPath={row.rootPath}
+                        groupName={node.groupName}
+                        countChildren={node.count}
+                        hasIncompatibleQos={node.hasIncompatibleQos}
+                        depth={row.depth}
+                        expanded={expandedItems.includes(row.id)}
+                        selected={isSelected}
+                        onToggle={() => toggleExpanded(row.id)}
+                        onSelect={() => handleSelect(row.id, domainId)}
+                      />
+                    );
+                  }
+
+                  const topicInfo = row.treeItem.topicInfo;
+                  if (!topicInfo) return null;
+                  const id = row.id;
+                  const isSelected = selected?.id === id && selected?.domainId === domainId;
+
+                  return (
+                    <TopicTreeItem
+                      key={id}
+                      itemId={id}
+                      rootPath={row.rootPath}
+                      topicInfo={topicInfo}
+                      selectedItem={selected?.id ?? ""} // light highlight for same id in other domains
+                      selected={isSelected} // strong selection only in this domain
+                      depth={row.depth}
+                      onSelect={() => handleSelect(id, domainId)}
+                    />
+                  );
+                }}
+              />
+            );
+          }}
+        />
+      ),
+    [
+      domainIds,
+      flatRows,
+      selected,
+      expandedItems,
+      singleDomainId,
+      toggleExpanded,
+      handleSelect,
+      filteredTopics,
+      providerDomainMap,
+      buildTree,
+      searchTerm,
+      settings.avoidGroupWithOneItem,
+      genKey,
+    ]
   );
 
   return (
@@ -549,8 +821,8 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
             </Box>
           )}
 
-          {/* Klick auf leeren Bereich des Panels deselektiert alles */}
-          <Box width="100%" height="100%" overflow="hidden" onClick={() => setSelectedItem("")}>
+          {/* Click on empty area deselects the current item */}
+          <Box width="100%" height="100%" overflow="hidden" onClick={() => setSelected(null)}>
             {treeView}
           </Box>
 
