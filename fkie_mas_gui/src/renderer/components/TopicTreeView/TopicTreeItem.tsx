@@ -56,12 +56,11 @@ export default function TopicTreeItem({
   /**
    * Reset local click/extended-info state when this item is no longer selected
    * in its domain (selection moved to another item or another domain).
-
    */
   useEffect(() => {
     if (!selected) {
       setIgnoreNextClick(true);
-      setShowExtendedInfo(false);
+      // setShowExtendedInfo(false);
     }
   }, [selected]);
 
@@ -205,18 +204,9 @@ export default function TopicTreeItem({
    * - If already selected:
    *   - first click only arms the next click (ignoreNextClick -> false)
    *   - second click toggles extended info.
-
    */
   const handleRowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    if (!selected) {
-      // first click in this domain: select, collapse extended info
-      setIgnoreNextClick(true);
-      setShowExtendedInfo(false);
-      onSelect();
-      return;
-    }
 
     // already selected in this domain -> handle extended info toggling
     if (ignoreNextClick) {

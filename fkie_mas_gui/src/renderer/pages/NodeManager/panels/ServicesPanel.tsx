@@ -1,15 +1,14 @@
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import { SimpleTreeView } from "@mui/x-tree-view";
-import { useDebounceCallback } from "@react-hook/debounce";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { Virtuoso } from "react-virtuoso";
 
-import { ServiceGroupTreeItem, ServiceTreeItem } from "@/renderer/components/ServiceTreeView";
+import { DomainFlexLayout } from "@/renderer/components/layout/DomainFlexLayout";
+import ServiceTreeItem from "@/renderer/components/ServiceTreeView/ServiceTreeItem";
+import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
@@ -32,470 +31,768 @@ type TTreeItem = {
   serviceInfo: ServiceExtendedInfo | null;
 };
 
+type TTreeResult = {
+  services: TTreeItem[];
+  count: number;
+  groupKeys: string[];
+};
+
+type TSettings = {
+  tooltipDelay: number;
+  avoidGroupWithOneItem: boolean;
+  backgroundColor: string;
+  buttonLocation: string;
+};
+
+type TSelected = { id: string; domainId: string } | null;
+
+type FlatRow = {
+  id: string;
+  type: "group" | "service";
+  depth: number;
+  treeItem: TTreeItem;
+  rootPath: string;
+};
+
 interface ServicesPanelProps {
   initialSearchTerm?: string;
 }
 
-export default function ServicesPanel(props: ServicesPanelProps): JSX.Element {
-  const { initialSearchTerm = "" } = props;
+const EXPAND_ON_SEARCH_MIN_CHARS = 2;
 
-  const EXPAND_ON_SEARCH_MIN_CHARS = 2;
+export default function ServicesPanel({ initialSearchTerm = "" }: ServicesPanelProps): JSX.Element {
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
-  const [services, setServices] = useState<ServiceExtendedInfo[]>([]);
-  const [filteredServices, setFilteredServices] = useState<ServiceExtendedInfo[]>([]);
+
+  // services grouped by domainId
+  const [servicesByDomain, setServicesByDomain] = useState<Record<string, ServiceExtendedInfo[]>>({});
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [rootDataList, setRootDataList] = useState<TTreeItem[]>([]);
-  const [expanded, setExpanded] = useState<string[]>([]);
-  const [expandedFiltered, setExpandedFiltered] = useState<string[]>([]);
-  const [serviceForSelected, setServiceForSelected] = useState<ServiceExtendedInfo>();
-  const [selectedItem, setSelectedItem] = useState<string>("");
-  const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
-  const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
-  const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<boolean>(
-    settingsCtx.get("avoidGroupWithOneItem") as boolean
-  );
-  const [buttonLocation, setButtonLocation] = useState<string>(settingsCtx.get("buttonLocation") as string);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [selected, setSelected] = useState<TSelected>(null);
+  const [serviceForSelected, setServiceForSelected] = useState<ServiceExtendedInfo | undefined>();
 
-  useEffect(() => {
-    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as boolean);
-    setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
-    setBackgroundColor(settingsCtx.get("backgroundColor") as string);
-    setButtonLocation(settingsCtx.get("buttonLocation") as string);
-  }, [settingsCtx.changed]);
+  const [settings, setSettings] = useState<TSettings>({
+    tooltipDelay: settingsCtx.get("tooltipEnterDelay") as number,
+    avoidGroupWithOneItem: settingsCtx.get("avoidGroupWithOneItem") as boolean,
+    backgroundColor: settingsCtx.get("backgroundColor") as string,
+    buttonLocation: settingsCtx.get("buttonLocation") as string,
+  });
 
-  function genKey(items: string[]): string {
-    return `${items.join("#")}`;
-  }
+  const genKey = useCallback((items: string[]): string => items.join("#"), []);
 
-  async function updateServiceList(): Promise<void> {
-    // Get services from the ros node list of each provider.
-    const newServicesMap = new Map();
+  /**
+   * Build per-domain ServiceExtendedInfo lists.
+   * For each domainId we collect services from all providers in that domain.
+
+   */
+  const updateServiceList = useCallback(async () => {
+    if (!rosCtx.initialized) {
+      return;
+    }
+
+    // domainId -> (serviceKey -> ServiceExtendedInfo)
+    const domainServiceMaps = new Map<string, Map<string, ServiceExtendedInfo>>();
+
     for (const provider of rosCtx.providers) {
+      const rawDomainId = provider.connection?.domainId ?? "default";
+      const domainId = String(rawDomainId);
+
+      let serviceMap = domainServiceMaps.get(domainId);
+      if (!serviceMap) {
+        serviceMap = new Map<string, ServiceExtendedInfo>();
+        domainServiceMaps.set(domainId, serviceMap);
+      }
+
       for (const service of provider.rosServices) {
         const key = genKey([service.name, service.srv_type]);
-        let serviceInfo: ServiceExtendedInfo = newServicesMap.get(key);
+        let serviceInfo = serviceMap.get(key);
+
         if (!serviceInfo) {
           serviceInfo = new ServiceExtendedInfo(service);
-          newServicesMap.set(key, serviceInfo);
+          serviceMap.set(key, serviceInfo);
         }
+
+        // attach all nodes from this provider to the aggregated ServiceExtendedInfo
         for (const rosNode of provider.rosNodes) {
           serviceInfo.add(rosNode);
         }
       }
     }
 
-    const newServices: ServiceExtendedInfo[] = Array.from(newServicesMap.values());
-    newServices.sort((a, b) => {
-      return a.name.localeCompare(b.name);
-    });
-    setServices(newServices);
-  }
+    const nextServicesByDomain: Record<string, ServiceExtendedInfo[]> = {};
+    const domainIdsFromMap = Array.from(domainServiceMaps.keys());
 
-  function getServiceList(): void {
+    for (const domainId of domainIdsFromMap) {
+      const serviceMap = domainServiceMaps.get(domainId);
+      if (!serviceMap) {
+        continue;
+      }
+
+      const list = Array.from(serviceMap.values()).sort((a, b) => {
+        const aSeps = (a.name.match(/\//g) || []).length;
+        const bSeps = (b.name.match(/\//g) || []).length;
+        if (aSeps === bSeps) {
+          return a.name.localeCompare(b.name);
+        }
+        return bSeps - aSeps;
+      });
+
+      nextServicesByDomain[domainId] = list;
+    }
+
+    setServicesByDomain(nextServicesByDomain);
+  }, [rosCtx.initialized, rosCtx.providers, genKey]);
+
+  /**
+   * Trigger providers to refresh their ROS node lists, which will in turn update services.
+
+   */
+  const getServiceList = useCallback(() => {
     for (const provider of rosCtx.providers) {
       provider.updateRosNodes({}, true);
     }
-  }
+  }, [rosCtx.providers]);
 
-  useCustomEventListener(EVENT_PROVIDER_ROS_SERVICES, () => {
-    updateServiceList();
-  });
+  /**
+   * Tree structure builder for services (similar to topics).
+   * Groups services by namespace segments.
 
-  useCustomEventListener(EVENT_FILTER_SERVICES, (filter: TFilterText) => {
-    setSearchTerm(filter.data);
-  });
+   */
+  const buildTree = useCallback((servicesList: ServiceExtendedInfo[], avoidSingle: boolean): TTreeResult => {
+    const nodes = new Map<string, TTreeItem>();
+    const rootNodes: TTreeItem[] = [];
 
-  // debounced search callback
-  const onSearch = useDebounceCallback((searchTerm: string) => {
-    setSearchTerm(searchTerm);
-    if (!searchTerm) {
-      setFilteredServices(services);
-      return;
+    // Phase 1: create nodes for all path segments and attach leaf services
+    for (const service of servicesList) {
+      const parts = service.name.split("/").filter(Boolean);
+      let currentPath = "";
+
+      for (let i = 0; i < parts.length; i += 1) {
+        const path = parts.slice(0, i + 1).join("/");
+        currentPath = `/${path}`;
+
+        if (!nodes.has(currentPath)) {
+          nodes.set(currentPath, {
+            groupKey: path.replace(/\//g, "-"),
+            groupName: parts[i],
+            services: [],
+            count: 0,
+            fullPrefix: i > 0 ? `/${parts.slice(0, i).join("/")}` : "",
+            srvType: "",
+            groupKeys: [],
+            serviceInfo: null,
+          });
+        }
+      }
+
+      const leafNode = nodes.get(currentPath);
+      if (leafNode) {
+        leafNode.serviceInfo = service;
+        leafNode.count = 1;
+        leafNode.srvType = service.srvType;
+      }
     }
 
-    const newFilteredServices = services.filter((service) => {
-      const isMatch = findIn(searchTerm, [
+    // Phase 2: connect nodes and propagate counts upwards
+    for (const [path, node] of nodes.entries()) {
+      const parentPath = path.substring(0, path.lastIndexOf("/"));
+
+      if (parentPath && nodes.has(parentPath)) {
+        const parent = nodes.get(parentPath);
+        if (parent) {
+          parent.services.push(node);
+          parent.count += node.count;
+          parent.groupKeys.push(node.groupKey);
+
+          if (!parent.serviceInfo) {
+            parent.srvType = node.srvType || parent.srvType;
+          }
+        }
+      } else {
+        rootNodes.push(node);
+      }
+    }
+
+    // Sort root nodes: groups first, then leaf services, both alphabetically
+    rootNodes.sort((a, b) => {
+      const aIsGroup = a.services.length > 0;
+      const bIsGroup = b.services.length > 0;
+      if (aIsGroup && !bIsGroup) return -1;
+      if (!aIsGroup && bIsGroup) return 1;
+      return a.groupName.localeCompare(b.groupName);
+    });
+
+    if (avoidSingle) {
+      const flattenedRoots: TTreeItem[] = [];
+      for (const node of rootNodes) {
+        const flattened = flattenSingleChildGroups(node);
+        flattenedRoots.push(flattened);
+      }
+
+      return { services: flattenedRoots, count: flattenedRoots.length, groupKeys: [] };
+    }
+
+    return { services: rootNodes, count: rootNodes.length, groupKeys: [] };
+  }, []);
+
+  /**
+   * If a group contains exactly one child and no direct service itself,
+   * merge the group with its child to avoid deep, single-branch hierarchies.
+
+   */
+  const flattenSingleChildGroups = useCallback((node: TTreeItem): TTreeItem => {
+    if (node.services.length === 1 && !node.serviceInfo) {
+      const child = node.services[0];
+
+      node.groupName = `${node.groupName}/${child.groupName}`;
+      node.groupKey = `${node.groupKey}-${child.groupKey}`;
+      node.services = child.services;
+      node.count = child.count;
+      node.groupKeys = [...node.groupKeys, ...child.groupKeys];
+      node.serviceInfo = child.serviceInfo;
+      node.srvType = child.srvType || node.srvType;
+
+      if (node.services.length === 1 && !node.serviceInfo) {
+        return flattenSingleChildGroups(node);
+      }
+    } else {
+      const nextChildren: TTreeItem[] = [];
+      for (const child of node.services) {
+        nextChildren.push(flattenSingleChildGroups(child));
+      }
+      node.services = nextChildren;
+    }
+
+    return node;
+  }, []);
+
+  /**
+   * Flatten all services across domains (used for text filtering).
+
+   */
+  const allServices = useMemo(() => {
+    const result: ServiceExtendedInfo[] = [];
+    const domainIdsLocal = Object.keys(servicesByDomain);
+
+    for (const domainId of domainIdsLocal) {
+      const list = servicesByDomain[domainId] ?? [];
+      for (const svc of list) {
+        result.push(svc);
+      }
+    }
+
+    return result;
+  }, [servicesByDomain]);
+
+  /**
+   * Text filter on service name, type and provider / requester node names.
+
+   */
+  const filteredServices = useMemo(() => {
+    if (!searchTerm.trim()) return allServices;
+
+    return allServices.filter((service) =>
+      findIn(searchTerm, [
         service.name,
         service.srvType,
         ...service.nodeProviders.map((item) => item.nodeName),
-      ]);
-      if (isMatch) {
-        return isMatch;
-      }
-      // providers[service.name].forEach((providerName) => {
-      //   if (findIn(searchTerm, [providerName])) {
-      //     isMatch = true;
-      //   }
-      // });
-      // if (isMatch) {
-      //   return true;
-      // }
-      return false;
-    });
-
-    setFilteredServices(newFilteredServices);
-  }, 300);
-
-  function onCallService(service: ServiceExtendedInfo, external: boolean, openInTerminal: boolean): void {
-    // TODO: open in external window like subscriber
-    console.debug(`not implemented service parameter: ${external} ${openInTerminal}`);
-    // navCtx.openSubscriber(topic.providerId, topic.name, true, false, external, openInTerminal);
-    emitCustomEvent(
-      EVENT_OPEN_COMPONENT,
-      eventOpenComponent(
-        `call-service-${service.id}}`,
-        `Call Service - ${service.name}`,
-        <ServiceCallerPanel
-          serviceName={service.name}
-          serviceType={service.srvType}
-          providerId={service.nodeProviders[0]?.providerId}
-        />,
-        true,
-        LAYOUT_TAB_SETS.BORDER_RIGHT,
-        new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
-      )
+        ...service.nodeRequester.map((item) => item.nodeName),
+      ])
     );
-  }
+  }, [allServices, searchTerm]);
 
-  // Get service list when mounting the component
+  /**
+   * Tree data for the current filter state (single-domain structure).
+
+   */
+  const treeData = useMemo(() => {
+    const treeResult = buildTree(
+      filteredServices,
+      searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? settings.avoidGroupWithOneItem : false
+    );
+    return treeResult.services;
+  }, [filteredServices, settings.avoidGroupWithOneItem, searchTerm.length, buildTree]);
+
+  // react to settings changes from context
+  useEffect(() => {
+    setSettings({
+      tooltipDelay: settingsCtx.get("tooltipEnterDelay") as number,
+      avoidGroupWithOneItem: settingsCtx.get("avoidGroupWithOneItem") as boolean,
+      backgroundColor: settingsCtx.get("backgroundColor") as string,
+      buttonLocation: settingsCtx.get("buttonLocation") as string,
+    });
+  }, [settingsCtx.changed, settingsCtx]);
+
+  // initial & event-driven updates
   useEffect(() => {
     updateServiceList();
-  }, [rosCtx.initialized]);
+  }, []); // initial
 
-  // Initial filter when setting the services
   useEffect(() => {
-    onSearch(searchTerm);
-  }, [services, searchTerm]);
+    updateServiceList();
+  }, [rosCtx.mapProviderRosNodes, updateServiceList]);
 
-  // create tree based on service namespace
-  // services are grouped only if more then one is in the group
-  function fillTree(fullPrefix: string, serviceGroup: ServiceExtendedInfo[], itemId: string): TTreeItem {
-    const byPrefixP1 = new Map<
-      string,
-      { restNameSuffix: string; serviceInfo: ServiceExtendedInfo; isGroup: boolean }[]
-    >();
-    // create a map with simulated tree for the namespaces of the service list
-    for (const serviceInfo of serviceGroup) {
-      const nameSuffix = serviceInfo.id.slice(fullPrefix.length + 1);
-      const [groupName, ...restName] = nameSuffix.split("/");
-      if (restName.length > 1) {
-        const restNameSuffix = restName.join("/");
-        if (byPrefixP1.has(groupName)) {
-          byPrefixP1.get(groupName)?.push({ restNameSuffix, serviceInfo, isGroup: true });
-        } else {
-          byPrefixP1.set(groupName, [{ restNameSuffix, serviceInfo, isGroup: true }]);
-        }
-      } else {
-        byPrefixP1.set(`${groupName}#${serviceInfo.srvType}`, [{ restNameSuffix: "", serviceInfo, isGroup: false }]);
+  useCustomEventListener(EVENT_PROVIDER_ROS_SERVICES, updateServiceList);
+  useCustomEventListener(EVENT_FILTER_SERVICES, (filter: TFilterText) => setSearchTerm(filter.data));
+
+  // keep derived root tree list in state (used by single-domain Virtuoso)
+  useEffect(() => {
+    setRootDataList(treeData);
+  }, [treeData]);
+
+  const onSearch = useCallback((term: string) => {
+    setSearchTerm(term);
+  }, []);
+
+  // expand/collapse for groups (shared across domains)
+  const toggleExpanded = useCallback((id: string) => {
+    setExpandedItems((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, []);
+
+  // selection: keep track of which domain the selection belongs to
+  const handleSelect = useCallback((itemId: string, domainId: string) => {
+    setSelected({ id: itemId, domainId });
+  }, []);
+
+  // resolve selected ServiceExtendedInfo from selection keys
+  useEffect(() => {
+    if (!selected) {
+      setServiceForSelected(undefined);
+      return;
+    }
+
+    const domainServices = servicesByDomain[selected.domainId] ?? [];
+    let found: ServiceExtendedInfo | undefined;
+
+    for (const svc of domainServices) {
+      if (genKey([svc.name, svc.srvType]) === selected.id) {
+        found = svc;
+        break;
       }
     }
 
-    let count = 0;
-    // create result
-    const groupKeys: string[] = [];
-    const newFilteredServices: TTreeItem[] = [];
-    byPrefixP1.forEach((value, groupName) => {
-      // don't create group with one parameter
-      const newFullPrefix = `${fullPrefix}/${groupName}`;
-      const serviceValues = value.filter((item) => !item.isGroup);
-      const groupValues = value.filter((item) => !serviceValues.includes(item));
+    setServiceForSelected(found);
+  }, [selected, servicesByDomain, genKey]);
 
-      if (groupValues.length > 0) {
-        const groupKey: string = itemId ? `${itemId}-${groupName}` : groupName;
-        groupKeys.push(groupKey);
-        const groupServices = value.map((item) => {
-          return item.serviceInfo;
+  /**
+   * Map provider -> domain (used to split multi-domain view).
+
+   */
+  const providerDomainMap = useMemo(() => {
+    const map = new Map<string, string>();
+
+    for (const provider of rosCtx.providers) {
+      const raw = provider.connection?.domainId ?? "default";
+      map.set(provider.id, String(raw));
+    }
+
+    return map;
+  }, [rosCtx.providers]);
+
+  /**
+   * Distinct domain IDs from all providers.
+
+   */
+  const domainIds = useMemo(() => {
+    const set = new Set<string>();
+
+    for (const domainId of providerDomainMap.values()) {
+      set.add(domainId);
+    }
+
+    return Array.from(set.values());
+  }, [providerDomainMap]);
+
+  // single-domain convenience id
+  const singleDomainId = domainIds.length === 1 ? domainIds[0] : "default";
+
+  /**
+   * Flat rows for the single-domain case (Virtuoso).
+   * Groups and services are flattened into a single list while preserving depth.
+
+   */
+  const flatRows = useMemo<FlatRow[]>(() => {
+    const expandedSet = new Set(expandedItems);
+    const rows: FlatRow[] = [];
+
+    const walk = (node: TTreeItem, depth: number, rootPath: string) => {
+      if (node.serviceInfo) {
+        rows.push({
+          id: genKey([node.serviceInfo.name, node.serviceInfo.srvType]),
+          type: "service",
+          depth,
+          treeItem: node,
+          rootPath,
         });
-        const subResult = fillTree(newFullPrefix, groupServices, groupKey);
-        // the result count is 0 -> we added multiple provider for service with same name.
-        if (subResult.count === 0) {
-          count += 1;
-        } else {
-          count += subResult.count;
-        }
-        if (subResult.groupKeys.length > 0) {
-          groupKeys.push(...subResult.groupKeys);
-        }
-        // if all services of the group have same message id, show it in the group info
-        let srvType: string | undefined = undefined;
-        groupValues.map((item) => {
-          if (srvType === undefined) {
-            srvType = item.serviceInfo.srvType;
-          } else if (srvType !== item.serviceInfo.srvType) {
-            if (srvType !== "") {
-              srvType = "";
-            }
-          }
+        return;
+      }
+
+      if (settings.avoidGroupWithOneItem && node.services.length === 1) {
+        const nextRoot = rootPath ? `${rootPath}/${node.groupName}` : node.groupName;
+        walk(node.services[0], depth, nextRoot);
+        return;
+      }
+
+      rows.push({
+        id: node.groupKey,
+        type: "group",
+        depth,
+        treeItem: node,
+        rootPath,
+      });
+
+      if (expandedSet.has(node.groupKey)) {
+        const sortedChildren = [...node.services].sort((a, b) => {
+          const aIsGroup = !a.serviceInfo;
+          const bIsGroup = !b.serviceInfo;
+          if (aIsGroup && !bIsGroup) return -1;
+          if (!aIsGroup && bIsGroup) return 1;
+          return a.groupName.localeCompare(b.groupName);
         });
-        newFilteredServices.push({
-          groupKey: groupKey,
-          groupName: groupName,
-          services: subResult.services,
-          count: subResult.count,
-          fullPrefix: fullPrefix,
-          srvType: srvType ? srvType : "",
-          groupKeys: groupKeys,
-          serviceInfo: null,
-        } as TTreeItem);
+
+        for (const child of sortedChildren) {
+          walk(child, depth + 1, "");
+        }
       }
-      for (const item of serviceValues) {
-        newFilteredServices.push({
-          groupKey: "",
-          groupName: "",
-          services: [],
-          count: 0,
-          fullPrefix: fullPrefix,
-          srvType: item.serviceInfo.srvType,
-          groupKeys: groupKeys,
-          serviceInfo: item.serviceInfo,
-        } as TTreeItem);
-        count += 1;
-      }
-      // if (value[0].serviceInfo.providerName !== groupName) {
-      //   // since the same service can be on multiple provider
-      //   // we count only services
-      //   count += 1;
-      // }
+    };
+
+    const sortedRoots = [...rootDataList].sort((a, b) => {
+      const aIsGroup = !a.serviceInfo;
+      const bIsGroup = !b.serviceInfo;
+      if (aIsGroup && !bIsGroup) return -1;
+      if (!aIsGroup && bIsGroup) return 1;
+      return a.groupName.localeCompare(b.groupName);
     });
-    return { services: newFilteredServices, count, groupKeys } as TTreeItem;
-  }
 
-  // create services tree from filtered service list
-  useEffect(() => {
-    const tree = fillTree("", filteredServices, "");
-    setRootDataList(tree.services);
-    if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
-      setExpandedFiltered(tree.groupKeys);
+    for (const root of sortedRoots) {
+      walk(root, 0, "");
     }
-  }, [filteredServices]);
 
-  const serviceTreeToStyledItems = useCallback(
-    (rootPath: string, treeItem: TTreeItem, selectedItem: string) => {
-      if (treeItem.serviceInfo) {
-        return (
-          <ServiceTreeItem
-            key={genKey([treeItem.serviceInfo.name, treeItem.srvType])}
-            itemId={genKey([treeItem.serviceInfo.name, treeItem.srvType])}
-            rootPath={rootPath}
-            serviceInfo={treeItem.serviceInfo}
-            selectedItem={selectedItem}
-          />
-        );
-      }
-      if (avoidGroupWithOneItem && treeItem.services.length === 1) {
-        // avoid groups with one item
-        return serviceTreeToStyledItems(
-          rootPath.length > 0 ? `${rootPath}/${treeItem.groupName}` : treeItem.groupName,
-          treeItem.services[0],
-          selectedItem
-        );
-      }
-      return (
-        <ServiceGroupTreeItem
-          key={treeItem.groupKey}
-          itemId={treeItem.groupKey}
-          rootPath={rootPath}
-          groupName={treeItem.groupName}
-          countChildren={treeItem.count}
-        >
-          {treeItem.services.map((subItem) => {
-            return serviceTreeToStyledItems("", subItem, selectedItem);
-          })}
-        </ServiceGroupTreeItem>
+    return rows;
+  }, [rootDataList, expandedItems, settings.avoidGroupWithOneItem, genKey]);
+
+  /**
+   * Open "call service" panel for the selected service.
+   * external / openInTerminal are reserved for future extension (parity with topics).
+
+   */
+  const onCallService = useCallback(
+    (service: ServiceExtendedInfo | undefined, external: boolean, openInTerminal = false) => {
+      if (!service) return;
+
+      // currently we do not distinguish external / terminal for services,
+      // but we keep the parameters for future alignment with topic handling
+      console.debug(`call service: external=${external} terminal=${openInTerminal}`);
+
+      emitCustomEvent(
+        EVENT_OPEN_COMPONENT,
+        eventOpenComponent(
+          `call-service-${service.id}}`,
+          `Call Service - ${service.name}`,
+          <ServiceCallerPanel
+            serviceName={service.name}
+            serviceType={service.srvType}
+            providerId={service.nodeProviders[0]?.providerId}
+          />,
+          true,
+          LAYOUT_TAB_SETS.BORDER_RIGHT,
+          new LayoutTabConfig(false, LAYOUT_TABS.SERVICES)
+        )
       );
     },
-    [avoidGroupWithOneItem]
+    []
   );
 
-  useEffect(() => {
-    const selectedServices = filteredServices.filter((item) => {
-      return genKey([item.name, item.srvType]) === selectedItem;
-    });
-    if (selectedServices?.length >= 0) {
-      setServiceForSelected(selectedServices[0]);
-    } else {
-      setServiceForSelected(undefined);
-    }
-  }, [filteredServices, selectedItem]);
-
-  const handleToggle = useCallback(
-    (itemIds: string[]) => {
-      if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
-        setExpanded(itemIds);
-      } else {
-        setExpandedFiltered(itemIds);
-      }
-    },
-    [searchTerm]
-  );
-
-  const createButtonBox = useMemo(() => {
-    return (
+  const buttonBox = useMemo(
+    () => (
       <ButtonGroup orientation="vertical" aria-label="service control group">
-        <Tooltip
-          title="Call service"
-          placement="left"
-          enterDelay={tooltipDelay}
-          // enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
+        <Tooltip title="Call service" placement="left" enterDelay={settings.tooltipDelay} disableInteractive>
           <span>
             <IconButton
               disabled={!serviceForSelected}
               size="medium"
               aria-label="call service"
-              onClick={(event) => {
-                if (serviceForSelected) {
-                  onCallService(serviceForSelected, event.nativeEvent.shiftKey, event.nativeEvent.ctrlKey);
-                }
-              }}
+              onClick={(event) =>
+                onCallService(serviceForSelected, event.nativeEvent.shiftKey, event.nativeEvent.ctrlKey)
+              }
             >
               <PlayArrowIcon fontSize="inherit" />
             </IconButton>
           </span>
         </Tooltip>
-        {/* <Tooltip
-          title="Call service in Terminal"
-          placement="left"
-          enterDelay={tooltipDelay}
-          // enterNextDelay={tooltipDelay}
-          disableInteractive
-        >
-          <span>
-            <IconButton
-              disabled={!serviceForSelected}
-              size="medium"
-              aria-label="call service in a terminal"
-              onClick={(event) => {
-                onCallService(serviceForSelected, event.nativeEvent.shiftKey, true);
-              }}
-            >
-              <DvrIcon fontSize="inherit" />
-            </IconButton>
-          </span>
-        </Tooltip> */}
       </ButtonGroup>
-    );
-  }, [tooltipDelay, serviceForSelected]);
+    ),
+    [serviceForSelected, settings.tooltipDelay, onCallService]
+  );
 
-  const createTreeView = useMemo(() => {
-    return (
-      <SimpleTreeView
-        onClick={(event) => {
-          // enable deselection
-          event.stopPropagation();
-        }}
-        aria-label="services"
-        expandedItems={searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered}
-        slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
-        // defaultEndIcon={<div style={{ width: 24 }} />}
-        expansionTrigger={"iconContainer"}
-        onExpandedItemsChange={(_event, itemIds: string[]) => handleToggle(itemIds)}
-        selectedItems={selectedItem}
-        onSelectedItemsChange={(_event, itemId: string | null) => {
-          setSelectedItem(itemId || "");
-          const copyExpanded = [...(searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? expanded : expandedFiltered)];
-          if (itemId) {
-            const index =
-              searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS
-                ? expanded.indexOf(itemId)
-                : expandedFiltered.indexOf(itemId);
-            if (index === -1) {
-              if (itemId) {
-                copyExpanded.push(itemId);
-              }
-            } else {
-              copyExpanded.splice(index, 1);
-            }
-          }
-          if (searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS) {
-            setExpanded(copyExpanded);
-          } else {
-            setExpandedFiltered(copyExpanded);
-          }
-        }}
-      >
-        {rootDataList.map((item) => {
-          return serviceTreeToStyledItems("", item, selectedItem);
-        })}
-      </SimpleTreeView>
-    );
-  }, [expanded, expandedFiltered, rootDataList, searchTerm, avoidGroupWithOneItem]);
-
-  const createReloadButton = useMemo(() => {
-    return (
+  const reloadButton = useMemo(
+    () => (
       <Tooltip title="Reload service list" placement="left" disableInteractive>
-        <IconButton
-          size="small"
-          onClick={() => {
-            getServiceList();
-          }}
-        >
+        <IconButton size="small" onClick={getServiceList}>
           <RefreshIcon sx={{ fontSize: "inherit" }} />
         </IconButton>
       </Tooltip>
-    );
-  }, [rosCtx.providers]);
+    ),
+    [getServiceList]
+  );
 
-  const createPanel = useMemo(() => {
-    return (
-      <Box height="100%" overflow="auto" sx={{ backgroundColor: backgroundColor }}>
-        <Stack
-          spacing={1}
-          height="100%"
-          // sx={{
-          //   height: '100%',
-          //   display: 'flex',
-          // }}
-        >
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            {buttonLocation === BUTTON_LOCATIONS.LEFT && createReloadButton}
-            <SearchBar
-              onSearch={onSearch}
-              placeholder="Filter Services (OR: <space>, AND: +, NOT: !)"
-              defaultValue={searchTerm}
-              fullWidth
-            />
-            {buttonLocation === BUTTON_LOCATIONS.RIGHT && createReloadButton}
-          </Stack>
-          <Stack direction="row" height="100%" overflow="auto">
-            {buttonLocation === BUTTON_LOCATIONS.LEFT && (
-              <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
-                {createButtonBox}
-              </Box>
-            )}
-            <Box
-              width="100%"
-              height="100%"
-              overflow="auto"
-              onClick={() => {
-                // deselect topics
-                setSelectedItem("");
-              }}
-            >
-              {createTreeView}
-            </Box>
-            {buttonLocation === BUTTON_LOCATIONS.RIGHT && (
-              <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
-                {createButtonBox}
-              </Box>
-            )}
-          </Stack>
+  /**
+   * Tree view:
+   * - Single-domain: one Virtuoso (flattened rows).
+   * - Multi-domain: DomainFlexLayout with one Virtuoso per domain.
+
+   */
+  const treeView = useMemo(
+    () =>
+      domainIds.length <= 1 ? (
+        <Virtuoso
+          style={{ height: "100%" }}
+          totalCount={flatRows.length}
+          itemContent={(index: number) => {
+            const row = flatRows[index];
+
+            if (row.type === "group") {
+              const node = row.treeItem;
+              const isSelected = selected?.id === row.id && selected?.domainId === singleDomainId;
+
+              return (
+                <TopicGroupTreeItem
+                  key={row.id}
+                  itemId={row.id}
+                  rootPath={row.rootPath}
+                  groupName={node.groupName}
+                  countChildren={node.count}
+                  hasIncompatibleQos={false}
+                  depth={row.depth}
+                  expanded={expandedItems.includes(row.id)}
+                  selected={isSelected}
+                  onToggle={() => toggleExpanded(row.id)}
+                  onSelect={() => handleSelect(row.id, singleDomainId)}
+                />
+              );
+            }
+
+            const serviceInfo = row.treeItem.serviceInfo;
+            if (!serviceInfo) return null;
+
+            const id = row.id;
+            const isSelected = selected?.id === id && selected?.domainId === singleDomainId;
+
+            return (
+              <ServiceTreeItem
+                key={id}
+                itemId={id}
+                rootPath={row.rootPath}
+                serviceInfo={serviceInfo}
+                selectedItem={selected?.id ?? ""}
+                selected={isSelected}
+                depth={row.depth}
+                onSelect={() => handleSelect(id, singleDomainId)}
+              />
+            );
+          }}
+        />
+      ) : (
+        <DomainFlexLayout
+          key="domain-service-layout"
+          storageKey="layoutServiceDomains"
+          ids={domainIds}
+          componentName="domainServiceTree"
+          configKey="domainId"
+          insideTabId={LAYOUT_TABS.SERVICES}
+          factory={(_, domainId) => {
+            // services which appear in this domain, based on provider/requester providerId
+            const servicesInDomain = filteredServices.filter((service) => {
+              const providerIds = new Set<string>();
+
+              for (const item of service.nodeProviders) {
+                providerIds.add(item.providerId);
+              }
+              for (const item of service.nodeRequester) {
+                providerIds.add(item.providerId);
+              }
+
+              const ids = Array.from(providerIds.values());
+              for (const pid of ids) {
+                if (providerDomainMap.get(pid) === domainId) {
+                  return true;
+                }
+              }
+              return false;
+            });
+
+            // build tree for this domain's services
+            const treeResult = buildTree(servicesInDomain, false);
+            const roots = treeResult.services;
+
+            const expandedSet = new Set(expandedItems);
+            const rows: FlatRow[] = [];
+            const avoidSingle = searchTerm.length < EXPAND_ON_SEARCH_MIN_CHARS ? settings.avoidGroupWithOneItem : false;
+
+            const walkDomain = (node: TTreeItem, depth: number, rootPath: string) => {
+              if (node.serviceInfo) {
+                rows.push({
+                  id: genKey([node.serviceInfo.name, node.serviceInfo.srvType]),
+                  type: "service",
+                  depth,
+                  treeItem: node,
+                  rootPath,
+                });
+                return;
+              }
+
+              // optional flattening for display
+              if (avoidSingle && node.services.length === 1) {
+                const nextRoot = rootPath ? `${rootPath}/${node.groupName}` : node.groupName;
+                walkDomain(node.services[0], depth, nextRoot);
+                return;
+              }
+
+              rows.push({
+                id: node.groupKey,
+                type: "group",
+                depth,
+                treeItem: node,
+                rootPath,
+              });
+
+              if (expandedSet.has(node.groupKey)) {
+                const sortedChildren = [...node.services].sort((a, b) => {
+                  const aIsGroup = !a.serviceInfo;
+                  const bIsGroup = !b.serviceInfo;
+                  if (aIsGroup && !bIsGroup) return -1;
+                  if (!aIsGroup && bIsGroup) return 1;
+                  return a.groupName.localeCompare(b.groupName);
+                });
+
+                for (const child of sortedChildren) {
+                  walkDomain(child, depth + 1, "");
+                }
+              }
+            };
+
+            const sortedRoots = [...roots].sort((a, b) => {
+              const aIsGroup = !a.serviceInfo;
+              const bIsGroup = !b.serviceInfo;
+              if (aIsGroup && !bIsGroup) return -1;
+              if (!aIsGroup && bIsGroup) return 1;
+              return a.groupName.localeCompare(b.groupName);
+            });
+
+            for (const root of sortedRoots) {
+              walkDomain(root, 0, "");
+            }
+
+            return (
+              <Virtuoso
+                style={{ height: "100%" }}
+                totalCount={rows.length}
+                itemContent={(index: number) => {
+                  const row = rows[index];
+
+                  if (row.type === "group") {
+                    const node = row.treeItem;
+                    const isSelected = selected?.id === row.id && selected?.domainId === domainId;
+
+                    return (
+                      <TopicGroupTreeItem
+                        key={row.id}
+                        itemId={row.id}
+                        rootPath={row.rootPath}
+                        groupName={node.groupName}
+                        countChildren={node.count}
+                        hasIncompatibleQos={false}
+                        depth={row.depth}
+                        expanded={expandedItems.includes(row.id)}
+                        selected={isSelected}
+                        onToggle={() => toggleExpanded(row.id)}
+                        onSelect={() => handleSelect(row.id, domainId)}
+                      />
+                    );
+                  }
+
+                  const serviceInfo = row.treeItem.serviceInfo;
+                  if (!serviceInfo) return null;
+
+                  const id = row.id;
+                  const isSelected = selected?.id === id && selected?.domainId === domainId;
+
+                  return (
+                    <ServiceTreeItem
+                      key={id}
+                      itemId={id}
+                      rootPath={row.rootPath}
+                      serviceInfo={serviceInfo}
+                      selectedItem={selected?.id ?? ""}
+                      selected={isSelected}
+                      depth={row.depth}
+                      onSelect={() => handleSelect(id, domainId)}
+                    />
+                  );
+                }}
+              />
+            );
+          }}
+        />
+      ),
+    [
+      domainIds,
+      flatRows,
+      selected,
+      expandedItems,
+      singleDomainId,
+      toggleExpanded,
+      handleSelect,
+      filteredServices,
+      providerDomainMap,
+      buildTree,
+      searchTerm,
+      settings.avoidGroupWithOneItem,
+      genKey,
+    ]
+  );
+
+  return (
+    <Box height="100%" overflow="hidden" sx={{ backgroundColor: settings.backgroundColor }}>
+      <Stack spacing={1} height="100%">
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          {settings.buttonLocation === BUTTON_LOCATIONS.LEFT && reloadButton}
+          <SearchBar
+            onSearch={onSearch}
+            placeholder="Filter Services (OR: <space>, AND: +, NOT: !)"
+            defaultValue={searchTerm}
+            fullWidth
+          />
+          {settings.buttonLocation === BUTTON_LOCATIONS.RIGHT && reloadButton}
         </Stack>
-      </Box>
-    );
-  }, [
-    rootDataList,
-    expanded,
-    expandedFiltered,
-    searchTerm,
-    selectedItem,
-    serviceForSelected,
-    backgroundColor,
-    buttonLocation,
-    avoidGroupWithOneItem,
-    rosCtx.providers,
-  ]);
-  return createPanel;
+
+        <Stack direction="row" height="100%" overflow="hidden">
+          {settings.buttonLocation === BUTTON_LOCATIONS.LEFT && (
+            <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
+              {buttonBox}
+            </Box>
+          )}
+
+          {/* Click on empty area deselects the current item */}
+          <Box
+            width="100%"
+            height="100%"
+            overflow="hidden"
+            onClick={() => {
+              setSelected(null);
+            }}
+          >
+            {treeView}
+          </Box>
+
+          {settings.buttonLocation === BUTTON_LOCATIONS.RIGHT && (
+            <Box height="100%" sx={{ boxShadow: `0px 0px 1px ${alpha(grey[600], 0.4)}` }}>
+              {buttonBox}
+            </Box>
+          )}
+        </Stack>
+      </Stack>
+    </Box>
+  );
 }
