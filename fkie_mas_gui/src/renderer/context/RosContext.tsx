@@ -158,7 +158,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     (host: string, rosVersion: string, port = 0, domainId = 0, useSSL = false): Provider => {
       return new Provider(logCtxRef, settingsCtxRef, host, rosVersion, port, domainId, useSSL);
     },
-    [logCtxRef, settingsCtxRef]
+    [logCtxRef.current, settingsCtxRef.current]
   );
 
   /** Returns true if the given host resolves to the local machine. */
@@ -168,7 +168,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       if (host === "localhost" || host === info?.osInfo?.hostname) return true;
       return (info?.networkInterfaces ?? []).some((ni) => ni.ip4 === host);
     },
-    [systemInfoRef]
+    [systemInfoRef.current]
   );
 
   /** Return a provider by id. By default also returns unavailable providers. */
@@ -177,7 +177,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       if (!providerId) return undefined;
       return providersRef.current.find((p) => (p.isAvailable() || includeNotAvailable) && p.id === providerId);
     },
-    [providersRef]
+    [providersRef.current]
   );
 
   /**
@@ -196,20 +196,20 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       }
       return defaultValue;
     },
-    [providersRef]
+    [providersRef.current]
   );
 
   /** Return all providers that are on localhost. */
   const getLocalProvider = useCallback((): Provider[] => {
     return providersRef.current.filter((p) => p.isLocalHost);
-  }, [providersRef]);
+  }, [providersRef.current]);
 
   /** Return the display name of a provider. */
   const getProviderName = useCallback(
     (providerId: string): string => {
       return providersRef.current.find((p) => p.id === providerId)?.name() ?? "";
     },
-    [providersRef]
+    [providersRef.current]
   );
 
   /** Add a provider if not already registered. */
@@ -242,14 +242,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         return false;
       })
     );
-  }, [providersRef]);
+  }, [providersRef.current]);
 
   /** Close the connection to all registered providers. */
   const closeProviders = useCallback((): void => {
     for (const p of providersRef.current) {
       p.close();
     }
-  }, [providersRef]);
+  }, [providersRef.current]);
 
   /** Remove a provider by id and close its connection. */
   const removeProvider = useCallback(
