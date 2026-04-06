@@ -486,19 +486,18 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
 
   const getHostStyle = useCallback(
     function getHostStyle(): object {
-      const providerId = provider?.name();
-      if (providerId && colorizeHosts) {
+      if (currentProviderId && colorizeHosts) {
         return {
           flexGrow: 1,
           borderTopStyle: "solid",
-          borderTopColor: rosCtx.providerColor(providerId),
+          borderTopColor: rosCtx.providerColor(currentProviderId),
           borderTopWidth: "0.3em",
           backgroundColor: backgroundColor,
         };
       }
       return { flexGrow: 1, backgroundColor: backgroundColor };
     },
-    [provider, colorizeHosts]
+    [currentProviderId, colorizeHosts, rosCtx.providerColor]
   );
 
   return (
