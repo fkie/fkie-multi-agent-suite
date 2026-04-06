@@ -1,63 +1,118 @@
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { Box, Stack, Typography } from "@mui/material";
-import {
-  treeItemClasses,
-  TreeItemSlotProps,
-  UseTreeItemContentSlotOwnProps,
-  UseTreeItemIconContainerSlotOwnProps,
-} from "@mui/x-tree-view";
+import { grey } from "@mui/material/colors";
+import { alpha } from "@mui/material/styles";
 import React from "react";
 
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
-import StyledTreeItem from "./StyledTreeItem";
 
 interface ServiceGroupTreeItemProps {
   itemId: string;
   rootPath: string;
   groupName: string;
   countChildren: number;
-  children: React.ReactNode;
+  expanded: boolean;
+  selected: boolean;
+  depth: number;
+  onToggle: () => void;
+  onSelect: () => void;
 }
 
-export default function ServiceGroupTreeItem(props: ServiceGroupTreeItemProps): JSX.Element {
-  const { itemId, rootPath, groupName, countChildren, ...children } = props;
-
+/**
+ * Virtualized row for a service group.
+ * Mirrors TopicGroupTreeItem behavior:
+ * - click row: toggle + select
+ * - click icon: toggle only
+ */
+export default function ServiceGroupTreeItem({
+  itemId,
+  rootPath,
+  groupName,
+  countChildren,
+  expanded,
+  selected,
+  depth,
+  onToggle,
+  onSelect,
+}: ServiceGroupTreeItemProps): JSX.Element {
   const logCtx = useLoggingContext();
 
-  // avoid selection if collapse icon was clicked
-  let toggled = false;
-  const handleContentClick: UseTreeItemContentSlotOwnProps["onClick"] = (event) => {
-    event.defaultMuiPrevented = toggled;
-    toggled = false;
+  const handleRowClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    onToggle();
+    onSelect();
   };
 
-  const handleLabelClick: UseTreeItemContentSlotOwnProps["onClick"] = () => {};
-
-  const handleIconContainerClick: UseTreeItemIconContainerSlotOwnProps["onClick"] = () => {
-    toggled = true;
+  const handleIconClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    onToggle();
   };
+
+  const handleLabelDoubleClick = (event: React.MouseEvent<HTMLSpanElement>) => {
+    if (event.detail === 2) {
+      // const value = `${rootPath}${groupName}`;
+      // navigator.clipboard.writeText(value);
+      // logCtx.info(`${value} copied!`, "", "service group copied");
+      event.stopPropagation();
+    }
+  };
+
+  // create one dashed column per depth level (visual indentation)
+  const lineKeys = Array.from({ length: depth }, (_, i) => `${itemId}-line-${i}`);
 
   return (
-    <StyledTreeItem
-      itemId={itemId}
-      slotProps={
-        {
-          label: { onClick: handleLabelClick },
-          content: { onClick: handleContentClick },
-          iconContainer: { onClick: handleIconContainerClick },
-        } as TreeItemSlotProps
-      }
+    <Box
+      onClick={handleRowClick}
       sx={{
-        [`& .${treeItemClasses.content}`]: {
-          paddingLeft: "8px",
-        },
+        display: "flex",
+        alignItems: "stretch",
+        cursor: "pointer",
+        borderRadius: 0,
+        bgcolor: selected ? "var(--color-select-bg)" : "transparent",
+        color: "text.secondary",
       }}
-      label={
-        <Stack direction="column">
+    >
+      {lineKeys.map((key) => (
+        <Box
+          key={key}
+          sx={{
+            ml: 0.9,
+            width: "0.9em",
+            borderLeft: `1px dashed ${alpha(grey[600], 0.4)}`,
+          }}
+        />
+      ))}
+
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          flexGrow: 1,
+          py: 0.3,
+          pr: 1,
+        }}
+      >
+        {/* Icon container (expand / collapse) */}
+        <Box
+          onClick={handleIconClick}
+          sx={{
+            width: "1em",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mr: 0,
+            ml: 0,
+          }}
+        >
+          {expanded ? <ArrowDropDownIcon fontSize="inherit" /> : <ArrowRightIcon fontSize="inherit" />}
+        </Box>
+
+        <Stack direction="column" sx={{ flexGrow: 1 }}>
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              // p: 0.3,
               pr: 0,
             }}
           >
@@ -68,36 +123,21 @@ export default function ServiceGroupTreeItem(props: ServiceGroupTreeItemProps): 
               <Typography
                 variant="body2"
                 sx={{ fontWeight: "inherit", userSelect: "none" }}
-                onClick={(e) => {
-                  if (e.detail === 2) {
-                    navigator.clipboard.writeText(`${rootPath}${groupName}`);
-                    logCtx.info(`${rootPath}${groupName} copied!`, "", `${rootPath}${groupName} copied!`);
-                    e.stopPropagation();
-                  }
-                }}
+                onClick={handleLabelDoubleClick}
               >
                 {groupName}
               </Typography>
-              {/* {requestData && <CircularProgress size="1em" />} */}
             </Stack>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{
-                alignItems: "center",
-              }}
-            >
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
               {countChildren > 0 && (
-                // <Tag text={countChildren} color="default" copyButton={false}></Tag>
-                <Typography variant="caption" color="inherit" padding={0}>
+                <Typography variant="caption" color="inherit" padding={0.2}>
                   [{countChildren}]
                 </Typography>
               )}
             </Stack>
           </Box>
         </Stack>
-      }
-      {...children}
-    />
+      </Box>
+    </Box>
   );
 }
