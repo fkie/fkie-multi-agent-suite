@@ -28,7 +28,6 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 
-import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import ProviderSelector from "@/renderer/components/UI/ProviderSelector";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { DB_MAX_MSGS, TMsgHistoryEntry, useMsgHistory } from "@/renderer/context/MsgHistoryContext";
@@ -87,6 +86,14 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   const [startPublisherDescription, setStartPublisherDescription] = useState("");
   const [startPublisherIsSubmitting, setStartPublisherIsSubmitting] = useState(false);
   const publishRateSelections = ["1", "once", "latched"];
+
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
+  const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+
+  useEffect(() => {
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
+    setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+  }, [settingsCtx.changed]);
 
   // migrate old history
   useEffect(() => {
@@ -479,19 +486,19 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
 
   const getHostStyle = useCallback(
     function getHostStyle(): object {
-      const providerName = provider?.name();
-      if (providerName && settingsCtx.get("colorizeHosts")) {
+      const providerId = provider?.name();
+      if (providerId && colorizeHosts) {
         return {
           flexGrow: 1,
           borderTopStyle: "solid",
-          borderTopColor: colorFromHostname(providerName),
+          borderTopColor: rosCtx.providerColor(providerId),
           borderTopWidth: "0.3em",
-          backgroundColor: settingsCtx.get("backgroundColor") as string,
+          backgroundColor: backgroundColor,
         };
       }
-      return { flexGrow: 1, backgroundColor: settingsCtx.get("backgroundColor") as string };
+      return { flexGrow: 1, backgroundColor: backgroundColor };
     },
-    [provider, settingsCtx.changed]
+    [provider, colorizeHosts]
   );
 
   return (

@@ -7,10 +7,10 @@ import {
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
-import { colorFromHostname } from "../UI";
 import StyledTreeItem from "./StyledTreeItem";
 
 interface ParameterGroupTreeItemProps {
@@ -21,7 +21,7 @@ interface ParameterGroupTreeItemProps {
   countChildren: number;
   requestData: boolean;
   requestError?: string;
-  providerName?: string;
+  providerId?: string;
   children: React.ReactNode;
 }
 
@@ -34,18 +34,24 @@ export default function ParameterGroupTreeItem(props: ParameterGroupTreeItemProp
     icon = null,
     requestData,
     requestError = "",
-    providerName,
+    providerId,
     ...children
   } = props;
 
+  const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
+
+  useEffect(() => {
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
+  }, [settingsCtx.changed]);
 
   const getHostStyle = useCallback(
     function getHostStyle(): object {
-      if (providerName && settingsCtx.get("colorizeHosts")) {
+      if (providerId && colorizeHosts) {
         return {
           borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(providerName),
+          borderLeftColor: rosCtx.providerColor(providerId),
           borderLeftWidth: "0.6em",
           [`& .${treeItemClasses.content}`]: {
             paddingLeft: "8px",
@@ -58,7 +64,7 @@ export default function ParameterGroupTreeItem(props: ParameterGroupTreeItemProp
         },
       };
     },
-    [providerName, settingsCtx.changed]
+    [rosCtx.providerColor, providerId, colorizeHosts]
   );
 
   // avoid selection if collapse icon was clicked

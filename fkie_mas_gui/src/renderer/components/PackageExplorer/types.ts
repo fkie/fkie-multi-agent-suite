@@ -8,6 +8,7 @@ export type TPackageTree = {
 
 export type TPackageTreeItem = {
   // treePath: string;
+  providerId: string;
   children: TPackageTreeItem[];
   file: PathItem | undefined;
   name: string;

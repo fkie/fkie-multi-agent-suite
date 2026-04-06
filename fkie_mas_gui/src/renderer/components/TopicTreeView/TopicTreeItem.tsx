@@ -7,6 +7,7 @@ import { emitCustomEvent } from "react-custom-events";
 
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { IncompatibleQos, TopicExtendedInfo } from "@/renderer/models";
 import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
@@ -14,7 +15,6 @@ import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
 import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { removeDDSuid } from "@/renderer/utils/index";
-import { colorFromHostname } from "../UI/Colors";
 
 interface TopicTreeItemProps {
   itemId: string;
@@ -37,6 +37,7 @@ export default function TopicTreeItem({
 }: TopicTreeItemProps): JSX.Element {
   const logCtx = useLoggingContext();
   const navCtx = useNavigationContext();
+  const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
 
   const [name, setName] = useState("");
@@ -85,21 +86,21 @@ export default function TopicTreeItem({
   }, [topicInfo, rootPath]);
 
   const getHostStyle = useCallback(
-    (providerName: string): object => {
+    (providerId: string): object => {
       // If host coloring is enabled and providerName is set, add a colored left border for the host
-      if (providerName && colorizeHosts) {
+      if (providerId && colorizeHosts) {
         return {
           flexGrow: 1,
           alignItems: "center",
           borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(providerName),
+          borderLeftColor: rosCtx.providerColor(providerId),
           borderLeftWidth: "0.6em",
         };
       }
       // default layout if no coloring
       return { flexGrow: 1, alignItems: "center", paddingLeft: 0 };
     },
-    [colorizeHosts]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   function addQosValue(
@@ -349,7 +350,7 @@ export default function TopicTreeItem({
                   key={`${item.providerId}-${item.info.node_id}`}
                   paddingLeft={3}
                   direction="row"
-                  sx={getHostStyle(item.providerName)}
+                  sx={getHostStyle(item.providerId)}
                 >
                   <Typography
                     fontSize="small"
@@ -375,7 +376,7 @@ export default function TopicTreeItem({
                   key={`${item.providerId}-${item.info.node_id}`}
                   paddingLeft={3}
                   direction="row"
-                  sx={getHostStyle(item.providerName)}
+                  sx={getHostStyle(item.providerId)}
                 >
                   <Typography
                     fontSize="small"

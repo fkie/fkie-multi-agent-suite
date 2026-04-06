@@ -23,7 +23,6 @@ import LaunchFileModal from "@/renderer/components/LaunchFileModal/LaunchFileMod
 import TreeDirectory from "@/renderer/components/PackageExplorer/TreeDirectory";
 import { TPackageItemsTree, TPackageTree, TPackageTreeItem } from "@/renderer/components/PackageExplorer/types";
 import { Tag } from "@/renderer/components/UI";
-import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import VirtualizedListboxComponent from "@/renderer/components/UI/VirtualizedListboxComponent";
 import { BUTTON_LOCATIONS, LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
@@ -173,6 +172,7 @@ export default function PackageExplorerPanel(): JSX.Element {
           curr.providerId = prov.id;
           curr.providerName = prov.name();
           return {
+            providerId: prov.id,
             name: curr.name,
             children: [],
             file: curr,
@@ -182,6 +182,7 @@ export default function PackageExplorerPanel(): JSX.Element {
         });
         provPackageHistory[`${prov.name()}`] = [
           {
+            providerId: prov.id,
             name: `${prov.name()}`,
             children: pit,
             file: undefined,
@@ -283,6 +284,7 @@ export default function PackageExplorerPanel(): JSX.Element {
               launchDirId = item.id;
             }
             prev.packageTree.push({
+              providerId: provider.id,
               name: fItem.name as string,
               children: [],
               file: fItem,
@@ -292,6 +294,7 @@ export default function PackageExplorerPanel(): JSX.Element {
           } else {
             // directory
             prev.packageTree.push({
+              providerId: provider.id,
               name: name,
               children: prev[name].packageTree,
               file: undefined,
@@ -448,22 +451,18 @@ export default function PackageExplorerPanel(): JSX.Element {
   }, [selectedLaunchFile]);
 
   const getHostStyle = useCallback(
-    function getHostStyle(providerName: string): object {
+    function getHostStyle(providerId: string): object {
       if (colorizeHosts) {
-        const hColor = colorFromHostname(providerName);
+        const hColor = rosCtx.providerColor(providerId);
         return {
           borderLeftStyle: "solid",
           borderLeftColor: hColor,
           borderLeftWidth: "0.6em",
-          // overflowWrap: "normal",
-          // borderBottomStyle: "solid",
-          // borderBottomColor: hColor,
-          // borderBottomWidth: "0.6em",
         };
       }
       return {}; // { overflowWrap: "normal" };
     },
-    [colorizeHosts]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   const createPackageSelector = useMemo(() => {
@@ -512,7 +511,7 @@ export default function PackageExplorerPanel(): JSX.Element {
             key={option.id}
             direction="row"
             alignItems="center"
-            style={getHostStyle(option.providerName)}
+            style={getHostStyle(option.providerId)}
             sx={{ cursor: "pointer" }}
           >
             <Tooltip title={`${option.rosPackage.name} | ${option.providerName}`} placement="top" disableInteractive>
@@ -674,6 +673,7 @@ export default function PackageExplorerPanel(): JSX.Element {
           {Object.keys(packageItemsTree).length > 0 && (
             <TreeDirectory
               selectedPackage={selectedPackage?.rosPackage}
+              providerId={selectedPackage?.providerId}
               providerName={selectedPackage?.providerName}
               packageItemsTree={packageItemsTree}
               selectedItem={firstLaunchDirItem}

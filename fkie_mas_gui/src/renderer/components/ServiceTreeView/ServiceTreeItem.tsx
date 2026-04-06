@@ -3,10 +3,10 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ServiceExtendedInfo, TServiceNodeInfo } from "@/renderer/models";
 import { treeItemClasses } from "@mui/x-tree-view";
-import { colorFromHostname } from "../UI/Colors";
 import StyledTreeItem from "./StyledTreeItem";
 
 interface ServiceTreeItemProps {
@@ -33,6 +33,7 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
   // ...other
   const logCtx = useLoggingContext();
   const navCtx = useNavigationContext();
+  const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [name, setName] = useState<string>("");
   const [namespace, setNamespace] = useState<string>("");
@@ -49,19 +50,19 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
   }, [settingsCtx.changed]);
 
   const getHostStyle = useCallback(
-    function getHostStyle(providerName: string): object {
-      if (providerName && colorizeHosts) {
+    function getHostStyle(providerId: string): object {
+      if (providerId && colorizeHosts) {
         return {
           flexGrow: 1,
           alignItems: "center",
           borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(providerName),
+          borderLeftColor: rosCtx.providerColor(providerId),
           borderLeftWidth: "0.6em",
         };
       }
       return { flexGrow: 1, alignItems: "center" };
     },
-    [settingsCtx.changed]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   useEffect(() => {
@@ -124,7 +125,7 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
               }
             }}
           >
-            <Stack spacing={1} direction="row" sx={getHostStyle(serviceInfo.nodeProviders[0]?.providerName)}>
+            <Stack spacing={1} direction="row" sx={getHostStyle(serviceInfo.nodeProviders[0]?.providerId)}>
               <Stack direction="row" sx={{ flexGrow: 1, alignItems: "center" }}>
                 <Typography
                   variant="body2"
@@ -197,11 +198,15 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
               </Typography>
               {serviceInfo.nodeProviders.map((item: TServiceNodeInfo) => {
                 return (
-                  <Stack key={item.nodeId} paddingLeft="0.5em" direction="row" sx={getHostStyle(item.providerName)}>
+                  <Stack key={item.nodeId} paddingLeft="0.5em" direction="row" sx={getHostStyle(item.providerId)}>
                     <Typography
                       fontSize="small"
                       onClick={() => {
-                        navCtx.setSelected("service-tree", [`${item.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
+                        navCtx.setSelected(
+                          "service-tree",
+                          [`${item.providerId}${item.nodeId.replaceAll("/", "#")}`],
+                          false
+                        );
                       }}
                     >
                       {item.nodeName}
@@ -217,11 +222,15 @@ export default function ServiceTreeItem(props: ServiceTreeItemProps): JSX.Elemen
                   </Typography>
                   {serviceInfo.nodeRequester.map((item) => {
                     return (
-                      <Stack key={item.nodeId} paddingLeft="0.5em" direction="row" sx={getHostStyle(item.providerName)}>
+                      <Stack key={item.nodeId} paddingLeft="0.5em" direction="row" sx={getHostStyle(item.providerId)}>
                         <Typography
                           fontSize="small"
                           onClick={() => {
-                            navCtx.setSelected("service-tree", [`${item.providerId}${item.nodeId.replaceAll("/", "#")}`], false);
+                            navCtx.setSelected(
+                              "service-tree",
+                              [`${item.providerId}${item.nodeId.replaceAll("/", "#")}`],
+                              false
+                            );
                           }}
                         >
                           {item.nodeName}

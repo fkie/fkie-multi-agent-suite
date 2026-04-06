@@ -18,7 +18,7 @@ import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import { removeDDSuid } from "@/renderer/utils";
-import { colorFromHostname, CopyButton } from "../UI";
+import { CopyButton } from "../UI";
 
 type TopicDetailsItemsProps = {
   providerId: string | undefined;
@@ -93,19 +93,19 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
   }
 
   const getHostStyle = useCallback(
-    function getHostStyle(providerName: string): object {
-      if (providerName && colorizeHosts) {
+    function getHostStyle(providerId: string): object {
+      if (providerId && colorizeHosts) {
         return {
           flexGrow: 1,
           alignItems: "center",
           borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(providerName),
+          borderLeftColor: rosCtx.providerColor(providerId),
           borderLeftWidth: "0.5em",
         };
       }
       return { flexGrow: 1, alignItems: "center" };
     },
-    [settingsCtx.changed]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   useCustomEventListener(EVENT_PROVIDER_ROS_TOPICS, () => {
@@ -410,7 +410,7 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
               alignItems="center"
               direction="row"
               spacing="0.5em"
-              style={getHostStyle(item.providerName)}
+              style={getHostStyle(item.providerId)}
             >
               {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
                 <Tooltip
@@ -455,7 +455,7 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
               alignItems="center"
               direction="row"
               spacing="0.5em"
-              style={getHostStyle(item.providerName)}
+              style={getHostStyle(item.providerId)}
             >
               {item.info.incompatible_qos && item.info.incompatible_qos.length > 0 && (
                 <Tooltip

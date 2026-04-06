@@ -7,11 +7,12 @@ import { CircularProgress, IconButton, Link, NativeSelect, Stack, Tooltip, Typog
 import { editor } from "monaco-editor";
 import React, { ForwardedRef, useCallback, useEffect, useMemo, useState } from "react";
 
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { getFileAbb, getFileName, LaunchIncludedFile } from "@/renderer/models";
 import { fileFromUriPath } from "@/renderer/monaco/utils";
 import { TFileRange, TLaunchArg } from "@/types";
-import { colorFromHostname, OverflowMenu } from "../UI";
+import { OverflowMenu } from "../UI";
 
 export type THistoryModel = {
   uriPath: string;
@@ -21,6 +22,7 @@ export type THistoryModel = {
 
 interface EditorToolbarProps {
   refEl: ForwardedRef<HTMLDivElement>;
+  providerId: string;
   providerName: string;
   packageName: string;
   rootFilePath: string;
@@ -48,6 +50,7 @@ interface EditorToolbarProps {
 export function EditorToolbar(props: EditorToolbarProps): JSX.Element {
   const {
     refEl,
+    providerId,
     providerName,
     packageName,
     rootFilePath,
@@ -63,6 +66,7 @@ export function EditorToolbar(props: EditorToolbarProps): JSX.Element {
     reloadCurrentFile = () => {},
   } = props;
 
+  const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [historyModels, setHistoryModels] = useState<THistoryModel[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
@@ -157,18 +161,23 @@ export function EditorToolbar(props: EditorToolbarProps): JSX.Element {
     });
   }, [historyModels]);
 
-  const hostStyle =
-    providerName && colorizeHosts
-      ? {
+  const getHostStyle = useCallback(
+    (providerId: string | undefined): object => {
+      if (colorizeHosts && providerId) {
+        return {
           flexGrow: 1,
           borderBottomStyle: "solid",
-          borderBottomColor: colorFromHostname(providerName),
+          borderBottomColor: rosCtx.providerColor(providerId),
           borderBottomWidth: "0.3em",
-        }
-      : { flexGrow: 1 };
+        };
+      }
+      return { flexGrow: 1 };
+    },
+    [colorizeHosts, rosCtx.providerColor]
+  );
 
   return (
-    <Stack direction="row" spacing={0.5} alignItems="center" ref={refEl} sx={hostStyle}>
+    <Stack direction="row" spacing={0.5} alignItems="center" ref={refEl} sx={getHostStyle(providerId)}>
       <Tooltip title="Save File" disableInteractive>
         <span>
           <IconButton

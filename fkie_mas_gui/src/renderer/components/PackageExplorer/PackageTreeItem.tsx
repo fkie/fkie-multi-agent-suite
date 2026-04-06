@@ -3,14 +3,15 @@ import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, red } from "@mui/material/colors";
 import { useCallback, useEffect, useState } from "react";
 
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
-import { colorFromHostname } from "../UI";
 import CopyButton from "../UI/CopyButton";
 import StyledRootTreeItem from "./StyledRootTreeItem";
 
 interface PackageTreeItemProps {
   itemId: string;
   packageName: string;
+  providerId: string | undefined;
   providerName: string | undefined;
   path: string;
   exists: boolean;
@@ -23,6 +24,7 @@ export default function PackageTreeItem(props: PackageTreeItemProps): JSX.Elemen
   const {
     itemId,
     packageName,
+    providerId = undefined,
     providerName = undefined,
     path,
     exists = true,
@@ -34,6 +36,7 @@ export default function PackageTreeItem(props: PackageTreeItemProps): JSX.Elemen
   const iconColor: string = exists ? blue[700] : red[700];
   const enableCopy: boolean = false;
 
+  const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
 
@@ -42,22 +45,19 @@ export default function PackageTreeItem(props: PackageTreeItemProps): JSX.Elemen
   }, [settingsCtx.changed]);
 
   const getHostStyle = useCallback(
-    function getHostStyle(providerName: string | undefined): object {
-      if (colorizeHosts && providerName) {
-        const hColor = colorFromHostname(providerName);
+    function getHostStyle(providerId: string | undefined): object {
+      if (colorizeHosts && providerId) {
+        const hColor = rosCtx.providerColor(providerId);
         return {
           borderLeftStyle: "solid",
           borderLeftColor: hColor,
           borderLeftWidth: "0.6em",
           overflowWrap: "normal",
-          // borderBottomStyle: "solid",
-          // borderBottomColor: hColor,
-          // borderBottomWidth: "0.6em",
         };
       }
       return {};
     },
-    [colorizeHosts]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   return (
@@ -76,7 +76,7 @@ export default function PackageTreeItem(props: PackageTreeItemProps): JSX.Elemen
           onDoubleClick={(event) => {
             onDoubleClick(packageName, itemId, event.ctrlKey, event.shiftKey, event.altKey);
           }}
-          style={getHostStyle(providerName)}
+          style={getHostStyle(providerId)}
         >
           <Inventory2OutlinedIcon
             sx={{

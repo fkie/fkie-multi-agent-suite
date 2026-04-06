@@ -8,7 +8,7 @@ import JsonView from "react18-json-view";
 
 import ServiceDetailsItem from "@/renderer/components/NodeDetails/ServiceDetailsItem";
 import { default as TopicDetailsItem } from "@/renderer/components/NodeDetails/TopicDetailsItem";
-import { colorFromHostname, getDiagnosticStyle } from "@/renderer/components/UI/Colors";
+import { getDiagnosticStyle } from "@/renderer/components/UI/Colors";
 import CopyButton from "@/renderer/components/UI/CopyButton";
 import Tag from "@/renderer/components/UI/Tag";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
@@ -69,8 +69,10 @@ export default function DetailsPanel(): JSX.Element {
   const [showLaunchParameter, setShowLaunchParameter] = useLocalStorage("DetailsPanel:showLaunchParameter", true);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
 
   useEffect(() => {
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
     setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx.changed]);
@@ -112,17 +114,17 @@ export default function DetailsPanel(): JSX.Element {
   });
 
   const getHostStyle = useCallback(
-    (providerName: string | undefined) => {
-      if (providerName && settingsCtx.get("colorizeHosts")) {
+    (providerId: string | undefined) => {
+      if (providerId && colorizeHosts) {
         return {
           borderTopStyle: "solid",
-          borderTopColor: colorFromHostname(providerName),
+          borderTopColor: rosCtx.providerColor(providerId),
           borderTopWidth: "0.4em",
         };
       }
       return {};
     },
-    [settingsCtx.changed]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   const createDiagnostics = useMemo(() => {
@@ -704,7 +706,7 @@ export default function DetailsPanel(): JSX.Element {
           alignItems="center"
           paddingTop={0}
           marginBottom={0.5}
-          sx={getHostStyle(nodeShow.providerName)}
+          sx={getHostStyle(nodeShow.providerId)}
         >
           {navCtx.history.length > 0 ? (
             <Tooltip title={"Go back to last node"} placement="bottom">

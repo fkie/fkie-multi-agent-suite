@@ -37,7 +37,6 @@ import { CmdType } from "@/renderer/providers";
 import Provider from "@/renderer/providers/Provider";
 import { generateUniqueId } from "@/renderer/utils";
 import { TTag } from "@/types";
-import { colorFromHostname } from "../UI/Colors";
 import Tag from "../UI/Tag";
 import DateHelpDialog from "./DateHelpDialog";
 import SetNTPDateDialog from "./SetNTPDateDialog";
@@ -61,10 +60,12 @@ export default function HostItem(props: HostItemProps): JSX.Element {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [showHelpTime, setShowHelpTime] = useState<boolean>(false);
   const [openNtpdateDialog, setOpenNtpdateDialog] = useState<boolean>(false);
+  const [colorizeHosts, setColorizeHosts] = useState<string>(settingsCtx.get("colorizeHosts") as string);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [timeDiffThreshold, setTimeDiffThreshold] = useState<number>(settingsCtx.get("timeDiffThreshold") as number);
 
   useEffect(() => {
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as string);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setTimeDiffThreshold(settingsCtx.get("timeDiffThreshold") as number);
   }, [settingsCtx.changed]);
@@ -174,12 +175,10 @@ export default function HostItem(props: HostItemProps): JSX.Element {
 
   const getHostStyle = useCallback(
     function getHostStyle(provider: Provider): object {
-      if (settingsCtx.get("colorizeHosts")) {
-        // borderLeft: `3px dashed`,
-        // borderColor: colorFromHostname(provider.name()),
+      if (colorizeHosts) {
         return {
           borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(provider.name()),
+          borderLeftColor: rosCtx.providerColor(provider.id),
           borderLeftWidth: "0.6em",
           [`& .${treeItemClasses.content}`]: {
             paddingLeft: "8px",
@@ -192,7 +191,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
         },
       };
     },
-    [settingsCtx.changed]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   // avoid selection if collapse icon was clicked

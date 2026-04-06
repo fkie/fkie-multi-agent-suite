@@ -27,7 +27,6 @@ import { useCustomEventListener } from "react-custom-events";
 import { v4 as uuid } from "uuid";
 
 import { Tag } from "@/renderer/components/UI";
-import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
@@ -87,11 +86,13 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
   const [qosAnchorEl, setQosAnchorEl] = useState(null);
   const [currentQos, setCurrentQos] = useState<RosQos | undefined>(undefined);
   const openQos = Boolean(qosAnchorEl);
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
   // let receivedIndex = 0;
 
   useEffect(() => {
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx.changed]);
@@ -616,19 +617,19 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
 
   const getHostStyle = useCallback(
     function getHostStyle(): object {
-      const providerName = currentProvider?.name();
-      if (providerName && settingsCtx.get("colorizeHosts")) {
+      const providerId = currentProvider?.id;
+      if (providerId && colorizeHosts) {
         return {
           flexGrow: 1,
           borderTopStyle: "solid",
-          borderTopColor: colorFromHostname(providerName),
+          borderTopColor: rosCtx.providerColor(providerId),
           borderTopWidth: "0.3em",
           backgroundColor: backgroundColor,
         };
       }
       return { flexGrow: 1, backgroundColor: backgroundColor };
     },
-    [currentProvider, backgroundColor, settingsCtx.changed]
+    [currentProvider, backgroundColor, colorizeHosts]
   );
 
   function onKeyDown(event: React.KeyboardEvent): void {

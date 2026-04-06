@@ -19,7 +19,6 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
 
-import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
@@ -54,6 +53,14 @@ export default function ServiceCallerPanel(props: ServiceCallerPanelProps): JSX.
   const [resultError, setResultError] = useState<string>();
   const [resultMessage, setResultMessage] = useState<TRosMessageStruct>();
   const [timeoutObj, setTimeoutObj] = useState<NodeJS.Timeout | null>(null);
+
+  const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
+
+  useEffect(() => {
+    setBackgroundColor(settingsCtx.get("backgroundColor") as string);
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
+  }, [settingsCtx.changed]);
 
   // get item history after the history was loaded
   const fromHistory = useDebounceCallback((index) => {
@@ -247,19 +254,19 @@ export default function ServiceCallerPanel(props: ServiceCallerPanelProps): JSX.
 
   const getHostStyle = useCallback(
     function getHostStyle(): object {
-      const providerName = provider?.name();
-      if (providerName && settingsCtx.get("colorizeHosts")) {
+      const providerId = provider?.id;
+      if (providerId && colorizeHosts) {
         return {
           flexGrow: 1,
           borderTopStyle: "solid",
-          borderTopColor: colorFromHostname(providerName),
+          borderTopColor: rosCtx.providerColor(providerId),
           borderTopWidth: "0.3em",
-          backgroundColor: settingsCtx.get("backgroundColor") as string,
+          backgroundColor: backgroundColor,
         };
       }
-      return { flexGrow: 1, backgroundColor: settingsCtx.get("backgroundColor") as string };
+      return { flexGrow: 1, backgroundColor: backgroundColor };
     },
-    [provider, settingsCtx.changed]
+    [provider, colorizeHosts, backgroundColor, rosCtx.providerColor]
   );
 
   const createJsonView = useMemo(() => {

@@ -291,7 +291,7 @@ export default function ParameterRootTree(props: ParameterRootTreeProps): JSX.El
         namespacePart={""}
         groupName={rosNode ? rosNode.name : provider.name()}
         icon={rosNode ? Label : ComputerIcon}
-        providerName={provider.name()}
+        providerId={provider.id}
         countChildren={rosParameters ? rosParameters.length : 0}
         requestData={requesting}
         requestError={requestError}

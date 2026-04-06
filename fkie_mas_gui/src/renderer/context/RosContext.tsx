@@ -1,9 +1,9 @@
 import { SnackbarKey, useSnackbar } from "notistack";
-import React, { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConnectConfig } from "ssh2";
 
-import { ErrorAlertComponent, ReloadFileAlertComponent, RestartNodesAlertComponent } from "@/renderer/components/UI";
+import { ErrorAlertComponent, ReloadFileAlertComponent, RestartNodesAlertComponent, colorFromHostname } from "@/renderer/components/UI";
 import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -93,7 +93,8 @@ export interface IRosContext {
   updateLocalNodes: (providerId: string, nodes: string[]) => void;
   setShowSnackbarReloadLaunchNotification: (show: boolean) => void;
   setShowSnackbarBinaryChangedNotification: (show: boolean) => void;
-  hiddenConnect(configParams: TProviderLaunchParams);
+  hiddenConnect: (configParams: TProviderLaunchParams) => void;
+  providerColor: (id: string) => string;
 }
 
 type TLoadLaunchResult = {
@@ -136,6 +137,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const [showSnackbarBinaryChangedNotification, setShowSnackbarBinaryChangedNotification] = useState<boolean>(true);
   const [mapProviderRosNodes, setMapProviderRosNodes] = useState(new Map<string, RosNode[]>());
   const [nodeMap, setNodeMap] = useState(new Map<string, RosNode>());
+
+  const providerColors = useRef<Map<string, string>>(new Map());
 
   // ── Stable refs (avoids stale-closure bugs in callbacks / event handlers) ──
   const logCtxRef = useAlwaysCurrentRef(logCtx);
@@ -213,6 +216,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
   const addProvider = useCallback(
     (provider: Provider): void => {
       if (!getProviderById(provider.id)) {
+        providerColors.current.set(provider.id, colorFromHostname(provider.id));
         setProviders((prev) => [...prev, provider]);
       }
     },
@@ -656,6 +660,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
               if (iface.ip6) provider.addHosts([iface.ip6]);
             }
           }
+          providerColors.current.set(provider.id, colorFromHostname(provider.id));
           // enqueue provider; will later be added to providers state
           setProvidersAddQueue((prev) => [...prev, provider as Provider]);
         } else {
@@ -938,6 +943,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         configParams.domainId,
         configParams.useSSL
       );
+      providerColors.current.set(provider.id, colorFromHostname(provider.id));
       setHiddenProviders((prev) => [...prev, provider]);
       provider.isLocalHost = isLocalHost(provider.connection.host);
       provider.startConfiguration = new ProviderLaunchConfiguration(configParams);
@@ -1149,6 +1155,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     logCtx.debugInterface(URI.ROS_PROVIDER_WARNINGS, JSON.stringify(data.warnings), "", data.provider.id);
   });
 
+  const providerColor = useCallback((id: string) => {
+    return providerColors.current.get(id) || "#bfbfbf";
+  }, []);
+
   // ─────────────────────────────────────────────
   // Effects
   // ─────────────────────────────────────────────
@@ -1232,6 +1242,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       setShowSnackbarReloadLaunchNotification,
       setShowSnackbarBinaryChangedNotification,
       hiddenConnect,
+      providerColor,
     }),
     [
       initialized,
@@ -1262,6 +1273,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       addProvider,
       updateLocalNodes,
       hiddenConnect,
+      providerColor,
     ]
   );
 

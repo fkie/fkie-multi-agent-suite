@@ -30,7 +30,6 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import semver from "semver";
 
-import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import { useAutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
@@ -58,8 +57,10 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
   const [providersActivity, setProvidersActivity] = useState(false);
   const [updated, forceUpdate] = useReducer((x) => x + 1, 0);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
 
   useEffect(() => {
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
   }, [settingsCtx.changed]);
 
@@ -305,18 +306,16 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
 
   const getHostStyle = useCallback(
     (provider: Provider) => {
-      if (settingsCtx.get("colorizeHosts")) {
-        // borderLeft: `3px dashed`,
-        // borderColor: colorFromHostname(provider.name()),
+      if (colorizeHosts) {
         return {
           borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(provider.name()),
+          borderLeftColor: rosCtx.providerColor(provider.id),
           borderLeftWidth: "0.6em",
         };
       }
       return {};
     },
-    [settingsCtx.changed]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   const isOlderVersion = useCallback((): boolean => {

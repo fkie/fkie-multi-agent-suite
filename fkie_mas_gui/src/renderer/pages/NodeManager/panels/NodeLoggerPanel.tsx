@@ -19,7 +19,6 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import { useCallback, useEffect, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
-import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -45,8 +44,10 @@ export default function NodeLoggerPanel(props: NodeLoggerPanelProps): JSX.Elemen
   const [loggersFiltered, setLoggersFiltered] = useState<LoggerConfig[]>([]);
   const [tooltipDelay, setTooltipDelay] = useState<number>(settingsCtx.get("tooltipEnterDelay") as number);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
 
   useEffect(() => {
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
     setTooltipDelay(settingsCtx.get("tooltipEnterDelay") as number);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx.changed]);
@@ -180,19 +181,17 @@ export default function NodeLoggerPanel(props: NodeLoggerPanelProps): JSX.Elemen
   );
 
   const getHostStyle = useCallback(
-    function getHostStyle(providerName: string): object {
-      if (settingsCtx.get("colorizeHosts")) {
-        // borderLeft: `3px dashed`,
-        // borderColor: colorFromHostname(provider.name()),
+    function getHostStyle(providerId: string): object {
+      if (colorizeHosts) {
         return {
           borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(providerName),
+          borderLeftColor: rosCtx.providerColor(providerId),
           borderLeftWidth: "0.6em",
         };
       }
       return {};
     },
-    [settingsCtx.changed]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   useEffect(() => {
@@ -215,7 +214,7 @@ export default function NodeLoggerPanel(props: NodeLoggerPanelProps): JSX.Elemen
       sx={{ backgroundColor: backgroundColor }}
     >
       <Stack direction="row" spacing="1em" justifyItems="center">
-        <Typography sx={getHostStyle(currentNode?.providerName)}>{currentNode?.name}</Typography>
+        <Typography sx={getHostStyle(currentNode?.providerId)}>{currentNode?.name}</Typography>
         {isRequesting && <CircularProgress size="1em" />}
       </Stack>
       <Stack direction="row" spacing={0.1} justifyItems="center">

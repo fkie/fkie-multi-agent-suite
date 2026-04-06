@@ -14,6 +14,7 @@ import { TPackageItemsTree, TPackageTreeItem } from "./types";
 interface TreeDirectoryProps {
   packageItemsTree: TPackageItemsTree;
   selectedPackage: RosPackage | undefined;
+  providerId: string | undefined;
   providerName: string | undefined;
   selectedItem: string | null;
   onNodeSelect: (itemId: string) => void;
@@ -24,6 +25,7 @@ export default function TreeDirectory(props: TreeDirectoryProps): JSX.Element {
   const {
     packageItemsTree,
     selectedPackage = undefined,
+    providerId = undefined,
     providerName = undefined,
     selectedItem = null,
     onNodeSelect = (): void => {},
@@ -223,7 +225,7 @@ export default function TreeDirectory(props: TreeDirectoryProps): JSX.Element {
       >
         {Object.entries(packageItemsTree).map(([packageName, packageTree]) => {
           return packageTree.map((itemTree) => {
-            const { name, children, file, appendPackageName } = itemTree;
+            const { providerId, name, children, file, appendPackageName } = itemTree;
             if (file && children && children.length === 0) {
               // The root item is a launch file from the saved history.
 
@@ -245,7 +247,7 @@ export default function TreeDirectory(props: TreeDirectoryProps): JSX.Element {
             }
             if (appendPackageName && name) {
               return (
-                <HistoryGroupItem key={name} itemId={name} providerName={name}>
+                <HistoryGroupItem key={name} itemId={name} providerId={providerId} providerName={name}>
                   {itemTree?.children && buildPackageTree(itemTree.children, packageName)}
                 </HistoryGroupItem>
               );
@@ -255,6 +257,7 @@ export default function TreeDirectory(props: TreeDirectoryProps): JSX.Element {
                 key={packageName}
                 itemId={packageName}
                 packageName={packageName}
+                providerId={providerId}
                 providerName={providerName}
                 path={selectedPackage?.path as string}
                 exists={!!itemTree}
@@ -271,6 +274,7 @@ export default function TreeDirectory(props: TreeDirectoryProps): JSX.Element {
     packageItemsTree,
     selectedItems,
     selectedPackage,
+    providerId,
     providerName,
     // handleToggle,
     // handleSelect,

@@ -335,7 +335,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               {...(props as HTMLAttributes<HTMLDivElement>)}
               key={option.host}
               direction="row"
-              // style={getHostStyle(option.host)}
             >
               <Typography sx={{ ml: 0 }} noWrap>
                 {`${option.host} | ${option.ip}`}

@@ -3,7 +3,6 @@ import { Box, Button, Stack, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
 
-import { colorFromHostname } from "@/renderer/components/UI";
 import CopyButton from "@/renderer/components/UI/CopyButton";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import Tag from "@/renderer/components/UI/Tag";
@@ -147,17 +146,17 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
   }, [providerId, rosCtx]);
 
   const getHostStyle = useCallback(
-    (providerName: string | undefined) => {
-      if (providerName && colorizeHosts) {
+    (providerId: string | undefined) => {
+      if (providerId && colorizeHosts) {
         return {
           borderTopStyle: "solid",
-          borderTopColor: colorFromHostname(providerName),
+          borderTopColor: rosCtx.providerColor(providerId),
           borderTopWidth: "0.4em",
         };
       }
       return {};
     },
-    [settingsCtx.changed]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   const createProviderDetailsView = useMemo(() => {
@@ -170,7 +169,7 @@ export default function SystemInformationPanel(props: SystemInformationPanelProp
         alignItems="left"
         marginBottom={1.5}
       >
-        <Stack paddingTop={0} marginBottom={0.5} sx={getHostStyle(provider.name())}>
+        <Stack paddingTop={0} marginBottom={0.5} sx={getHostStyle(provider.id)}>
           <Typography
             variant="subtitle1"
             style={{

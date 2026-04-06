@@ -29,7 +29,6 @@ export default function ProviderPanelRowCfg(props: ProviderPanelRowCfgProps): JS
             flexGrow: 1,
             width: "100%",
           }}
-          // sx={getHostStyle(startConfig.params.host)}
         >
           <Stack direction="row" spacing="0.5em" flexGrow={1}>
             <Link noWrap href="#" underline="none" color="inherit" onClick={() => {}}>

@@ -15,7 +15,7 @@ import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeM
 import ServiceCallerPanel from "@/renderer/pages/NodeManager/panels/ServiceCallerPanel";
 import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
 import { generateUniqueId, removeDDSuid } from "@/renderer/utils";
-import { colorFromHostname, CopyButton } from "../UI";
+import { CopyButton } from "../UI";
 
 type ServiceDetailsItemsProps = {
   providerId: string | undefined;
@@ -84,19 +84,19 @@ export default function ServiceDetailsItem(props: ServiceDetailsItemsProps): JSX
   }, [providerId, rosCtx.providers]);
 
   const getHostStyle = useCallback(
-    function getHostStyle(providerName: string): object {
-      if (providerName && colorizeHosts) {
+    (providerId: string): object => {
+      if (providerId && colorizeHosts) {
         return {
           flexGrow: 1,
           alignItems: "center",
           borderLeftStyle: "solid",
-          borderLeftColor: colorFromHostname(providerName),
+          borderLeftColor: rosCtx.providerColor(providerId),
           borderLeftWidth: "0.5em",
         };
       }
       return { flexGrow: 1, alignItems: "center" };
     },
-    [settingsCtx.changed]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -176,7 +176,7 @@ export default function ServiceDetailsItem(props: ServiceDetailsItemsProps): JSX
               alignItems="center"
               direction="row"
               spacing="0.5em"
-              style={getHostStyle(item.providerName)}
+              style={getHostStyle(item.providerId)}
             >
               <Button
                 size="small"

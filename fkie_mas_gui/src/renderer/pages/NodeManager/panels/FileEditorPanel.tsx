@@ -494,6 +494,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
         >
           <EditorToolbar
             refEl={toolbarRef as ForwardedRef<HTMLDivElement>}
+            providerId={provider.id}
             providerName={providerName}
             packageName={packageName}
             rootFilePath={rootFilePath}

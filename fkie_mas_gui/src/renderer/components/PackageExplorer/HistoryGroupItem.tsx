@@ -2,12 +2,13 @@ import HistoryIcon from "@mui/icons-material/History";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 
+import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
-import { colorFromHostname } from "../UI";
 import StyledRootTreeItem from "./StyledRootTreeItem";
 
 interface HistoryGroupItemProps {
   itemId: string;
+  providerId: string;
   providerName: string;
   children: React.ReactNode;
   onClick?: (labelText: string, itemId: string) => void;
@@ -15,8 +16,16 @@ interface HistoryGroupItemProps {
 }
 
 export default function HistoryGroupItem(props: HistoryGroupItemProps): JSX.Element {
-  const { itemId, providerName, onClick = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
+  const {
+    itemId,
+    providerId,
+    providerName,
+    onClick = (): void => {},
+    onDoubleClick = (): void => {},
+    ...children
+  } = props;
 
+  const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
 
@@ -25,22 +34,19 @@ export default function HistoryGroupItem(props: HistoryGroupItemProps): JSX.Elem
   }, [settingsCtx.changed]);
 
   const getHostStyle = useCallback(
-    function getHostStyle(providerName: string | undefined): object {
-      if (colorizeHosts && providerName) {
-        const hColor = colorFromHostname(providerName);
+    (providerId: string | undefined): object => {
+      if (colorizeHosts && providerId) {
+        const hColor = rosCtx.providerColor(providerId);
         return {
           borderLeftStyle: "solid",
           borderLeftColor: hColor,
           borderLeftWidth: "0.6em",
           overflowWrap: "normal",
-          // borderBottomStyle: "solid",
-          // borderBottomColor: hColor,
-          // borderBottomWidth: "0.6em",
         };
       }
       return {};
     },
-    [colorizeHosts]
+    [colorizeHosts, rosCtx.providerColor]
   );
 
   return (
@@ -59,7 +65,7 @@ export default function HistoryGroupItem(props: HistoryGroupItemProps): JSX.Elem
           onDoubleClick={(event) => {
             onDoubleClick(providerName, itemId, event.ctrlKey, event.shiftKey, event.altKey);
           }}
-          style={getHostStyle(providerName)}
+          style={getHostStyle(providerId)}
         >
           <HistoryIcon
             sx={{

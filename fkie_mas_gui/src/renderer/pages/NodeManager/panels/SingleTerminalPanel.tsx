@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { emitCustomEvent } from "react-custom-events";
 
 import TerminalClient from "@/renderer/components/TerminalClient/TerminalClient";
-import { colorFromHostname } from "@/renderer/components/UI/Colors";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import CmdType from "@/renderer/providers/CmdType";
@@ -26,16 +25,18 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
   const rosCtx = useRosContext();
   const settingsCtx = useSettingsContext();
   const [initialCommands, setInitialCommands] = useState<string[]>([]);
-  const [providerName, setProviderName] = useState("");
+  const [providerId, setProviderId] = useState("");
   const [currentHost, setCurrentHost] = useState<string>();
   const [ttydPort, setTtydPort] = useState<number>(8681);
   const [lastScreenUsed, setLastScreenUsed] = useState("");
   const [tokenUrl, setTokenUrl] = useState(provider.id);
   const [errorHighlighting, setErrorHighlighting] = useState(false);
+  const [colorizeHosts, setColorizeHosts] = useState<boolean>(settingsCtx.get("colorizeHosts") as boolean);
   const [backgroundColor, setBackgroundColor] = useState<string>(settingsCtx.get("backgroundColor") as string);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
+    setColorizeHosts(settingsCtx.get("colorizeHosts") as boolean);
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
   }, [settingsCtx.changed]);
 
@@ -46,7 +47,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         setCurrentHost(undefined);
         return;
       }
-      setProviderName(provider.name());
+      setProviderId(provider.id);
       setCurrentHost(provider.host());
       let tkUrl = `${nodeName.replaceAll("/", "")}`;
       if (!tkUrl) {
@@ -121,18 +122,18 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const getHostStyle = useCallback(
     function getHostStyle(): object {
-      if (providerName && settingsCtx.get("colorizeHosts")) {
+      if (providerId && colorizeHosts) {
         return {
           flexGrow: 1,
           borderTopStyle: "solid",
-          borderTopColor: colorFromHostname(providerName),
+          borderTopColor: rosCtx.providerColor(providerId),
           borderTopWidth: "0.3em",
           backgroundColor: backgroundColor,
         };
       }
       return { flexGrow: 1, backgroundColor: backgroundColor };
     },
-    [providerName, backgroundColor, settingsCtx.changed]
+    [providerId, backgroundColor, colorizeHosts]
   );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
