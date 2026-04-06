@@ -5,8 +5,6 @@ import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
 import React from "react";
 
-import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
-
 interface ServiceGroupTreeItemProps {
   itemId: string;
   rootPath: string;
@@ -36,8 +34,6 @@ export default function ServiceGroupTreeItem({
   onToggle,
   onSelect,
 }: ServiceGroupTreeItemProps): JSX.Element {
-  const logCtx = useLoggingContext();
-
   const handleRowClick = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation();
     onToggle();
