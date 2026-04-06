@@ -174,89 +174,6 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
     }
   }, [rosCtx.providers]);
 
-  /**
-   * Tree structure builder (same logic as before, just commented in English).
-
-   */
-  const buildTree = useCallback((topicsList: TopicExtendedInfo[], avoidSingle: boolean): TTreeResult => {
-    const nodes = new Map<string, TTreeItem>();
-    const rootNodes: TTreeItem[] = [];
-
-    // Phase 1: create nodes for all path segments
-    for (const topic of topicsList) {
-      const parts = topic.name.split("/").filter(Boolean);
-      let currentPath = "";
-
-      for (let i = 0; i < parts.length; i += 1) {
-        const path = parts.slice(0, i + 1).join("/");
-        currentPath = `/${path}`;
-
-        if (!nodes.has(currentPath)) {
-          nodes.set(currentPath, {
-            groupKey: path.replace(/\//g, "-"),
-            groupName: parts[i],
-            topics: [],
-            count: 0,
-            fullPrefix: i > 0 ? `/${parts.slice(0, i).join("/")}` : "",
-            msgType: "",
-            groupKeys: [],
-            topicInfo: null,
-            hasIncompatibleQos: false,
-          });
-        }
-      }
-
-      const leafNode = nodes.get(currentPath);
-      if (leafNode) {
-        leafNode.topicInfo = topic;
-        leafNode.count = 1;
-        leafNode.hasIncompatibleQos = topic.hasIncompatibleQos;
-      }
-    }
-
-    // Phase 2: connect nodes and propagate QoS flags upwards
-    nodes.forEach((node, path) => {
-      const parentPath = path.substring(0, path.lastIndexOf("/"));
-
-      if (parentPath && nodes.has(parentPath)) {
-        const parent = nodes.get(parentPath);
-        if (parent) {
-          parent.topics.push(node);
-          parent.count += node.count;
-          parent.groupKeys.push(node.groupKey);
-
-          if (!parent.topicInfo) {
-            parent.hasIncompatibleQos = parent.hasIncompatibleQos || node.hasIncompatibleQos;
-            parent.msgType = node.msgType || parent.msgType;
-          }
-        }
-      } else {
-        rootNodes.push(node);
-      }
-    });
-
-    // Sort: groups before leaf topics, then alphabetically
-    rootNodes.sort((a, b) => {
-      const aIsGroup = a.topics.length > 0;
-      const bIsGroup = b.topics.length > 0;
-      if (aIsGroup && !bIsGroup) return -1;
-      if (!aIsGroup && bIsGroup) return 1;
-      return a.groupName.localeCompare(b.groupName);
-    });
-
-    // Optionally flatten groups with a single child
-    if (avoidSingle) {
-      const flattenedRoots: TTreeItem[] = [];
-      for (const node of rootNodes) {
-        const flattened = flattenSingleChildGroups(node);
-        flattenedRoots.push(flattened);
-      }
-      return { topics: flattenedRoots, count: flattenedRoots.length, groupKeys: [] };
-    }
-
-    return { topics: rootNodes, count: rootNodes.length, groupKeys: [] };
-  }, []);
-
   const flattenSingleChildGroups = useCallback((node: TTreeItem): TTreeItem => {
     if (node.topics.length === 1 && !node.topicInfo) {
       const child = node.topics[0];
@@ -283,6 +200,142 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
 
     return node;
   }, []);
+
+  /**
+   * Tree structure builder (same logic as before, just commented in English).
+
+   */
+  const buildTree = useCallback(
+    (topicsList: TopicExtendedInfo[], avoidSingle: boolean): TTreeResult => {
+      // Map of full path ("/foo/bar") to tree node
+      const nodes = new Map<string, TTreeItem>();
+      const rootNodes: TTreeItem[] = [];
+
+      /**
+     * Phase 1: create a node for every path segment and attach TopicExtendedInfo
+     * - For topic "/foo/bar/baz", we create nodes for:
+     *   "/foo", "/foo/bar", "/foo/bar/baz"
+     * - Only the last segment (leaf) holds topicInfo
+
+     */
+      for (const topic of topicsList) {
+        const parts = topic.name.split("/").filter(Boolean);
+        let currentPath = "";
+
+        for (let i = 0; i < parts.length; i += 1) {
+          const path = parts.slice(0, i + 1).join("/");
+          currentPath = `/${path}`;
+
+          if (!nodes.has(currentPath)) {
+            nodes.set(currentPath, {
+              groupKey: path.replace(/\//g, "-"),
+              groupName: parts[i],
+              topics: [],
+              count: 0,
+              fullPrefix: i > 0 ? `/${parts.slice(0, i).join("/")}` : "",
+              msgType: "",
+              groupKeys: [],
+              topicInfo: null,
+              hasIncompatibleQos: false,
+            });
+          }
+        }
+
+        // Attach TopicExtendedInfo to the leaf node
+        const leafNode = nodes.get(currentPath);
+        if (leafNode) {
+          leafNode.topicInfo = topic;
+          // Leaf node always represents exactly one topic initially
+          leafNode.count = 1;
+          leafNode.hasIncompatibleQos = topic.hasIncompatibleQos;
+        }
+      }
+
+      /**
+     * Phase 2: connect nodes to a tree based on their parent paths
+     * - Determine parent by stripping the last "/segment" from the path
+     * - Root nodes have no valid parent in the map and are pushed to rootNodes
+
+     */
+      nodes.forEach((node, path) => {
+        const parentPath = path.substring(0, path.lastIndexOf("/"));
+
+        if (parentPath && nodes.has(parentPath)) {
+          const parent = nodes.get(parentPath);
+          if (parent) {
+            parent.topics.push(node);
+            parent.groupKeys.push(node.groupKey);
+
+            // Propagate QoS information upwards if this group itself has no topic
+            if (!parent.topicInfo) {
+              parent.hasIncompatibleQos = parent.hasIncompatibleQos || node.hasIncompatibleQos;
+              parent.msgType = node.msgType || parent.msgType;
+            }
+          }
+        } else {
+          // No parent => this is a root node
+          rootNodes.push(node);
+        }
+      });
+
+      /**
+     * Phase 3: sort root nodes
+     * - Groups before leaf topics
+     * - Alphabetical by groupName
+
+     */
+      rootNodes.sort((a, b) => {
+        const aIsGroup = a.topics.length > 0;
+        const bIsGroup = b.topics.length > 0;
+        if (aIsGroup && !bIsGroup) return -1;
+        if (!aIsGroup && bIsGroup) return 1;
+        return a.groupName.localeCompare(b.groupName);
+      });
+
+      /**
+     * Phase 4: optionally flatten groups that contain only a single child
+     * - This is only a structural change; counts will be recalculated afterwards
+
+     */
+      const processedRoots: TTreeItem[] = [];
+      if (avoidSingle) {
+        for (const node of rootNodes) {
+          processedRoots.push(flattenSingleChildGroups(node));
+        }
+      } else {
+        processedRoots.push(...rootNodes);
+      }
+
+      /**
+     * Phase 5: recursively compute counts for all nodes
+     * - Leaf node (topicInfo != null) has count = 1
+     * - Group node has count = sum of all leaf topics in its subtree
+     * - This guarantees that count includes all topics in subgroups
+
+     */
+      const computeCounts = (node: TTreeItem): number => {
+        // Leaf topic
+        if (node.topicInfo) {
+          node.count = 1;
+          return 1;
+        }
+
+        let sum = 0;
+        for (const child of node.topics) {
+          sum += computeCounts(child);
+        }
+        node.count = sum;
+        return sum;
+      };
+
+      for (const root of processedRoots) {
+        computeCounts(root);
+      }
+
+      return { topics: processedRoots, count: processedRoots.length, groupKeys: [] };
+    },
+    [flattenSingleChildGroups]
+  );
 
   /**
    * All topics across all domains (used for filtering and selection).

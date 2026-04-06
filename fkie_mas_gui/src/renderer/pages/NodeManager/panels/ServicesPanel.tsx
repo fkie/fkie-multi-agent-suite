@@ -155,88 +155,6 @@ export default function ServicesPanel({ initialSearchTerm = "" }: ServicesPanelP
   }, [rosCtx.providers]);
 
   /**
-   * Tree structure builder for services (similar to topics).
-   * Groups services by namespace segments.
-
-   */
-  const buildTree = useCallback((servicesList: ServiceExtendedInfo[], avoidSingle: boolean): TTreeResult => {
-    const nodes = new Map<string, TTreeItem>();
-    const rootNodes: TTreeItem[] = [];
-
-    // Phase 1: create nodes for all path segments and attach leaf services
-    for (const service of servicesList) {
-      const parts = service.name.split("/").filter(Boolean);
-      let currentPath = "";
-
-      for (let i = 0; i < parts.length; i += 1) {
-        const path = parts.slice(0, i + 1).join("/");
-        currentPath = `/${path}`;
-
-        if (!nodes.has(currentPath)) {
-          nodes.set(currentPath, {
-            groupKey: path.replace(/\//g, "-"),
-            groupName: parts[i],
-            services: [],
-            count: 0,
-            fullPrefix: i > 0 ? `/${parts.slice(0, i).join("/")}` : "",
-            srvType: "",
-            groupKeys: [],
-            serviceInfo: null,
-          });
-        }
-      }
-
-      const leafNode = nodes.get(currentPath);
-      if (leafNode) {
-        leafNode.serviceInfo = service;
-        leafNode.count = 1;
-        leafNode.srvType = service.srvType;
-      }
-    }
-
-    // Phase 2: connect nodes and propagate counts upwards
-    for (const [path, node] of nodes.entries()) {
-      const parentPath = path.substring(0, path.lastIndexOf("/"));
-
-      if (parentPath && nodes.has(parentPath)) {
-        const parent = nodes.get(parentPath);
-        if (parent) {
-          parent.services.push(node);
-          parent.count += node.count;
-          parent.groupKeys.push(node.groupKey);
-
-          if (!parent.serviceInfo) {
-            parent.srvType = node.srvType || parent.srvType;
-          }
-        }
-      } else {
-        rootNodes.push(node);
-      }
-    }
-
-    // Sort root nodes: groups first, then leaf services, both alphabetically
-    rootNodes.sort((a, b) => {
-      const aIsGroup = a.services.length > 0;
-      const bIsGroup = b.services.length > 0;
-      if (aIsGroup && !bIsGroup) return -1;
-      if (!aIsGroup && bIsGroup) return 1;
-      return a.groupName.localeCompare(b.groupName);
-    });
-
-    if (avoidSingle) {
-      const flattenedRoots: TTreeItem[] = [];
-      for (const node of rootNodes) {
-        const flattened = flattenSingleChildGroups(node);
-        flattenedRoots.push(flattened);
-      }
-
-      return { services: flattenedRoots, count: flattenedRoots.length, groupKeys: [] };
-    }
-
-    return { services: rootNodes, count: rootNodes.length, groupKeys: [] };
-  }, []);
-
-  /**
    * If a group contains exactly one child and no direct service itself,
    * merge the group with its child to avoid deep, single-branch hierarchies.
 
@@ -266,6 +184,142 @@ export default function ServicesPanel({ initialSearchTerm = "" }: ServicesPanelP
 
     return node;
   }, []);
+
+  /**
+   * Tree structure builder for services (similar to topics).
+   * Groups services by namespace segments.
+
+   */
+  const buildTree = useCallback(
+    (servicesList: ServiceExtendedInfo[], avoidSingle: boolean): TTreeResult => {
+      // Map of full path ("/foo/bar") to tree node
+      const nodes = new Map<string, TTreeItem>();
+      const rootNodes: TTreeItem[] = [];
+
+      /**
+     * Phase 1: create a node for every path segment and attach ServiceExtendedInfo
+     * - For service "/foo/bar/baz", we create nodes for:
+     *   "/foo", "/foo/bar", "/foo/bar/baz"
+     * - Only the last segment (leaf) holds serviceInfo
+
+     */
+      for (const service of servicesList) {
+        const parts = service.name.split("/").filter(Boolean);
+        let currentPath = "";
+
+        for (let i = 0; i < parts.length; i += 1) {
+          const path = parts.slice(0, i + 1).join("/");
+          currentPath = `/${path}`;
+
+          if (!nodes.has(currentPath)) {
+            nodes.set(currentPath, {
+              groupKey: path.replace(/\//g, "-"),
+              groupName: parts[i],
+              services: [],
+              count: 0,
+              fullPrefix: i > 0 ? `/${parts.slice(0, i).join("/")}` : "",
+              srvType: "",
+              groupKeys: [],
+              serviceInfo: null,
+            });
+          }
+        }
+
+        // Attach ServiceExtendedInfo to the leaf node
+        const leafNode = nodes.get(currentPath);
+        if (leafNode) {
+          leafNode.serviceInfo = service;
+          // Leaf node always represents exactly one service initially
+          leafNode.count = 1;
+          leafNode.srvType = service.srvType;
+        }
+      }
+
+      /**
+     * Phase 2: connect nodes to a tree based on their parent paths
+     * - Determine parent by stripping the last "/segment" from the path
+     * - Root nodes have no valid parent in the map and are pushed to rootNodes
+     * - We DO NOT propagate counts here; that is done later recursively
+
+     */
+      for (const [path, node] of nodes.entries()) {
+        const parentPath = path.substring(0, path.lastIndexOf("/"));
+
+        if (parentPath && nodes.has(parentPath)) {
+          const parent = nodes.get(parentPath);
+          if (parent) {
+            parent.services.push(node);
+            parent.groupKeys.push(node.groupKey);
+
+            // Propagate type information upwards if this group itself has no service
+            if (!parent.serviceInfo) {
+              parent.srvType = node.srvType || parent.srvType;
+            }
+          }
+        } else {
+          // No parent => this is a root node
+          rootNodes.push(node);
+        }
+      }
+
+      /**
+     * Phase 3: sort root nodes
+     * - Groups before leaf services
+     * - Alphabetical by groupName
+
+     */
+      rootNodes.sort((a, b) => {
+        const aIsGroup = a.services.length > 0;
+        const bIsGroup = b.services.length > 0;
+        if (aIsGroup && !bIsGroup) return -1;
+        if (!aIsGroup && bIsGroup) return 1;
+        return a.groupName.localeCompare(b.groupName);
+      });
+
+      /**
+     * Phase 4: optionally flatten groups that contain only a single child
+     * - This is only a structural change; counts will be recalculated afterwards
+
+     */
+      const processedRoots: TTreeItem[] = [];
+      if (avoidSingle) {
+        for (const node of rootNodes) {
+          processedRoots.push(flattenSingleChildGroups(node));
+        }
+      } else {
+        processedRoots.push(...rootNodes);
+      }
+
+      /**
+     * Phase 5: recursively compute counts for all nodes
+     * - Leaf node (serviceInfo != null) has count = 1
+     * - Group node has count = sum of all leaf services in its subtree
+     * - This guarantees that count includes all services in subgroups
+
+     */
+      const computeCounts = (node: TTreeItem): number => {
+        // Leaf service
+        if (node.serviceInfo) {
+          node.count = 1;
+          return 1;
+        }
+
+        let sum = 0;
+        for (const child of node.services) {
+          sum += computeCounts(child);
+        }
+        node.count = sum;
+        return sum;
+      };
+
+      for (const root of processedRoots) {
+        computeCounts(root);
+      }
+
+      return { services: processedRoots, count: processedRoots.length, groupKeys: [] };
+    },
+    [flattenSingleChildGroups]
+  );
 
   /**
    * Flatten all services across domains (used for text filtering).
