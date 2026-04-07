@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.6.1 - 07.04.2026
+
+Fixed count nodes in subgroups
+Fixed initialization with domain ids of external apps dialog
+Added domain id splitting for nodes, topics and services tab
+Fixed wrong host colors on startup
+Try to connect before start provider
+Updated content-security-policy
+Added tooltip to reset start button in echo panel
+Added support for multiple domains
+Improved queue action type
+Fixed open multiple loggers
+Fixed restart nodes, if the user should select process to kill
+Fixed store history launch files with same path
+Fixed switch to history after load launch file
+Improved filter packages
+
 ## 5.6.0 - 02.04.2026
 
 Added reset stats in echo topic panel
