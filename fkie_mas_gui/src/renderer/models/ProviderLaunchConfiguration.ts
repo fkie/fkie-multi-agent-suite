@@ -367,7 +367,7 @@ export default class ProviderLaunchConfiguration {
 
   public getZenohRemoteRouter(): string {
     if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
-    return `ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/<REMOTE-IP>:7447"]'`.replace(
+    return `ZENOH_CONFIG_OVERRIDE='mode="peer";connect/endpoints=["tcp/<REMOTE-IP>:7447"]'`.replace(
       "<REMOTE-IP>",
       this.params.rmw.remoteZenohHost
     );
@@ -375,6 +375,6 @@ export default class ProviderLaunchConfiguration {
 
   public getZenohLocalRouter(): string {
     if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
-    return `ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/0.0.0.0:7447"]'`;
+    return `ZENOH_CONFIG_OVERRIDE='mode="peer";connect/endpoints=["tcp/0.0.0.0:7447"]'`;
   }
 }
