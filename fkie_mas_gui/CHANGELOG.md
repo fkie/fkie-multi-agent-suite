@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.6.3 - 08.04.2026
+
+Changed zenoh to peer mode
+
 ## 5.6.2 - 08.04.2026
 
 Changed zenoh configuration
