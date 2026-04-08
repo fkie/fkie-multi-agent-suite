@@ -976,6 +976,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
       `trigger add new provider: ${data.provider.rosState.name}`,
       `RosState details: ${JSON.stringify(data.provider.rosState)}`
     );
+    providerColors.current.set(data.provider.id, colorFromHostname(data.provider.id));
     setProvidersAddQueue((prev) => [...prev, data.provider]);
   });
 

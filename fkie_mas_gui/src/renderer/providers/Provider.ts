@@ -277,7 +277,10 @@ export default class Provider implements IProvider {
         useSSL,
         (reason, details) => this.onCloseConnection(reason, details),
         () => this.onOpenConnection(),
-        () => this.setConnectionState(ConnectionState.STATES.CONNECTING, "")
+        () => {
+          if (this.connectionState !== ConnectionState.STATES.CONNECTED)
+            this.setConnectionState(ConnectionState.STATES.CONNECTING, "");
+        }
       );
     }
     this.id = `${this.connection.host}:${this.connection.port}`;
@@ -699,7 +702,7 @@ export default class Provider implements IProvider {
             p.host,
             p.ros_version ? p.ros_version : "2",
             p.port,
-            0,
+            this.connection.domainId,
             false // TODO get useSSL from settings
           );
           oldRemoteProviders = oldRemoteProviders.filter((orp) => orp.url() !== np.url());
