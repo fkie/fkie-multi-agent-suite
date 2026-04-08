@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.6.2 - 08.04.2026
+
+Changed zenoh configuration
+Fixed domain id of discovered hosts
+
 ## 5.6.1 - 07.04.2026
 
 Fixed count nodes in subgroups
