@@ -112,8 +112,11 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
 
   const defaultHost: string = hostArg ? hostArg : config?.params.host || "localhost";
   const [selectedHost, setSelectedHost] = useState<THostIp | null>({ host: defaultHost });
+  const [selectedZenohHost, setSelectedZenohHost] = useState<THostIp | null>({ host: launchCfg?.params.rmw.remoteZenohHost });
   const [selectedRmw, setSelectedRmw] = useState<RmwSelection>(launchCfg.params.rmw.selected || "RMW_IMPLEMENTATION");
-  const [selectedZenohEnv, setSelectedZenohEnv] = useState<ZenohEnvSelection>(launchCfg.params.rmw.overrideZenoEnv || "");
+  const [selectedZenohEnv, setSelectedZenohEnv] = useState<ZenohEnvSelection>(
+    launchCfg.params.rmw.overrideZenoEnv || ""
+  );
   const [hostList, setHostList] = useState<THostIp[]>([{ ip: "127.0.0.1", host: "localhost" }]);
   const [robotHostInputValue, setRobotHostInputValue] = useState("");
 
@@ -300,6 +303,12 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     updateStartParameter();
   }, [selectedZenohEnv]);
 
+
+  useEffect(() => {
+    launchCfg.params.rmw.remoteZenohHost = selectedZenohHost?.host || selectedZenohHost?.ip || "";
+    updateStartParameter();
+  }, [selectedZenohHost]);
+
   const createHostSelector = useMemo(() => {
     return (
       <Autocomplete
@@ -310,7 +319,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
         clearOnEscape
         disableListWrap
         handleHomeEndKeys={false}
-        noOptionsText="Package not found"
+        noOptionsText="host not found"
         options={hostList}
         getOptionLabel={(option: string | THostIp) => host2label(option)}
         freeSolo
@@ -331,11 +340,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
         )}
         renderOption={(props, option) => {
           return (
-            <Stack
-              {...(props as HTMLAttributes<HTMLDivElement>)}
-              key={option.host}
-              direction="row"
-            >
+            <Stack {...(props as HTMLAttributes<HTMLDivElement>)} key={option.host} direction="row">
               <Typography sx={{ ml: 0 }} noWrap>
                 {`${option.host} | ${option.ip}`}
               </Typography>
@@ -406,9 +411,51 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
             setSelectedZenohEnv(newInputValue as ZenohEnvSelection);
           }}
         />
+        {selectedZenohEnv === "remote" && (
+          <Autocomplete
+            id="autocomplete-zenoh-remote"
+            size="small"
+            fullWidth={true}
+            autoHighlight
+            clearOnEscape
+            disableListWrap
+            handleHomeEndKeys={false}
+            noOptionsText="host not found"
+            options={hostList}
+            getOptionLabel={(option: string | THostIp) => host2label(option)}
+            freeSolo
+            // This prevents warnings on invalid autocomplete values
+            value={selectedZenohHost}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                variant="standard"
+                label="remote zenoh daemon"
+                placeholder="remote zenoh daemon"
+                onBlur={(event) => {
+                  if (event.target.value) {
+                    setSelectedZenohHost({ host: event.target.value.split(" ")[0] });
+                  }
+                }}
+              />
+            )}
+            renderOption={(props, option) => {
+              return (
+                <Stack {...(props as HTMLAttributes<HTMLDivElement>)} key={option.host} direction="row">
+                  <Typography sx={{ ml: 0 }} noWrap>
+                    {`${option.host} | ${option.ip}`}
+                  </Typography>
+                </Stack>
+              );
+            }}
+            onInputChange={(_event, newInputValue) => {
+              setSelectedZenohHost(newInputValue ? { host: newInputValue.split(" ")[0] } : null);
+            }}
+          />
+        )}
       </Stack>
     );
-  }, [selectedZenohEnv, rosCtx.rosInfo]);
+  }, [selectedZenohEnv, selectedZenohHost, rosCtx.rosInfo]);
 
   return (
     <Stack

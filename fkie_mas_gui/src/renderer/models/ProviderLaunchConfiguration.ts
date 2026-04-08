@@ -48,6 +48,7 @@ export type TProviderLaunchParams = {
     current: RmwSelection;
     selected: RmwSelection;
     overrideZenoEnv: ZenohEnvSelection;
+    remoteZenohHost: string;
   };
 
   daemon: {
@@ -117,6 +118,7 @@ export default class ProviderLaunchConfiguration {
         current: "RMW_IMPLEMENTATION",
         selected: "RMW_IMPLEMENTATION",
         overrideZenoEnv: "local",
+        remoteZenohHost: "0.0.0.0",
       },
       daemon: { enable: true },
       discovery: { enable: true, robotHosts: [], heartbeatHz: 0.5, respawn: true },
@@ -323,7 +325,9 @@ export default class ProviderLaunchConfiguration {
       result.push(this.getZenohOverride());
     } else if (this.params.rmw.overrideZenoEnv === "remote") {
       result.push(this.getZenohRemoteRouter());
-    } else if (this.params.rmw.overrideZenoEnv !== "local") {
+    } else if (this.params.rmw.overrideZenoEnv === "local") {
+      result.push(this.getZenohLocalRouter());
+    } else {
       for (const token of this.splitEnv(this.params.rmw.overrideZenoEnv)) {
         result.push(token);
       }
@@ -363,6 +367,14 @@ export default class ProviderLaunchConfiguration {
 
   public getZenohRemoteRouter(): string {
     if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
-    return "ZENOH_CONNECT=tcp/<REMOTE-IP>:7447";
+    return `ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/<REMOTE-IP>:7447"]'`.replace(
+      "<REMOTE-IP>",
+      this.params.rmw.remoteZenohHost
+    );
+  }
+
+  public getZenohLocalRouter(): string {
+    if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
+    return `ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/0.0.0.0:7447"]'`;
   }
 }

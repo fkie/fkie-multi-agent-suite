@@ -787,6 +787,7 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
 
             return (
               <Virtuoso
+                key={`topics-panel-${domainId}`}
                 style={{ height: "100%" }}
                 totalCount={rows.length}
                 itemContent={(index) => {

@@ -740,6 +740,7 @@ export default function ServicesPanel({ initialSearchTerm = "" }: ServicesPanelP
 
             return (
               <Virtuoso
+                key={`services-panel-${domainId}`}
                 style={{ height: "100%" }}
                 totalCount={rows.length}
                 itemContent={(index: number) => {

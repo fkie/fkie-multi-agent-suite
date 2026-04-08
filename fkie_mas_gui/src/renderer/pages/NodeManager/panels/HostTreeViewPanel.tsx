@@ -1551,7 +1551,6 @@ export default function HostTreeViewPanel(): JSX.Element {
         )}
         <Stack direction="row" height="100%" overflow="auto">
           {buttonLocation === BUTTON_LOCATIONS.LEFT && <Box height="100%">{createActions()}</Box>}
-
           {domainGroups.length <= 1 ? (
             // Single domain: keep current behavior, show all nodes in one tree
             <HostTreeView
@@ -1563,6 +1562,7 @@ export default function HostTreeViewPanel(): JSX.Element {
               stopNodes={stopNodesFromId}
             />
           ) : (
+
             // Multiple domains: one tab per domain with its own HostTreeView
             <DomainFlexLayout
               key="domain-host-layout"
@@ -1575,6 +1575,7 @@ export default function HostTreeViewPanel(): JSX.Element {
                 const nodesForDomain = domainVisibleNodes[domainId] ?? [];
                 return (
                   <HostTreeView
+                    key={`host-tree-${domainId}`}
                     triggerId={`host-tree-${domainId}`}
                     visibleNodes={nodesForDomain}
                     isFiltered={filterText.length > 0}
