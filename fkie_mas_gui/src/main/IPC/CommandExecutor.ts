@@ -35,7 +35,7 @@ export default class CommandExecutor implements TCommandExecutor {
     terminals: ["/usr/bin/x-terminal-emulator", "/usr/bin/xterm", "/opt/x11/bin/xterm"],
     exec: "e",
     noClose: "",
-    title: "-T",
+    title: "",
   };
 
   constructor(commandLine: CommandLine) {

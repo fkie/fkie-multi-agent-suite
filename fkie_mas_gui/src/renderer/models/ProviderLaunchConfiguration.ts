@@ -121,7 +121,7 @@ export default class ProviderLaunchConfiguration {
         startZenohDaemon: true,
       },
       daemon: { enable: true },
-      discovery: { enable: true, robotHosts: [], heartbeatHz: 0.5, respawn: true },
+      discovery: { enable: true, robotHosts: [], heartbeatHz: 0.5, respawn: false },
       sync: { enable: false, doNotSync: [], syncTopics: [] },
       terminal: { enable: true, path: "ttyd", port: 8681 },
       force: { stop: false, start: false },

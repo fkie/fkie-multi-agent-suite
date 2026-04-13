@@ -433,18 +433,18 @@ def main(argv=sys.argv) -> int:
 
         if args.show_screen_log:
             settings = Settings()
-            logfile = screen.get_logfile(node=args.show_screen_log)
+            logfile = screen.get_logfile(node=args.show_screen_log.replace('{HOST}', ros_host_suffix()))
             if not os.path.isfile(logfile):
                 raise Exception('screen logfile not found for: %s' %
                                 args.show_screen_log)
-            cmd = ' '.join([settings.param('log_viewer'), str(logfile)])
+            cmd = ' '.join([settings.param('log_viewer', "/usr/bin/less -fLQR +G +F"), str(logfile)])
             Log.info(cmd)
             p = subprocess.Popen(shlex.split(cmd))
             p.wait()
             print_help = False
 
         if args.tail_screen_log:
-            logfile = screen.get_logfile(node=args.tail_screen_log)
+            logfile = screen.get_logfile(node=args.tail_screen_log.replace('{HOST}', ros_host_suffix()))
             if not os.path.isfile(logfile):
                 raise Exception('screen logfile not found for: %s' %
                                 args.tail_screen_log)
