@@ -580,7 +580,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
         <Stack direction="row" alignItems="center" spacing={1}>
           <FormControl sx={{ m: 1, width: "100%" }} variant="standard">
             <ProviderSelector
-              defaultProvider={provider?.id || ""}
+              defaultProvider={currentProviderId || ""}
               setSelectedProvider={(provId) => setCurrentProviderId(provId)}
             />
           </FormControl>
