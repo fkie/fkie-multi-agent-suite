@@ -56,6 +56,7 @@ export default function DetailsPanel(): JSX.Element {
   const [updateDiagnostics, forceUpdateDiagnostics] = useReducer((x) => x + 1, 0);
   const [updateServices, forceUpdateServices] = useReducer((x) => x + 1, 0);
   const [updateTopics, forceUpdateTopics] = useReducer((x) => x + 1, 0);
+  const [envPrefix, setEnvPrefix] = useState<string>("");
 
   const [showDiagnosticHistory, setShowDiagnosticHistory] = useLocalStorage(
     "DetailsPanel:showDiagnosticHistory",
@@ -90,6 +91,7 @@ export default function DetailsPanel(): JSX.Element {
     if (!nodeShow) return;
     const provider = rosCtx.getProviderById(nodeShow.providerId as string, true);
     setLifecycle(provider?.getLifecycleForNode(nodeShow.id));
+    setEnvPrefix(provider?.startConfiguration?.getEnvPrefix() || "");
   }, [nodeShow]);
 
   useCustomEventListener(EVENT_PROVIDER_ROS_SERVICES, () => {
@@ -522,6 +524,7 @@ export default function DetailsPanel(): JSX.Element {
 
   const createLaunchView = useMemo(() => {
     if (!nodeShow || !nodeShow.services) return <></>;
+    const provider = rosCtx.getProviderById(nodeShow.providerId);
     return (
       <Stack paddingTop="0.5em" spacing={0}>
         <Stack
@@ -573,22 +576,59 @@ export default function DetailsPanel(): JSX.Element {
                           </Stack>
                         </Typography>
                       )}
-                      {launchInfo.launch_prefix && (
-                        <Typography variant="caption">
-                          <Stack direction="row" spacing={0.5}>
-                            <Box sx={{ fontWeight: "bold", color: "orange" }}>launch prefix:</Box>
-                            <Box sx={{ fontWeight: "normal" }}>{launchInfo.launch_prefix}</Box>
+                      <Stack
+                        direction="column"
+                        spacing="0"
+                        paddingLeft="0.3em"
+                        sx={{ background: (theme) => theme.palette.background.default }}
+                      >
+                        {(envPrefix || launchInfo.launch_prefix) && (
+                          <Tooltip
+                            title={`${envPrefix} ${launchInfo.launch_prefix} ${launchInfo.cmd}`}
+                            disableInteractive
+                          >
+                            <Stack direction="row" spacing="0.3em">
+                              <CopyButton
+                                value={`${envPrefix} ${launchInfo.launch_prefix} ${launchInfo.cmd}`}
+                                fontSize="0.6em"
+                              />
+                            </Stack>
+                          </Tooltip>
+                        )}
+                        {envPrefix && (
+                          <Tooltip title={envPrefix} disableInteractive>
+                            <Stack direction="row" spacing="0.3em">
+                              <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
+                                env:
+                              </Typography>
+                              <Typography variant="body2" align="justify" noWrap>
+                                {envPrefix}
+                              </Typography>
+                              <CopyButton value={envPrefix} fontSize="0.6em" />
+                            </Stack>
+                          </Tooltip>
+                        )}
+                        {launchInfo.launch_prefix && (
+                          <Typography variant="caption">
+                            <Stack direction="row" spacing={0.5}>
+                              <Box sx={{ fontWeight: "bold", color: "orange" }}>launch prefix:</Box>
+                              <Box sx={{ fontWeight: "normal" }}>{launchInfo.launch_prefix}</Box>
+                            </Stack>
+                          </Typography>
+                        )}
+
+                        <Tooltip title={launchInfo.cmd} disableInteractive>
+                          <Stack direction="row" spacing="0.3em">
+                            <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
+                              command:
+                            </Typography>
+                            <Typography variant="body2" align="justify" noWrap>
+                              {launchInfo.cmd}
+                            </Typography>
+                            <CopyButton value={launchInfo.cmd} fontSize="0.6em" />
                           </Stack>
-                        </Typography>
-                      )}
-                      <Tag
-                        color="default"
-                        title="CMD:"
-                        text={`${launchInfo.cmd}`}
-                        tooltip={`${launchInfo.cmd}`}
-                        wrap
-                        copyButton={`${launchInfo.cmd}`}
-                      />
+                        </Tooltip>
+                      </Stack>
                     </Stack>
                   )}
                   {launchInfo.additional_env && (
