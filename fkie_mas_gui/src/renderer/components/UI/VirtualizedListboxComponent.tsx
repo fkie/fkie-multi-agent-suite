@@ -24,8 +24,11 @@ type OuterElementContextValue = React.HTMLAttributes<HTMLElement> | undefined;
 const OuterElementContext = createContext<OuterElementContextValue>(undefined);
 
 const OuterElementType = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => {
-  const outerProps = useContext(OuterElementContext);
-  return <div ref={ref} {...outerProps} {...props} />;
+  const outerProps = useContext(OuterElementContext) || {};
+
+  const filteredOuterProps = Object.fromEntries(Object.entries(outerProps).filter(([key]) => key !== "ownerState"));
+
+  return <div ref={ref} {...filteredOuterProps} {...props} />;
 });
 OuterElementType.displayName = "AutocompleteOuterElementType";
 
