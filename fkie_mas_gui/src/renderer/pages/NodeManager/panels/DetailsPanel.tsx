@@ -56,7 +56,6 @@ export default function DetailsPanel(): JSX.Element {
   const [updateDiagnostics, forceUpdateDiagnostics] = useReducer((x) => x + 1, 0);
   const [updateServices, forceUpdateServices] = useReducer((x) => x + 1, 0);
   const [updateTopics, forceUpdateTopics] = useReducer((x) => x + 1, 0);
-  const [envPrefix, setEnvPrefix] = useState<string>("");
 
   const [showDiagnosticHistory, setShowDiagnosticHistory] = useLocalStorage(
     "DetailsPanel:showDiagnosticHistory",
@@ -91,8 +90,7 @@ export default function DetailsPanel(): JSX.Element {
     if (!nodeShow) return;
     const provider = rosCtx.getProviderById(nodeShow.providerId as string, true);
     setLifecycle(provider?.getLifecycleForNode(nodeShow.id));
-    setEnvPrefix(provider?.startConfiguration?.getEnvPrefix() || "");
-  }, [nodeShow]);
+  }, [nodeShow, rosCtx.getProviderById]);
 
   useCustomEventListener(EVENT_PROVIDER_ROS_SERVICES, () => {
     forceUpdateServices();
@@ -549,6 +547,9 @@ export default function DetailsPanel(): JSX.Element {
         {showLaunchParameter &&
           Array.from(nodeShow.launchInfo.keys()).map((launchPath: string) => {
             const launchInfo = nodeShow.launchInfo.get(launchPath);
+            const provider = rosCtx.getProviderById(nodeShow.providerId);
+            const envPrefix = provider?.startConfiguration?.getEnvPrefix() || "";
+
             if (launchInfo) {
               return (
                 <Stack key={launchPath} marginTop={"0.5em"}>
