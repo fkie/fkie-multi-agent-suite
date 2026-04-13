@@ -734,6 +734,13 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         }
 
         // ── Start services ────────────────────────────────────────────────────
+        const zenohDaemonCmd = config.getZenohDaemonCmd();
+        if (zenohDaemonCmd) {
+          const sr = await startService(credential, zenohDaemonCmd, provider, config, "zenoh daemon");
+          if (sr.authRequested) return false;
+          if (!sr.started) allStarted = false;
+        }
+
         if (config.params.daemon.enable) {
           const sr = await startService(credential, config.daemonStartCmd(), provider, config, "daemon");
           if (sr.authRequested) return false;
@@ -760,9 +767,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
         // ── After a short delay try to connect again (daemon should be up) ───
 
-        setTimeout(() => {
-          connectToProvider(provider as Provider);
-        }, 2000);
+        // setTimeout(() => {
+        //   connectToProvider(provider as Provider);
+        // }, 2000);
       } catch (error) {
         logCtx.error(`Error starting host: ${config.params.host}`, `${error}`, `${config.params.host} start failed`);
         allStarted = false;

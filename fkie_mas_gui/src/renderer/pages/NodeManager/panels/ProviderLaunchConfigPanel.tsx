@@ -106,6 +106,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   const [startCmdDiscovery, setStartCmdDiscovery] = useState<string>("");
   const [startCmdTtyd, setStartCmdTtyd] = useState<string>("");
   const [startCmdZenohOverride, setStartCmdZenohOverride] = useState<string>("");
+  const [startCmdZenohDaemon, setStartCmdZenohDaemon] = useState<string>("");
   const [tsList, setTSList] = useState<string[]>([]);
   const [topicList, setTopicList] = useState<string[]>([]);
   // const [forceStart, setForceStart] = useState(false);
@@ -230,6 +231,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     setStartCmdDiscovery(launchCfg.masterDiscoveryStartCmd().message);
     setStartCmdTtyd(launchCfg.terminalStartCmd().message);
     setStartCmdZenohOverride(launchCfg.getEnv().join(" "));
+    setStartCmdZenohDaemon(launchCfg.getZenohDaemonCmd().message);
     forceValuesUpdate();
   }
 
@@ -294,6 +296,11 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     } else {
       launchCfg.params.rmw.current = selectedRmw;
       launchCfg.params.rmw.selected = selectedRmw;
+    }
+    if (launchCfg.params.rmw.current === "rmw_zenoh_cpp") {
+      if (launchCfg.params.rmw.startZenohDaemon === undefined) {
+        launchCfg.params.rmw.startZenohDaemon = true;
+      }
     }
     updateStartParameter();
   }, [selectedRmw]);
@@ -1079,14 +1086,8 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
             <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createRMWSelector}</Box>
             <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createZenohEnvSelector}</Box>
 
-            {/* <Tooltip
-              title={
-                <Typography variant="body2">
-                  Prepend zenoh multicast configuration with new port (7448 + ROS_DOMAIN_ID)
-                </Typography>
-              }
-              disableInteractive
-            >
+            {(launchCfg.params.rmw.overrideZenoEnv === "local" ||
+              !ZENO_SELECTIONS.includes(launchCfg.params.rmw.overrideZenoEnv as (typeof ZENO_SELECTIONS)[number])) && (
               <FormGroup
                 aria-label="position"
                 row
@@ -1096,20 +1097,18 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                   control={
                     <Checkbox
                       size="small"
-                      checked={!!launchCfg.params.rmw.overrideZenoEnv}
+                      checked={!!launchCfg.params.rmw.startZenohDaemon}
                       onChange={(event) => {
-                        launchCfg.params.rmw.overrideZenoEnv = event.target.checked;
-                        // setOptionOverrideZenohConfig(event.target.checked);
+                        launchCfg.params.rmw.startZenohDaemon = event.target.checked;
                         updateStartParameter();
                       }}
                     />
                   }
-                  label={"override zenoh config"}
+                  label={"start zenoh daemon"}
                   labelPlacement="end"
                 />
               </FormGroup>
-            </Tooltip> */}
-
+            )}
             {/* <FormGroup
               aria-label="position"
               row
@@ -1222,6 +1221,26 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                       }}
                     >
                       {startCmdTtyd}
+                    </Typography>
+                  </Stack>
+                )}
+                {startCmdZenohDaemon && (
+                  <Stack direction="row" alignItems="start">
+                    <CopyButton value={startCmdZenohDaemon} fontSize="inherit" />
+                    <Typography
+                      variant="body2"
+                      component="pre"
+                      sx={{
+                        fontFamily: "monospace",
+                        backgroundColor: "#f5f5f5",
+                        padding: 1,
+                        borderRadius: 1,
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {startCmdZenohDaemon}
                     </Typography>
                   </Stack>
                 )}

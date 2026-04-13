@@ -49,6 +49,7 @@ export type TProviderLaunchParams = {
     selected: RmwSelection;
     overrideZenoEnv: ZenohEnvSelection;
     remoteZenohHost: string;
+    startZenohDaemon: boolean;
   };
 
   daemon: {
@@ -117,6 +118,7 @@ export default class ProviderLaunchConfiguration {
         selected: "RMW_IMPLEMENTATION",
         overrideZenoEnv: "local",
         remoteZenohHost: "0.0.0.0",
+        startZenohDaemon: true,
       },
       daemon: { enable: true },
       discovery: { enable: true, robotHosts: [], heartbeatHz: 0.5, respawn: true },
@@ -276,6 +278,24 @@ export default class ProviderLaunchConfiguration {
       } as TResult;
     }
     return { result: true, message: cmdDaemon } as TResult;
+  }
+
+  /** Generate start command for a Zenoh daemon */
+  public getZenohDaemonCmd(): TResult {
+    if (this.params.rmw.current !== "rmw_zenoh_cpp") {
+      return { result: false, message: "" };
+    }
+    if (!this.params.rmw.startZenohDaemon) {
+      return { result: false, message: "" };
+    }
+    if (
+      this.params.rmw.overrideZenoEnv !== "local" &&
+      ZENO_SELECTIONS.includes(this.params.rmw.overrideZenoEnv as (typeof ZENO_SELECTIONS)[number])
+    ) {
+      return { result: false, message: "" };
+    }
+    const cmd = "ros2 run fkie_mas_daemon mas-remote-node.py --name='zenoh-daemon' --command='ros2 run rmw_zenoh_cpp rmw_zenohd' ";
+    return { result: true, message: cmd } as TResult;
   }
 
   /** Generate start command for a Dynamic Reconfigure Node */

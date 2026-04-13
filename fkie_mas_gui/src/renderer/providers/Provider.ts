@@ -1489,7 +1489,7 @@ export default class Provider implements IProvider {
         n.providerId = this.id;
         n.status = RosNodeStatus.ONLY_SCREEN;
         // set if system node, e.g. ttyd
-        if (screen.name.startsWith("/ttyd-") || screen.name.startsWith("/roscore-")) {
+        if (screen.name.startsWith("/ttyd-") || screen.name.startsWith("/zenoh-") || screen.name.startsWith("/roscore-")) {
           n.system_node = true;
         }
         n.screens = screen.screens;
