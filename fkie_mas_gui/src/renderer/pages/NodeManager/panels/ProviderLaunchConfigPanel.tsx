@@ -112,7 +112,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
 
   const defaultHost: string = hostArg ? hostArg : config?.params.host || "localhost";
   const [selectedHost, setSelectedHost] = useState<THostIp | null>({ host: defaultHost });
-  const [selectedZenohHost, setSelectedZenohHost] = useState<THostIp | null>({ host: launchCfg?.params.rmw.remoteZenohHost });
+  const [selectedZenohHost, setSelectedZenohHost] = useState<THostIp | null>({
+    host: launchCfg?.params.rmw.remoteZenohHost,
+  });
   const [selectedRmw, setSelectedRmw] = useState<RmwSelection>(launchCfg.params.rmw.selected || "RMW_IMPLEMENTATION");
   const [selectedZenohEnv, setSelectedZenohEnv] = useState<ZenohEnvSelection>(
     launchCfg.params.rmw.overrideZenoEnv || ""
@@ -144,8 +146,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
 
   useEffect(() => {
     setBackgroundColor(settingsCtx.get("backgroundColor") as string);
-    launchCfg.params.zenohConfigOverride = settingsCtx.get("zenohConfigOverride") as string;
-    updateStartParameter();
   }, [settingsCtx.changed]);
 
   function updateTopics(): void {
@@ -229,7 +229,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     setStartCmdDaemon(launchCfg.daemonStartCmd().message);
     setStartCmdDiscovery(launchCfg.masterDiscoveryStartCmd().message);
     setStartCmdTtyd(launchCfg.terminalStartCmd().message);
-    setStartCmdZenohOverride(launchCfg.getZenohOverride());
+    setStartCmdZenohOverride(launchCfg.getEnv().join(" "));
     forceValuesUpdate();
   }
 
@@ -302,7 +302,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     launchCfg.params.rmw.overrideZenoEnv = selectedZenohEnv;
     updateStartParameter();
   }, [selectedZenohEnv]);
-
 
   useEffect(() => {
     launchCfg.params.rmw.remoteZenohHost = selectedZenohHost?.host || selectedZenohHost?.ip || "";
@@ -1163,13 +1162,11 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                   <Stack direction="row">
                     <Stack spacing={1}>
                       <CopyButton value={startCmdDaemon} fontSize="inherit" />
-                      {selectedZenohEnv === "multicast" && (
-                        <Tooltip title="copy only ZENOH_CONFIG_OVERRIDE" disableInteractive>
-                          <span>
-                            <CopyButton value={startCmdZenohOverride} fontSize="0.7em" />
-                          </span>
-                        </Tooltip>
-                      )}
+                      <Tooltip title="copy only environment prefix" disableInteractive>
+                        <span>
+                          <CopyButton value={startCmdZenohOverride} fontSize="0.7em" />
+                        </span>
+                      </Tooltip>
                     </Stack>
                     <Typography
                       variant="body2"

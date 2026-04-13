@@ -24,8 +24,6 @@ export const getDefaultPortFromRos: (
 
 type TCliArg = { default: string | boolean | number | undefined; hint: string };
 
-const ZENOH_CONFIG_OVERRIDE='listen/endpoints=["tcp/0.0.0.0:0"];routing/peer/mode="linkstate";scouting/multicast/enabled=true;scouting/multicast/address="224.0.0.224:${ZENOH_PORT}";scouting/multicast/listen=true'
-
 export interface ISettingsContext {
   MIN_VERSION_DAEMON: string;
   changed: number;
@@ -227,14 +225,6 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     type: "string",
     default: "ASK",
     options: ["ASK", "DISMISS", "RELOAD"],
-    description: "",
-  },
-  zenohConfigOverride: {
-    label: "ZENOH_CONFIG_OVERRIDE",
-    type: "string",
-    freeSolo: true,
-    default: ZENOH_CONFIG_OVERRIDE,
-    options: [ZENOH_CONFIG_OVERRIDE],
     description: "",
   },
   editorOpenLocation: {

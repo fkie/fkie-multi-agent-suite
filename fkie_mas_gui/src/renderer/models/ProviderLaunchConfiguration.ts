@@ -92,8 +92,6 @@ export type TProviderLaunchParams = {
   };
 
   respawn: boolean;
-
-  zenohConfigOverride: string;
 };
 
 /**
@@ -129,7 +127,6 @@ export default class ProviderLaunchConfiguration {
       autostart: false,
       ros1MasterUri: { enable: false, uri: "default" },
       respawn: false,
-      zenohConfigOverride: "",
     }
   ) {
     this.params = params;
@@ -322,7 +319,7 @@ export default class ProviderLaunchConfiguration {
     const result: string[] = [this.domainPrefix(), this.rmwPrefix()];
     if (this.params.rmw.overrideZenoEnv === "multicast") {
       result.push(this.getZenohRouterCheck());
-      result.push(this.getZenohOverride());
+      result.push(this.getZenohMulticast());
     } else if (this.params.rmw.overrideZenoEnv === "remote") {
       result.push(this.getZenohRemoteRouter());
     } else if (this.params.rmw.overrideZenoEnv === "local") {
@@ -354,20 +351,20 @@ export default class ProviderLaunchConfiguration {
     return "ZENOH_ROUTER_CHECK_ATTEMPTS=-1";
   }
 
-  public getZenohOverride(): string {
+  public getZenohMulticast(): string {
     if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
 
     const zenohPort = 7448 + this.params.domainId || 0;
     let envParam = "";
-    if (this.params.zenohConfigOverride) {
-      envParam = `ZENOH_CONFIG_OVERRIDE='${this.params.zenohConfigOverride.replace("${ZENOH_PORT}", `${zenohPort}`)}'`;
-    }
+    const ZENOH_CONFIG_OVERRIDE =
+      'listen/endpoints=["tcp/0.0.0.0:0"];routing/peer/mode="linkstate";scouting/multicast/enabled=true;scouting/multicast/address="224.0.0.224:${ZENOH_PORT}";scouting/multicast/listen=true';
+    envParam = `ZENOH_CONFIG_OVERRIDE='${ZENOH_CONFIG_OVERRIDE.replace("${ZENOH_PORT}", `${zenohPort}`)}'`;
     return envParam;
   }
 
   public getZenohRemoteRouter(): string {
     if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
-    return `ZENOH_CONFIG_OVERRIDE='mode="peer";connect/endpoints=["tcp/<REMOTE-IP>:7447"]'`.replace(
+    return `ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/<REMOTE-IP>:7447"]'`.replace(
       "<REMOTE-IP>",
       this.params.rmw.remoteZenohHost
     );
@@ -375,6 +372,6 @@ export default class ProviderLaunchConfiguration {
 
   public getZenohLocalRouter(): string {
     if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
-    return `ZENOH_CONFIG_OVERRIDE='mode="peer";connect/endpoints=["tcp/0.0.0.0:7447"]'`;
+    return `ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/0.0.0.0:7447"]'`;
   }
 }
