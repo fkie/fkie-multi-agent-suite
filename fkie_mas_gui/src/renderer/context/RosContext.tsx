@@ -3,7 +3,12 @@ import React, { createContext, useCallback, useEffect, useMemo, useRef, useState
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConnectConfig } from "ssh2";
 
-import { ErrorAlertComponent, ReloadFileAlertComponent, RestartNodesAlertComponent, colorFromHostname } from "@/renderer/components/UI";
+import {
+  ErrorAlertComponent,
+  ReloadFileAlertComponent,
+  RestartNodesAlertComponent,
+  colorFromHostname,
+} from "@/renderer/components/UI";
 import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -735,7 +740,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
 
         // ── Start services ────────────────────────────────────────────────────
         const zenohDaemonCmd = config.getZenohDaemonCmd();
-        if (zenohDaemonCmd) {
+        if (zenohDaemonCmd.result) {
           const sr = await startService(credential, zenohDaemonCmd, provider, config, "zenoh daemon");
           if (sr.authRequested) return false;
           if (!sr.started) allStarted = false;
@@ -766,7 +771,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         }
 
         // ── After a short delay try to connect again (daemon should be up) ───
-
+        if (provider.connectionState !== ConnectionState.STATES.CONNECTED)
+          provider.setConnectionState(ConnectionState.STATES.CONNECTING, "");
         // setTimeout(() => {
         //   connectToProvider(provider as Provider);
         // }, 2000);

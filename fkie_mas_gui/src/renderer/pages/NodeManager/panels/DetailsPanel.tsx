@@ -524,7 +524,6 @@ export default function DetailsPanel(): JSX.Element {
 
   const createLaunchView = useMemo(() => {
     if (!nodeShow || !nodeShow.services) return <></>;
-    const provider = rosCtx.getProviderById(nodeShow.providerId);
     return (
       <Stack paddingTop="0.5em" spacing={0}>
         <Stack
