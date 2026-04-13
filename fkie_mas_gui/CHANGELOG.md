@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.6.4 - 13.04.2026
+
+Fixed show show daemon log in a terminal
+Fixed wrong selected host on open publisher panel from details tab
+Added option to start zenoh daemon
+Changed zenoh config to client mode
+
 ## 5.6.3 - 08.04.2026
 
 Changed zenoh to peer mode

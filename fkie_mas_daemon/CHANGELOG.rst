@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.6.1 (13.04.2026)
+------------------
+* Fixed show show daemon log in a terminal
+
 5.6.0 (02.04.2026)
 ------------------
 * Added reset stats for echo topic
