@@ -233,9 +233,9 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
     const connectedUserIds = providersRef.current
       .filter((p) => p.isCreatedByUser() && p.connectionState === ConnectionState.STATES.CONNECTED)
       .map((p) => p.id);
-
-    setProviders((prev) =>
-      prev.filter((p) => {
+    setProviders((prev) => {
+      let filtered = false;
+      const newList = prev.filter((p) => {
         if (
           p.isCreatedByUser() ||
           p.cleanDiscoverer(connectedUserIds).length > 0 ||
@@ -243,10 +243,12 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         ) {
           return true;
         }
+        filtered = true;
         p.close();
         return false;
-      })
-    );
+      });
+      return filtered ? newList : prev;
+    });
   }, [providersRef.current]);
 
   /** Close the connection to all registered providers. */

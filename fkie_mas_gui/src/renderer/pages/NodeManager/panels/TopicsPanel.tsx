@@ -22,7 +22,7 @@ import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { TopicExtendedInfo } from "@/renderer/models";
 import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
-import { findIn } from "@/renderer/utils/index";
+import { areArraysEqual, findIn } from "@/renderer/utils/index";
 import { EVENT_FILTER_TOPICS, TFilterText } from "../layout/events";
 
 type TTreeItem = {
@@ -86,6 +86,7 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
   const [selected, setSelected] = useState<TSelected>(null);
   const [topicForSelected, setTopicForSelected] = useState<TopicExtendedInfo | undefined>();
   const [availableProviders, setAvailableProviders] = useState<TProviderDescription[]>([]);
+  const [domainIds, setDomainIds] = useState<string[]>([]);
   const [settings, setSettings] = useState<TSettings>({
     tooltipDelay: settingsCtx.get("tooltipEnterDelay") as number,
     avoidGroupWithOneItem: settingsCtx.get("avoidGroupWithOneItem") as boolean,
@@ -549,22 +550,19 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
 
   // Map provider -> domain
   const providerDomainMap = useMemo(() => {
+    const dm = new Map<string, string>();
     const m = new Map<string, string>();
     for (const p of rosCtx.providers) {
       const raw = p.connection?.domainId ?? "default";
       m.set(p.id, String(raw));
+      dm.set(String(raw), String(raw));
+    }
+    // changes on domain ids causes refactoring in flex layout
+    if (!areArraysEqual(Array.from(dm.keys()), domainIds)) {
+      setDomainIds(Array.from(dm.keys()));
     }
     return m;
   }, [rosCtx.providers]);
-
-  // list of domainIds
-  const domainIds = useMemo(() => {
-    const set = new Set<string>();
-    for (const domainId of providerDomainMap.values()) {
-      set.add(domainId);
-    }
-    return Array.from(set.values());
-  }, [providerDomainMap]);
 
   // eine sinnvolle Domain-ID für den Single-Domain-Fall
   const singleDomainId = domainIds.length === 1 ? domainIds[0] : "default";

@@ -1,15 +1,6 @@
 import RefreshIcon from "@mui/icons-material/Refresh";
 import StopIcon from "@mui/icons-material/Stop";
-import {
-  Alert,
-  Box,
-  FormLabel,
-  IconButton,
-  LinearProgress,
-  Paper,
-  Stack,
-  Tooltip,
-} from "@mui/material";
+import { Alert, Box, FormLabel, IconButton, LinearProgress, Paper, Stack, Tooltip } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
@@ -42,7 +33,7 @@ import { CmdType, Provider } from "@/renderer/providers";
 import { ConnectionState, EventProviderRestartNodes, EventProviderRosNodes } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_RESTART_NODES, EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
-import { findIn } from "@/renderer/utils/index";
+import { areArraysEqual, findIn } from "@/renderer/utils/index";
 import { TFileRange } from "@/types";
 import NodeLoggerPanel from "./NodeLoggerPanel";
 import ParameterPanel from "./ParameterPanel";
@@ -125,6 +116,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   const [nodesToStart, setNodesToStart] = useState<RosNode[]>();
   const [progressQueueMain, setProgressQueueMain] = useState<number>(0);
   const queue = useQueue<TQueueAction>(setProgressQueueMain);
+  const [domainIds, setDomainIds] = useState<string[]>([]);
 
   // variables with show dialog actions
   const [rosCleanPurge, setRosCleanPurge] = useState<boolean>(false);
@@ -142,7 +134,6 @@ export default function HostTreeViewPanel(): JSX.Element {
   >([]);
   // remember last processed queue index to avoid double execution (e.g. in StrictMode)
   const lastProcessedIndexRef = useRef<number | null>(null);
-  // const layoutInitializedRef = useRef(false);
 
   // keep UI-related settings in sync with SettingsContext
   useEffect(() => {
@@ -263,6 +254,11 @@ export default function HostTreeViewPanel(): JSX.Element {
       map.get(key)?.providers.push(provider);
     }
 
+    // changes on domain ids causes refactoring in flex layout
+    if (!areArraysEqual(Array.from(map.keys()), domainIds)) {
+      setDomainIds(Array.from(map.keys()));
+    }
+
     return Array.from(map.values());
   }, [rosCtx.providers]);
 
@@ -288,9 +284,8 @@ export default function HostTreeViewPanel(): JSX.Element {
     }
 
     return result;
-  }, [domainGroups, visibleNodesGlobal, rosCtx]);
+  }, [domainGroups, visibleNodesGlobal, rosCtx.getProviderById]);
 
-  const domainIds = useMemo(() => domainGroups.map((g) => g.domainId), [domainGroups]);
 
   // Event listeners -----------------------------------------------------------------------------------
 

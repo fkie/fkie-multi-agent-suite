@@ -15,7 +15,7 @@ import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ServiceExtendedInfo } from "@/renderer/models";
 import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
-import { findIn } from "@/renderer/utils/index";
+import { areArraysEqual, findIn } from "@/renderer/utils/index";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS, LayoutTabConfig } from "../layout";
 import { EVENT_FILTER_SERVICES, EVENT_OPEN_COMPONENT, eventOpenComponent, TFilterText } from "../layout/events";
 import ServiceCallerPanel from "./ServiceCallerPanel";
@@ -71,6 +71,7 @@ export default function ServicesPanel({ initialSearchTerm = "" }: ServicesPanelP
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [selected, setSelected] = useState<TSelected>(null);
   const [serviceForSelected, setServiceForSelected] = useState<ServiceExtendedInfo | undefined>();
+  const [domainIds, setDomainIds] = useState<string[]>([]);
 
   const [settings, setSettings] = useState<TSettings>({
     tooltipDelay: settingsCtx.get("tooltipEnterDelay") as number,
@@ -434,29 +435,22 @@ export default function ServicesPanel({ initialSearchTerm = "" }: ServicesPanelP
 
    */
   const providerDomainMap = useMemo(() => {
+    const dMap = new Map<string, string>();
     const map = new Map<string, string>();
 
     for (const provider of rosCtx.providers) {
       const raw = provider.connection?.domainId ?? "default";
       map.set(provider.id, String(raw));
+      dMap.set(String(raw), String(raw));
+    }
+
+    // changes on domain ids causes refactoring in flex layout
+    if (!areArraysEqual(Array.from(dMap.keys()), domainIds)) {
+      setDomainIds(Array.from(dMap.keys()));
     }
 
     return map;
   }, [rosCtx.providers]);
-
-  /**
-   * Distinct domain IDs from all providers.
-
-   */
-  const domainIds = useMemo(() => {
-    const set = new Set<string>();
-
-    for (const domainId of providerDomainMap.values()) {
-      set.add(domainId);
-    }
-
-    return Array.from(set.values());
-  }, [providerDomainMap]);
 
   // single-domain convenience id
   const singleDomainId = domainIds.length === 1 ? domainIds[0] : "default";
