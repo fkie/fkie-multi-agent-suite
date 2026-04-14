@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.6.5 - 14.04.2026
+
+Added count nodes to host entry
+Expand on load launch file
+Read environment of the remote host to get DDS specific start prefix
+Fixed show environment prefix in details panel
+Fixed warning in virtualized package list
+Fixed show current state in the host row
+Added copy button for command with environment
+
 ## 5.6.4 - 13.04.2026
 
 Fixed show show daemon log in a terminal
