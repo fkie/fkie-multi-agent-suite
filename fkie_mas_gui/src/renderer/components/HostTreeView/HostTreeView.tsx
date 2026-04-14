@@ -8,7 +8,7 @@ import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
-import { getFileName, LaunchContent, LaunchFile, RosNode } from "@/renderer/models";
+import { getFileName, LaunchContent, LaunchFile, RosNode, RosNodeStatus } from "@/renderer/models";
 import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { CmdType, Provider } from "@/renderer/providers";
@@ -820,6 +820,23 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     ]
   );
 
+  const getVisibleNodeCountForProvider = useCallback(
+    (providerId: string): number => {
+      return visibleNodes.filter((n) => n.providerId === providerId).length;
+    },
+    [visibleNodes]
+  );
+
+  const getVisibleAndRunningNodeCountForProvider = useCallback(
+    (providerId: string): number => {
+      return visibleNodes.filter(
+        (n) =>
+          n.providerId === providerId && (n.status === RosNodeStatus.RUNNING || n.status === RosNodeStatus.ONLY_SCREEN)
+      ).length;
+    },
+    [visibleNodes]
+  );
+
   return (
     <Box
       width="100%"
@@ -881,6 +898,8 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
               onDoubleClick={(event: React.MouseEvent, id: string) => {
                 handleDoubleClick(event, id);
               }}
+              nodeCount={getVisibleNodeCountForProvider(p.id)}
+              nodeRunningCount={getVisibleAndRunningNodeCountForProvider(p.id)}
             >
               {/* Show launch files if host is available (have children) */}
               {providerIsAvailable && (

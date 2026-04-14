@@ -14,6 +14,7 @@ import {
   Popper,
   Stack,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import { green, grey, orange, red } from "@mui/material/colors";
 import {
@@ -46,11 +47,13 @@ interface HostItemProps {
   provider: Provider;
   stopNodes: (nodeIdGlobals: string[]) => void;
   onDoubleClick: (event: React.MouseEvent, id: string) => void;
+  nodeCount: number;
+  nodeRunningCount: number;
   children: React.ReactNode;
 }
 
 export default function HostItem(props: HostItemProps): JSX.Element {
-  const { provider, stopNodes = (): void => {}, onDoubleClick = (): void => {}, ...children } = props;
+  const { provider, stopNodes = (): void => {}, onDoubleClick = (): void => {}, nodeCount, nodeRunningCount, ...children } = props;
   const settingsCtx = useSettingsContext();
   const navCtx = useNavigationContext();
   const rosCtx = useRosContext();
@@ -339,11 +342,20 @@ export default function HostItem(props: HostItemProps): JSX.Element {
 
           <Stack
             direction="row"
+            display="flex"
+            alignItems="center"
             sx={{ flexGrow: 1, userSelect: "none" }}
             // style={{ pointerEvents: "none" }}
           >
-            {provider.name()}
+            <Typography variant="body1" flexGrow={1} sx={{ marginLeft: 1 }}>{provider.name()}</Typography>
 
+            {nodeCount > 0 && (
+              <Tooltip title="count of running / total nodes" disableInteractive>
+              <Typography variant="body2" sx={{ marginLeft: 1 }}>
+                [{nodeRunningCount}/{nodeCount}]
+              </Typography>
+              </Tooltip>
+            )}
             {getProviderTags(provider).map((tag: TTag) => (
               <Tooltip
                 key={tag.id}
