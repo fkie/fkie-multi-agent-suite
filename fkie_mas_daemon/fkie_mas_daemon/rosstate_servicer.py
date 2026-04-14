@@ -88,6 +88,9 @@ class RosStateServicer:
         self._ros_service_list_str: str = json.dumps(self._ros_service_list, cls=SelfEncoder)
         self._ros_service_dict: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService] = {}
         self._ros_topic_dict: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic] = {}
+        self._count_nodes = 0
+        self._count_topics = 0
+        self._count_services = 0
         self._ros_node_list_mutex = threading.RLock()
         self._ros_topic_list_mutex = threading.RLock()
         self._ros_service_list_mutex = threading.RLock()
@@ -192,6 +195,10 @@ class RosStateServicer:
     def _callback_nodes(self, nodes: List[RosNode]):
         new_nodes_str = json.dumps(nodes, cls=SelfEncoder)
         with self._ros_node_list_mutex:
+            nodes_set = set()
+            for n in nodes:
+                nodes_set.add(n.name)
+            self._count_nodes = len(nodes_set)
             self._ros_node_list = nodes
             self._ts_state_notified = time.time()
             if self._ros_node_list_str != new_nodes_str:
@@ -204,6 +211,7 @@ class RosStateServicer:
     def _callback_topics(self, topics: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic]):
         new_topic_str = json.dumps([v for v in topics.values()], cls=SelfEncoder)
         with self._ros_topic_list_mutex:
+            self._count_topics = len(topics)
             self._ros_topic_list = topics
             self._ts_state_notified = time.time()
             if self._ros_topic_list_str != new_topic_str:
@@ -214,6 +222,7 @@ class RosStateServicer:
     def _callback_services(self, services: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService]):
         new_service_str = json.dumps([v for v in services.values()], cls=SelfEncoder)
         with self._ros_service_list_mutex:
+            self._count_services = len(services)
             self._ros_service_list = services
             self._ts_state_notified = time.time()
             if self._ros_service_list_str != new_service_str:
@@ -285,6 +294,23 @@ class RosStateServicer:
                 # send only if websocket clients are connected
                 if (update_ros_state or self._force_refresh) and self.websocket.count_clients() > 0:
                     send_notification = True
+
+                if not send_notification:
+                    if time.time() - self._ts_state_notified > self._check_delay:
+                        # check own state
+                        if self._count_topics != len(nmd.ros_node.get_topic_names_and_types()):
+                            print(f"count_topics old/new: {self._count_topics} / {len(nmd.ros_node.get_topic_names_and_types())}")
+                            send_notification = True
+                        elif self._count_services != len(nmd.ros_node.get_service_names_and_types()):
+                            print(f"count_services old/new: {self._count_services} / {len(nmd.ros_node.get_service_names_and_types())}")
+                            send_notification = True
+                        else:
+                            unique_nodes = set()
+                            for name, ns in nmd.ros_node.get_node_names_and_namespaces():
+                                unique_nodes.add(os.path.join(ns, name))
+                            if self._count_nodes != len(unique_nodes):
+                                print(f"count_nodes old/new: {self._count_nodes} / {len(unique_nodes)}")
+                                send_notification = True
 
                 if send_notification:
                     try:
