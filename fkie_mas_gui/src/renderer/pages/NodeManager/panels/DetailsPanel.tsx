@@ -25,6 +25,7 @@ import {
   getDiagnosticLevelName,
   getFileName,
 } from "@/renderer/models";
+import { envFromSystemEnv } from "@/renderer/models/ProviderLaunchConfiguration";
 import {
   EVENT_NODE_DIAGNOSTIC,
   EVENT_NODE_LIFECYCLE,
@@ -548,8 +549,14 @@ export default function DetailsPanel(): JSX.Element {
           Array.from(nodeShow.launchInfo.keys()).map((launchPath: string) => {
             const launchInfo = nodeShow.launchInfo.get(launchPath);
             const provider = rosCtx.getProviderById(nodeShow.providerId);
-            const envPrefix = provider?.startConfiguration?.getEnvPrefix() || "";
 
+            let envPrefix = "";
+            if (provider) {
+              envPrefix = provider.startConfiguration?.getEnvPrefix() || "";
+              if (!envPrefix) {
+                envPrefix = envFromSystemEnv(provider.systemEnv).join(" ");
+              }
+            }
             if (launchInfo) {
               return (
                 <Stack key={launchPath} marginTop={"0.5em"}>

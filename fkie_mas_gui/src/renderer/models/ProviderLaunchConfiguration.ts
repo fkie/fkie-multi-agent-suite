@@ -1,6 +1,6 @@
 import { parse } from "shell-quote";
 
-import { TResult } from "@/types";
+import { JSONObject, TResult } from "@/types";
 import { generateUniqueId } from "../utils";
 
 export const RMW_SELECTIONS = [
@@ -93,6 +93,38 @@ export type TProviderLaunchParams = {
   };
 
   respawn: boolean;
+};
+
+export const envFromSystemEnv = (env: JSONObject) => {
+  const result: string[] = [];
+  if (env.ROS_DOMAIN_ID) {
+    result.push(`ROS_DOMAIN_ID=${env.ROS_DOMAIN_ID}`);
+  }
+  if (env.RMW_IMPLEMENTATION) {
+    result.push(`RMW_IMPLEMENTATION=${env.RMW_IMPLEMENTATION}`);
+    if (env.RMW_IMPLEMENTATION === "rmw_zenoh_cpp") {
+      for (const envVar of Object.keys(env)) {
+        if (envVar.startsWith('ZENOH_')) {
+          result.push(`${envVar}=${env[envVar]}`);
+        }
+      }
+    }
+    if (env.RMW_IMPLEMENTATION === "rmw_cyclonedds_cpp") {
+      for (const envVar of Object.keys(env)) {
+        if (envVar.startsWith('CYCLONEDDS_')) {
+          result.push(`${envVar}=${env[envVar]}`);
+        }
+      }
+    }
+    if (env.RMW_IMPLEMENTATION === "rmw_fastrtps_cpp") {
+      for (const envVar of Object.keys(env)) {
+        if (envVar.startsWith('FASTDDS_') || envVar.startsWith('RMW_FASTRTPS_')) {
+          result.push(`${envVar}=${env[envVar]}`);
+        }
+      }
+    }
+  }
+  return result;
 };
 
 /**
@@ -294,7 +326,8 @@ export default class ProviderLaunchConfiguration {
     ) {
       return { result: false, message: "" };
     }
-    const cmd = "ros2 run fkie_mas_daemon mas-remote-node.py --name='zenoh-daemon' --command='ros2 run rmw_zenoh_cpp rmw_zenohd' ";
+    const cmd =
+      "ros2 run fkie_mas_daemon mas-remote-node.py --name='zenoh-daemon' --command='ros2 run rmw_zenoh_cpp rmw_zenohd' ";
     return { result: true, message: cmd } as TResult;
   }
 
