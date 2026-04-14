@@ -673,28 +673,28 @@ export default function HostTreeViewPanel(): JSX.Element {
       const resultStopNode = await provider.stopNode(node.id);
       if (!resultStopNode.result) {
         // If this is the last item in the queue, offer killing the process
-        if (queue.queue.length <= 1) {
-          const getProcessResult = await provider.findNodeProcess(node.name);
-          if (getProcessResult.processes.length > 0) {
-            const questions: {
-              node: string;
-              pid: number;
-              cmdLine: string;
-              callback?: () => Promise<void>;
-            }[] = [];
-            for (const p of getProcessResult.processes) {
-              questions.push({
-                node: node.name,
-                pid: p.pid,
-                cmdLine: p.cmdLine,
-                callback: async (): Promise<void> => {
-                  await provider.killProcess(p.pid);
-                },
-              });
-            }
-            setKillProcessQuestion(questions);
-          }
-        }
+        // if (queue.queue.length <= 1) {
+        //   const getProcessResult = await provider.findNodeProcess(node.name);
+        //   if (getProcessResult.processes.length > 0) {
+        //     const questions: {
+        //       node: string;
+        //       pid: number;
+        //       cmdLine: string;
+        //       callback?: () => Promise<void>;
+        //     }[] = [];
+        //     for (const p of getProcessResult.processes) {
+        //       questions.push({
+        //         node: node.name,
+        //         pid: p.pid,
+        //         cmdLine: p.cmdLine,
+        //         callback: async (): Promise<void> => {
+        //           await provider.killProcess(p.pid);
+        //         },
+        //       });
+        //     }
+        //     setKillProcessQuestion(questions);
+        //   }
+        // }
         queue.addStatus("STOP", node.name, false, resultStopNode.message);
       } else {
         queue.addStatus("STOP", node.name, true, "stopped");
