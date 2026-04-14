@@ -290,7 +290,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     freeSolo: true,
     type: "string",
     default: ".*_impl_,/*_ros2cli",
-    options: [".*_impl_,/*_ros2cli", ".*_impl_,/*_ros2cli,/mas/*,/_mas_*,ttyd*"],
+    options: [".*_impl_,/*_ros2cli", ".*_impl_,/*_ros2cli,/mas/*,/_mas_*,ttyd*", ".*_impl_,/*_ros2cli,/mas/*,/_mas_*,ttyd*,zenoh-daemon"],
     description: "Nodes to be placed in a {SPAM} group.",
     isValid: (value: JSONValue) => {
       let result = true;
