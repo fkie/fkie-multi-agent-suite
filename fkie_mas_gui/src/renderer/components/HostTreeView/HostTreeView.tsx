@@ -2,7 +2,7 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { emitCustomEvent } from "react-custom-events";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
@@ -12,6 +12,8 @@ import { getFileName, LaunchContent, LaunchFile, RosNode } from "@/renderer/mode
 import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { CmdType, Provider } from "@/renderer/providers";
+import { EVENT_PROVIDER_LAUNCH_LOADED } from "@/renderer/providers/eventTypes";
+import { EventProviderLaunchLoaded } from "@/renderer/providers/events";
 import { generateUniqueId, idFromDDSLocations, nodeNameWithoutNamespace, removeDDSuid } from "@/renderer/utils";
 import { Alert, AlertTitle, Box, Stack } from "@mui/material";
 import GroupItem, { GroupIcon, MultiScreenIcon, NodesCount } from "./GroupItem";
@@ -88,6 +90,16 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     settingsCtx.get("openScreenByDefault") as string
   );
   const [spamNodesRegExp, setSpamNodesRegExp] = useState<RegExp | undefined>(getSpamNodesRegExp());
+
+  useCustomEventListener(
+    EVENT_PROVIDER_LAUNCH_LOADED,
+    (data: EventProviderLaunchLoaded) => {
+      if (providerIdsInTree.includes(data.provider.id)) {
+        setExpanded((prev) => [...prev, data.provider.id]);
+      }
+    },
+    [setExpanded]
+  );
 
   /**
    * List of providerIds that are present in this tree (top-level items).
