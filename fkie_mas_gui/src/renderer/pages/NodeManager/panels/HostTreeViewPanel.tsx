@@ -1,6 +1,21 @@
 import RefreshIcon from "@mui/icons-material/Refresh";
 import StopIcon from "@mui/icons-material/Stop";
-import { Alert, Box, FormLabel, IconButton, LinearProgress, Paper, Stack, Tooltip } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  FormLabel,
+  IconButton,
+  LinearProgress,
+  Paper,
+  Stack,
+  Tooltip,
+} from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
@@ -10,6 +25,7 @@ import { DomainFlexLayout } from "@/renderer/components/layout/DomainFlexLayout"
 import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
 import ListSelectionModal from "@/renderer/components/SelectionModal/ListSelectionModal";
 import MapSelectionModal, { MapSelectionItem } from "@/renderer/components/SelectionModal/MapSelectionModal";
+import { DraggablePaper } from "@/renderer/components/UI";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
@@ -119,6 +135,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   const [domainIds, setDomainIds] = useState<string[]>([]);
 
   // variables with show dialog actions
+  const [shutdownRos, setShutdownRos] = useState<"" | "only nodes" | "kill ros2">("");
   const [rosCleanPurge, setRosCleanPurge] = useState<boolean>(false);
   const [nodeScreens, setNodeScreens] = useState<TMenuOptionsScreen[]>([]);
   const [nodeParams, setNodeParams] = useState<TMenuOptionsParam[]>([]);
@@ -285,7 +302,6 @@ export default function HostTreeViewPanel(): JSX.Element {
 
     return result;
   }, [domainGroups, visibleNodesGlobal, rosCtx.getProviderById]);
-
 
   // Event listeners -----------------------------------------------------------------------------------
 
@@ -1441,13 +1457,26 @@ export default function HostTreeViewPanel(): JSX.Element {
     }
   };
 
+  const handleShutdownRosClick = (options: { killRos2: boolean }): void => {
+    if (navCtx.selection.selectedProviders.length === 1) {
+      setShutdownRos(options.killRos2 ? "kill ros2" : "only nodes");
+    }
+  };
+
+  const shutdownProvider = useCallback(async (id: string, killRos2: boolean) => {
+    const provider = rosCtx.getProviderById(id);
+    if (!provider) return;
+    console.log(`shutdown ${provider.id}`);
+    const result = await provider.shutdown(killRos2);
+    console.log(`finished shutdown ${provider.id} ${JSON.stringify(result)}`);
+  }, [rosCtx.getProviderById]);
+
   const createActions = () => {
     return (
       <Box height="100%">
         <HostTreeViewActions
           selectedNodesCount={selectedNodes.length}
           hasDynamicReconfigure={hasDynamicReconfigure}
-          hasSelectedProviders={hasSelectedProviders}
           canUnregisterSelectedNodes={canUnregisterSelectedNodes}
           tooltipDelay={tooltipDelay}
           showButtonsForKeyModifiers={showButtonsForKeyModifiers}
@@ -1464,6 +1493,7 @@ export default function HostTreeViewPanel(): JSX.Element {
           onLoggersClick={handleLoggersClick}
           onClearLogsClick={handleClearLogsClick}
           onOpenTerminalOnHostsClick={handleOpenTerminalOnHostsClick}
+          onShutdownRosClick={handleShutdownRosClick}
         />
       </Box>
     );
@@ -1557,7 +1587,6 @@ export default function HostTreeViewPanel(): JSX.Element {
               stopNodes={stopNodesFromId}
             />
           ) : (
-
             // Multiple domains: one tab per domain with its own HostTreeView
             <DomainFlexLayout
               key="domain-host-layout"
@@ -1804,6 +1833,55 @@ export default function HostTreeViewPanel(): JSX.Element {
             setKillProcessQuestion([]);
           }}
         />
+      )}
+      {shutdownRos && (
+        <Dialog
+          open={!!shutdownRos}
+          onClose={() => {
+            setShutdownRos("");
+          }}
+          onAbort={() => {
+            setShutdownRos("");
+          }}
+          fullWidth
+          scroll="paper"
+          maxWidth="sm"
+          PaperComponent={DraggablePaper}
+          aria-labelledby="draggable-dialog-title"
+        >
+          <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
+            {shutdownRos === "kill ros2" ? "Terminate ROS and terminate all ros2 processes" : "Terminate ROS"}
+          </DialogTitle>
+
+          <DialogContent aria-label="list">
+            <DialogContentText id="alert-dialog-description">
+              {`Terminate ROS on "${navCtx.selection.selectedProviders.map((p) => p.split(":")[0])}"`}
+            </DialogContentText>
+          </DialogContent>
+
+          <DialogActions>
+            <Button
+              color="primary"
+              onClick={() => {
+                setShutdownRos("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              autoFocus
+              color="primary"
+              onClick={() => {
+                for (const providerId of navCtx.selection.selectedProviders) {
+                  shutdownProvider(providerId, shutdownRos === "kill ros2");
+                }
+                setShutdownRos("");
+              }}
+            >
+              Ok
+            </Button>
+          </DialogActions>
+        </Dialog>
       )}
     </Box>
   );

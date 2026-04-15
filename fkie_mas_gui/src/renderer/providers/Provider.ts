@@ -542,7 +542,7 @@ export default class Provider implements IProvider {
     emitCustomEvent(EVENT_PROVIDER_STATE, new EventProviderState(this, state, oldState, details));
     // get provider details depending on new state
     if (state === ConnectionState.STATES.CONNECTING && oldState === ConnectionState.STATES.STARTING) {
-      //
+      this.connection.open();
     } else if (state === ConnectionState.STATES.SERVER_CONNECTED) {
       this.registerCallbacks()
         .then(() => {
@@ -1181,8 +1181,8 @@ export default class Provider implements IProvider {
   /**
    * Terminate all running subprocesses (ROS, TTYD) of the provider
    */
-  public shutdown: () => Promise<Result> = async () => {
-    const result = await this.makeCall(URI.ROS_PROVIDER_SHUTDOWN, [], true).then((value: TResultData) => {
+  public shutdown: (killRos2: boolean) => Promise<Result> = async (killRos2) => {
+    const result = await this.makeCall(URI.ROS_PROVIDER_SHUTDOWN, [killRos2], true).then((value: TResultData) => {
       if (value.result) {
         return value.data as Result;
       }

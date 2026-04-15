@@ -217,7 +217,7 @@ Cleans ros log folder.
 
 Kills all screens started by provider. Also MAS nodes.
 
-`Request`: `empty`
+`Request`: `boolean` _killRos2_
 
 `Reply`:
 
@@ -1254,7 +1254,8 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
   "no_str": bool,         // exclude string fields.
   "hz": float,            // rate to forward messages. Ignored on latched topics. Disabled by 0. Default: 1
   "window": int,          // window size, in # of messages, for calculating rate
-  "arrayItemsCount": int  // reduce arrays to this count. Default: 15
+  "arrayItemsCount": int, // reduce arrays to this count. Default: 15
+  "resetStats": bool
 }
 ```
 
@@ -1280,7 +1281,8 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/runtime_interfa
   "delay_max": float,
   "size": float,
   "size_min": float,
-  "size_max": float
+  "size_max": float,
+  "subscriber_id": int
 }
 ```
 

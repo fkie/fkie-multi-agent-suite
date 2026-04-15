@@ -1,9 +1,11 @@
 import { ButtonGroup, Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import React from "react";
 
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import AddToQueueIcon from "@mui/icons-material/AddToQueue";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
+import DangerousOutlinedIcon from "@mui/icons-material/DangerousOutlined";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
 import DvrIcon from "@mui/icons-material/Dvr";
@@ -19,7 +21,6 @@ import WysiwygIcon from "@mui/icons-material/Wysiwyg";
 export interface HostTreeViewActionsProps {
   selectedNodesCount: number;
   hasDynamicReconfigure: boolean;
-  hasSelectedProviders: boolean;
   canUnregisterSelectedNodes: boolean;
   tooltipDelay: number;
   showButtonsForKeyModifiers: boolean;
@@ -37,6 +38,7 @@ export interface HostTreeViewActionsProps {
   onLoggersClick: () => void;
   onClearLogsClick: () => void;
   onOpenTerminalOnHostsClick: (options: { external: boolean; openInTerminal: boolean }) => void;
+  onShutdownRosClick: (options: { killRos2: boolean }) => void;
 }
 
 /**
@@ -47,7 +49,6 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
   const {
     selectedNodesCount,
     hasDynamicReconfigure,
-    hasSelectedProviders,
     canUnregisterSelectedNodes,
     tooltipDelay,
     showButtonsForKeyModifiers,
@@ -64,9 +65,13 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
     onLoggersClick,
     onClearLogsClick,
     onOpenTerminalOnHostsClick,
+    onShutdownRosClick,
   } = props;
 
   const hasNodeSelection = selectedNodesCount > 0;
+
+  const navCtx = useNavigationContext();
+  const hasSelectedProviders = navCtx.selection.selectedProviders.length > 0;
   const hasNodesOrProvidersSelection = hasNodeSelection || hasSelectedProviders;
 
   const handleStart = (event: React.MouseEvent<HTMLButtonElement>): void => {
@@ -109,6 +114,12 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
     onOpenTerminalOnHostsClick({
       external: event.nativeEvent.shiftKey,
       openInTerminal: event.nativeEvent.ctrlKey,
+    });
+  };
+
+  const handleShutdownRos = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    onShutdownRosClick({
+      killRos2: event.nativeEvent.shiftKey,
     });
   };
 
@@ -381,6 +392,36 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
               <TerminalIcon fontSize="inherit" />
             </IconButton>
           </span>
+        </Tooltip>
+      )}
+      {navCtx.selection.selectedProviders.length === 1 && (
+        <Tooltip
+          title={
+            <div>
+              <Typography fontWeight="bold" fontSize="inherit">
+                First, a SIGTERM is sent to all nodes started via MAS. After that, a SIGKILL is sent to all screen child
+                processes.
+              </Typography>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight="bold" fontSize="inherit">
+                  Shift:
+                </Typography>
+                <Typography fontSize="inherit">Terminate all ros2 processes</Typography>
+              </Stack>
+            </div>
+          }
+          placement="left"
+          enterDelay={tooltipDelay}
+          enterNextDelay={tooltipDelay}
+          disableInteractive
+        >
+          <IconButton
+            size="medium"
+            aria-label="Stop all screen and ros2 nodes on selected host"
+            onClick={handleShutdownRos}
+          >
+            <DangerousOutlinedIcon fontSize="inherit" />
+          </IconButton>
         </Tooltip>
       )}
     </ButtonGroup>

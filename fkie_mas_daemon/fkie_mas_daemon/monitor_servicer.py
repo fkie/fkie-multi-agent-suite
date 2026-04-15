@@ -66,14 +66,15 @@ class MonitorServicer:
                 now = time.time()
                 # add only newest messages
                 for ogw in self._warning_groups[group.id].warnings:
-                    if  now - ogw.timestamp < self.WARNING_LIFETIME_SEC:
+                    if now - ogw.timestamp < self.WARNING_LIFETIME_SEC:
                         new_group.warnings.append(ogw)
                 self._warning_groups[group.id] = new_group
         if updated:
             count_warnings = 0
             for wg in self._warning_groups.values():
                 count_warnings += len(wg.warnings)
-            Log.info(f"{self.__class__.__name__}: ros.provider.warnings with {count_warnings} warnings in {len(self._warning_groups)} groups")
+            Log.info(
+                f"{self.__class__.__name__}: ros.provider.warnings with {count_warnings} warnings in {len(self._warning_groups)} groups")
             self.websocket.publish('ros.provider.warnings', list(self._warning_groups.values()))
 
     def update_local_node_names(self, local_nodes: List[str]):
@@ -135,8 +136,8 @@ class MonitorServicer:
                 message = f"{e}"
         return json.dumps({"result": result, "message": message}, cls=SelfEncoder)
 
-    def rosShutdown(self) -> {bool, str}:
-        Log.info(f"{self.__class__.__name__}: ros.provider.shutdown")
+    def rosShutdown(self, killRos2: bool = False) -> {bool, str}:
+        Log.info(f"{self.__class__.__name__}: ros.provider.shutdown; killRos2: {killRos2}")
         result = False
         message = ''
         procs = []
@@ -147,13 +148,16 @@ class MonitorServicer:
                     cmdStr = ' '.join(ps_it.cmdline())
                     if cmdStr.find(SETTINGS_PATH) > -1:
                         # ignore mas daemon pid to kill it last
-                        if (cmdStr.find('mas-daemon') == -1):
+                        if cmdStr.find('mas-daemon') == -1:
                             found_pid, _found_name, _parents2kill = process.get_child_pid(ps_it.pid)
                             procs.append(ps_it)
                             ps_it.terminate()
                             if found_pid > -1:
                                 # store child process of the screen we found using SETTINGS_PATH for later kill
                                 screen_child_ids.append(found_pid)
+                    elif killRos2 and cmdStr.find('ros2') != -1 and cmdStr.find('mas-daemon') == -1:
+                        ps_it.terminate()
+                        procs.append(ps_it)
                 except (psutil.ZombieProcess, psutil.NoSuchProcess):
                     # ignore errors because of zombie processes or non-existent (terminated child?) processes
                     pass

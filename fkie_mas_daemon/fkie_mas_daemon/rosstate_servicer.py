@@ -98,6 +98,7 @@ class RosStateServicer:
         self._ros_composable_mutex = threading.RLock()
         self._is_dds = os.environ["RMW_IMPLEMENTATION"] != "rmw_zenoh_cpp" if "RMW_IMPLEMENTATION" in os.environ else True
         self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/changed"
+        self.topic_name_participants = ""
         if self._is_dds:
             self.topic_name_participants = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/participants"
         self.topic_name_endpoint = f"{NM_NAMESPACE}/daemons"
@@ -277,7 +278,7 @@ class RosStateServicer:
             try:
                 if self.topic_state_publisher_count:
                     # check if we have a discovery node
-                    if nmd.ros_node.count_publishers(self.topic_name_state) == 0 and nmd.ros_node.count_publishers(self.topic_name_participants) == 0:
+                    if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
                         self.topic_state_publisher_count = 0
                         self.publish_discovery_state()
                         with self._lock_check:
