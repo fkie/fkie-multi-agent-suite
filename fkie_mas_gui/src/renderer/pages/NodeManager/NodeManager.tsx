@@ -902,7 +902,7 @@ export default function NodeManager(): JSX.Element {
         await Promise.all(
           providers.map(async (prov) => {
             console.log(`shutdown ${prov.id}`);
-            const result = await prov.shutdown();
+            const result = await prov.shutdown(true);
             console.log(`finished shutdown ${prov.id} ${JSON.stringify(result)}`);
           })
         );
