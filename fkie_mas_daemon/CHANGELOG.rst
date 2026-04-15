@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.6.2 (15.04.2026)
+------------------
+* Added local check to find changes without discovery node
+* Added option to terminate ros2 processes
+
 5.6.1 (13.04.2026)
 ------------------
 * Fixed show show daemon log in a terminal

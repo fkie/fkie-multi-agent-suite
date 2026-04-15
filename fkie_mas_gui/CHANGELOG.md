@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.6.6 - 15.04.2026
+
+Added long press actions for control buttons
+Added terminate ros button
+Fixed the lag when a provider reconnects
+Added option to put zenoh-daemon screen to spam nodes
+Added local check to find changes without discovery node
+Removed question to kill process
+
 ## 5.6.5 - 14.04.2026
 
 Added count nodes to host entry
