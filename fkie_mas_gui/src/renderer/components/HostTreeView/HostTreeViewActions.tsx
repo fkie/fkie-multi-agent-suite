@@ -17,6 +17,7 @@ import StopIcon from "@mui/icons-material/Stop";
 import TerminalIcon from "@mui/icons-material/Terminal";
 import TuneIcon from "@mui/icons-material/Tune";
 import WysiwygIcon from "@mui/icons-material/Wysiwyg";
+import LongPressIconButton from "../UI/LongPressIconButton";
 
 export interface HostTreeViewActionsProps {
   selectedNodesCount: number;
@@ -134,7 +135,7 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
             </Typography>
             <Stack direction="row" spacing={"0.2em"}>
               <Typography fontWeight="bold" fontSize="inherit">
-                Shift:
+                Shift or long press:
               </Typography>
               <Typography fontSize="inherit">ignore start timer</Typography>
             </Stack>
@@ -146,9 +147,15 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
         disableInteractive
       >
         <span>
-          <IconButton size="medium" aria-label="Start" onClick={handleStart} disabled={!hasNodeSelection}>
+          <LongPressIconButton
+            size="medium"
+            aria-label="Start"
+            onClick={handleStart}
+            onLongPress={() => onStartClick({ ignoreTimer: true })}
+            disabled={!hasNodeSelection}
+          >
             <PlayArrowIcon fontSize="inherit" />
-          </IconButton>
+          </LongPressIconButton>
         </span>
       </Tooltip>
 
@@ -161,7 +168,7 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
             </Typography>
             <Stack direction="row" spacing={"0.2em"}>
               <Typography fontWeight="bold" fontSize="inherit">
-                Shift:
+                Shift or long press:
               </Typography>
               <Typography fontSize="inherit">kill</Typography>
             </Stack>
@@ -179,9 +186,20 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
         disableInteractive
       >
         <span>
-          <IconButton size="medium" aria-label="Stop" onClick={handleStop} disabled={!hasNodeSelection}>
+          <LongPressIconButton
+            size="medium"
+            aria-label="Stop"
+            onClick={handleStop}
+            onLongPress={() =>
+              onStopClick({
+                kill: true,
+                unregister: false,
+              })
+            }
+            disabled={!hasNodeSelection}
+          >
             <StopIcon fontSize="inherit" />
-          </IconButton>
+          </LongPressIconButton>
         </span>
       </Tooltip>
 
@@ -194,7 +212,7 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
             </Typography>
             <Stack direction="row" spacing={"0.2em"}>
               <Typography fontWeight="bold" fontSize="inherit">
-                Shift:
+                Shift or long press:
               </Typography>
               <Typography fontSize="inherit">ignore start timer</Typography>
             </Stack>
@@ -206,9 +224,15 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
         disableInteractive
       >
         <span>
-          <IconButton size="medium" aria-label="Restart" onClick={handleRestart} disabled={!hasNodeSelection}>
+          <LongPressIconButton
+            size="medium"
+            aria-label="Restart"
+            onClick={handleRestart}
+            onLongPress={() => onRestartClick({ ignoreTimer: true })}
+            disabled={!hasNodeSelection}
+          >
             <RestartAltIcon fontSize="inherit" />
-          </IconButton>
+          </LongPressIconButton>
         </span>
       </Tooltip>
 
@@ -249,7 +273,7 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
             </Typography>
             <Stack direction="row" spacing={"0.2em"}>
               <Typography fontWeight="bold" fontSize="inherit">
-                Shift+click:
+                Shift or long press:
               </Typography>
               <Typography fontSize="inherit">alternative open location</Typography>
             </Stack>
@@ -261,9 +285,15 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
         disableInteractive
       >
         <span>
-          <IconButton size="medium" aria-label="Edit" onClick={handleEdit} disabled={!hasNodeSelection}>
+          <LongPressIconButton
+            size="medium"
+            aria-label="Edit"
+            onClick={handleEdit}
+            onLongPress={() => onEditClick({ external: true })}
+            disabled={!hasNodeSelection}
+          >
             <BorderColorIcon fontSize="inherit" />
-          </IconButton>
+          </LongPressIconButton>
         </span>
       </Tooltip>
 
@@ -303,9 +333,15 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
             </Typography>
             <Stack direction="row" spacing={"0.2em"}>
               <Typography fontWeight="bold" fontSize="inherit">
-                Shift+click:
+                Shift:
               </Typography>
               <Typography fontSize="inherit">alternative open location</Typography>
+            </Stack>
+            <Stack direction="row" spacing={"0.2em"}>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Ctrl or long press:
+              </Typography>
+              <Typography fontSize="inherit">open in Terminal</Typography>
             </Stack>
           </div>
         }
@@ -313,14 +349,20 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
         disableInteractive
       >
         <span>
-          <IconButton
+          <LongPressIconButton
             size="medium"
             aria-label="Screen"
             disabled={!hasNodesOrProvidersSelection}
             onClick={handleScreens}
+            onLongPress={() =>
+              onScreensClick({
+                external: false,
+                openInTerminal: true,
+              })
+            }
           >
             {hasSelectedProviders ? <AddToQueueIcon fontSize="inherit" /> : <DvrIcon fontSize="inherit" />}
-          </IconButton>
+          </LongPressIconButton>
         </span>
       </Tooltip>
 
@@ -333,9 +375,15 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
             </Typography>
             <Stack direction="row" spacing={"0.2em"}>
               <Typography fontWeight="bold" fontSize="inherit">
-                Shift+click:
+                Shift:
               </Typography>
               <Typography fontSize="inherit">alternative open location</Typography>
+            </Stack>
+            <Stack direction="row" spacing={"0.2em"}>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Ctrl or long press:
+              </Typography>
+              <Typography fontSize="inherit">open in Terminal</Typography>
             </Stack>
           </div>
         }
@@ -343,9 +391,20 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
         disableInteractive
       >
         <span>
-          <IconButton size="medium" aria-label="Log" disabled={!hasNodesOrProvidersSelection} onClick={handleLogs}>
+          <LongPressIconButton
+            size="medium"
+            aria-label="Log"
+            disabled={!hasNodesOrProvidersSelection}
+            onClick={handleLogs}
+            onLongPress={() =>
+              onLogsClick({
+                external: false,
+                openInTerminal: true,
+              })
+            }
+          >
             <WysiwygIcon fontSize="inherit" />
-          </IconButton>
+          </LongPressIconButton>
         </span>
       </Tooltip>
 
@@ -376,21 +435,39 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
       {hasSelectedProviders && <Divider />}
       {hasSelectedProviders && (
         <Tooltip
-          title="Open Terminal on selected host (external terminal with shift+click)"
+          title={
+            <div>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Open Terminal on selected host
+              </Typography>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight="bold" fontSize="inherit">
+                  Shift or long press:
+                </Typography>
+                <Typography fontSize="inherit">alternativ open location</Typography>
+              </Stack>
+            </div>
+          }
           placement="left"
           enterDelay={tooltipDelay}
           enterNextDelay={tooltipDelay}
           disableInteractive
         >
           <span>
-            <IconButton
+            <LongPressIconButton
               size="medium"
               aria-label="Open Terminal on selected host"
               disabled={!hasSelectedProviders}
               onClick={handleOpenTerminalOnHosts}
+              onLongPress={() =>
+                onOpenTerminalOnHostsClick({
+                  external: true,
+                  openInTerminal: false,
+                })
+              }
             >
               <TerminalIcon fontSize="inherit" />
-            </IconButton>
+            </LongPressIconButton>
           </span>
         </Tooltip>
       )}
@@ -404,7 +481,7 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
               </Typography>
               <Stack direction="row" spacing={"0.2em"}>
                 <Typography fontWeight="bold" fontSize="inherit">
-                  Shift:
+                  Shift or long press:
                 </Typography>
                 <Typography fontSize="inherit">Terminate all ros2 processes</Typography>
               </Stack>
@@ -415,13 +492,18 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
           enterNextDelay={tooltipDelay}
           disableInteractive
         >
-          <IconButton
+          <LongPressIconButton
             size="medium"
             aria-label="Stop all screen and ros2 nodes on selected host"
             onClick={handleShutdownRos}
+            onLongPress={() =>
+              onShutdownRosClick({
+                killRos2: true,
+              })
+            }
           >
             <DangerousOutlinedIcon fontSize="inherit" />
-          </IconButton>
+          </LongPressIconButton>
         </Tooltip>
       )}
     </ButtonGroup>
