@@ -557,6 +557,7 @@ export default function DetailsPanel(): JSX.Element {
                 envPrefix = envFromSystemEnv(provider.systemEnv).join(" ");
               }
             }
+            const launchPrefix = launchInfo?.launch_prefix ? launchInfo?.launch_prefix : "";
             if (launchInfo) {
               return (
                 <Stack key={launchPath} marginTop={"0.5em"}>
@@ -589,16 +590,10 @@ export default function DetailsPanel(): JSX.Element {
                         paddingLeft="0.3em"
                         sx={{ background: (theme) => theme.palette.background.default }}
                       >
-                        {(envPrefix || launchInfo.launch_prefix) && (
-                          <Tooltip
-                            title={`${envPrefix} ${launchInfo.launch_prefix} ${launchInfo.cmd}`}
-                            disableInteractive
-                          >
+                        {(envPrefix || launchPrefix) && (
+                          <Tooltip title={`${envPrefix} ${launchPrefix} ${launchInfo.cmd}`} disableInteractive>
                             <Stack direction="row" spacing="0.3em">
-                              <CopyButton
-                                value={`${envPrefix} ${launchInfo.launch_prefix} ${launchInfo.cmd}`}
-                                fontSize="0.6em"
-                              />
+                              <CopyButton value={`${envPrefix} ${launchPrefix} ${launchInfo.cmd}`} fontSize="0.6em" />
                             </Stack>
                           </Tooltip>
                         )}
