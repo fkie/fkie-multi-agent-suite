@@ -11,10 +11,12 @@ export const RMW_SELECTIONS = [
   "rmw_zenoh_cpp",
 ] as const;
 
-export const ZENO_SELECTIONS = ["local", "multicast", "remote"] as const;
+export const ZENOH_SELECTIONS = ["local", "multicast", "remote"] as const;
+export const CYCLONE_SELECTIONS = ["", "100 participants"] as const;
 
 export type RmwSelection = (typeof RMW_SELECTIONS)[number];
-export type ZenohEnvSelection = (typeof ZENO_SELECTIONS)[number] | string;
+export type ZenohEnvSelection = (typeof ZENOH_SELECTIONS)[number] | string;
+export type CycloneEnvSelection = (typeof CYCLONE_SELECTIONS)[number] | string;
 
 export type TProviderLaunchParams = {
   id: string;
@@ -48,6 +50,7 @@ export type TProviderLaunchParams = {
     current: RmwSelection;
     selected: RmwSelection;
     overrideZenoEnv: ZenohEnvSelection;
+    overrideCycloneEnv: CycloneEnvSelection;
     remoteZenohHost: string;
     startZenohDaemon: boolean;
   };
@@ -104,21 +107,21 @@ export const envFromSystemEnv = (env: JSONObject) => {
     result.push(`RMW_IMPLEMENTATION=${env.RMW_IMPLEMENTATION}`);
     if (env.RMW_IMPLEMENTATION === "rmw_zenoh_cpp") {
       for (const envVar of Object.keys(env)) {
-        if (envVar.startsWith('ZENOH_')) {
+        if (envVar.startsWith("ZENOH_")) {
           result.push(`${envVar}=${env[envVar]}`);
         }
       }
     }
     if (env.RMW_IMPLEMENTATION === "rmw_cyclonedds_cpp") {
       for (const envVar of Object.keys(env)) {
-        if (envVar.startsWith('CYCLONEDDS_')) {
+        if (envVar.startsWith("CYCLONEDDS_")) {
           result.push(`${envVar}=${env[envVar]}`);
         }
       }
     }
     if (env.RMW_IMPLEMENTATION === "rmw_fastrtps_cpp") {
       for (const envVar of Object.keys(env)) {
-        if (envVar.startsWith('FASTDDS_') || envVar.startsWith('RMW_FASTRTPS_')) {
+        if (envVar.startsWith("FASTDDS_") || envVar.startsWith("RMW_FASTRTPS_")) {
           result.push(`${envVar}=${env[envVar]}`);
         }
       }
@@ -149,6 +152,7 @@ export default class ProviderLaunchConfiguration {
         current: "RMW_IMPLEMENTATION",
         selected: "RMW_IMPLEMENTATION",
         overrideZenoEnv: "local",
+        overrideCycloneEnv: "",
         remoteZenohHost: "0.0.0.0",
         startZenohDaemon: true,
       },
@@ -322,7 +326,7 @@ export default class ProviderLaunchConfiguration {
     }
     if (
       this.params.rmw.overrideZenoEnv !== "local" &&
-      ZENO_SELECTIONS.includes(this.params.rmw.overrideZenoEnv as (typeof ZENO_SELECTIONS)[number])
+      ZENOH_SELECTIONS.includes(this.params.rmw.overrideZenoEnv as (typeof ZENOH_SELECTIONS)[number])
     ) {
       return { result: false, message: "" };
     }
@@ -370,17 +374,22 @@ export default class ProviderLaunchConfiguration {
 
   public getEnv() {
     const result: string[] = [this.domainPrefix(), this.rmwPrefix()];
-    if (this.params.rmw.overrideZenoEnv === "multicast") {
-      result.push(this.getZenohRouterCheck());
-      result.push(this.getZenohMulticast());
-    } else if (this.params.rmw.overrideZenoEnv === "remote") {
-      result.push(this.getZenohRemoteRouter());
-    } else if (this.params.rmw.overrideZenoEnv === "local") {
-      result.push(this.getZenohLocalRouter());
-    } else {
-      for (const token of this.splitEnv(this.params.rmw.overrideZenoEnv)) {
-        result.push(token);
+    if (this.params.rmw.current === "rmw_zenoh_cpp") {
+      if (this.params.rmw.overrideZenoEnv === "multicast") {
+        result.push(this.getZenohRouterCheck());
+        result.push(this.getZenohMulticast());
+      } else if (this.params.rmw.overrideZenoEnv === "remote") {
+        result.push(this.getZenohRemoteRouter());
+      } else if (this.params.rmw.overrideZenoEnv === "local") {
+        result.push(this.getZenohLocalRouter());
+      } else {
+        for (const token of this.splitEnv(this.params.rmw.overrideZenoEnv)) {
+          result.push(token);
+        }
       }
+    }
+    if (this.params.rmw.current === "rmw_cyclonedds_cpp") {
+      result.push(this.getCycloneEnv());
     }
     return result.filter((entry) => !!entry);
   }
@@ -426,5 +435,17 @@ export default class ProviderLaunchConfiguration {
   public getZenohLocalRouter(): string {
     if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
     return `ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/0.0.0.0:7447"]'`;
+  }
+
+  public getCycloneEnv(): string {
+    if (this.params.rmw.current !== "rmw_cyclonedds_cpp") return "";
+    return `CYCLONEDDS_URI='<CycloneDDS>
+    <Domain Id="any">
+        <Discovery>
+            <ParticipantIndex>auto</ParticipantIndex>
+            <MaxAutoParticipantIndex>100</MaxAutoParticipantIndex>
+        </Discovery>
+    </Domain>
+</CycloneDDS>'`;
   }
 }

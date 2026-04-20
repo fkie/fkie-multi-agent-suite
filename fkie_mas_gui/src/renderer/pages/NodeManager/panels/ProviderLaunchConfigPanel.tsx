@@ -36,9 +36,11 @@ import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 import {
+  CYCLONE_SELECTIONS,
+  CycloneEnvSelection,
   RMW_SELECTIONS,
   RmwSelection,
-  ZENO_SELECTIONS,
+  ZENOH_SELECTIONS,
   ZenohEnvSelection,
 } from "@/renderer/models/ProviderLaunchConfiguration";
 import { EVENT_CLOSE_COMPONENT, eventCloseComponent } from "../layout/events";
@@ -119,6 +121,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   const [selectedRmw, setSelectedRmw] = useState<RmwSelection>(launchCfg.params.rmw.selected || "RMW_IMPLEMENTATION");
   const [selectedZenohEnv, setSelectedZenohEnv] = useState<ZenohEnvSelection>(
     launchCfg.params.rmw.overrideZenoEnv || ""
+  );
+  const [selectedCycloneEnv, setSelectedCycloneEnv] = useState<CycloneEnvSelection>(
+    launchCfg.params.rmw.overrideCycloneEnv || ""
   );
   const [hostList, setHostList] = useState<THostIp[]>([{ ip: "127.0.0.1", host: "localhost" }]);
   const [robotHostInputValue, setRobotHostInputValue] = useState("");
@@ -409,7 +414,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
           freeSolo
           fullWidth
           handleHomeEndKeys={false}
-          options={ZENO_SELECTIONS}
+          options={ZENOH_SELECTIONS}
           value={selectedZenohEnv}
           sx={{ minWidth: 250 }} // optional: horizontales Scrollen erlauben
           renderInput={(params) => <TextField {...params} variant="standard" label="zenoh override configuration" />}
@@ -462,6 +467,34 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
       </Stack>
     );
   }, [selectedZenohEnv, selectedZenohHost, rosCtx.rosInfo]);
+
+  const createCycloneEnvSelector = useMemo(() => {
+    return (
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+        paddingRight={2}
+        sx={{ flexGrow: 1 }} // optional: horizontales Scrollen erlauben
+      >
+        <Autocomplete
+          id="autocomplete-cyclone-env"
+          size="small"
+          autoHighlight
+          freeSolo
+          fullWidth
+          handleHomeEndKeys={false}
+          options={CYCLONE_SELECTIONS}
+          value={selectedCycloneEnv}
+          sx={{ minWidth: 250 }} // optional: horizontales Scrollen erlauben
+          renderInput={(params) => <TextField {...params} variant="standard" label="cyclone override configuration" />}
+          onInputChange={(_event, newInputValue) => {
+            setSelectedCycloneEnv(newInputValue as ZenohEnvSelection);
+          }}
+        />
+      </Stack>
+    );
+  }, [selectedCycloneEnv, rosCtx.rosInfo]);
 
   return (
     <Stack
@@ -1084,53 +1117,43 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
             )}
             <Divider />
             <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createRMWSelector}</Box>
-            <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createZenohEnvSelector}</Box>
 
-            {(launchCfg.params.rmw.overrideZenoEnv === "local" ||
-              !ZENO_SELECTIONS.includes(launchCfg.params.rmw.overrideZenoEnv as (typeof ZENO_SELECTIONS)[number])) && (
-              <FormGroup
-                aria-label="position"
-                row
-                sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
-              >
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={!!launchCfg.params.rmw.startZenohDaemon}
-                      onChange={(event) => {
-                        launchCfg.params.rmw.startZenohDaemon = event.target.checked;
-                        updateStartParameter();
-                      }}
+            {launchCfg.params.rmw.current === "rmw_zenoh_cpp" && (
+              <Box>
+                <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createZenohEnvSelector}</Box>
+
+                {(launchCfg.params.rmw.overrideZenoEnv === "local" ||
+                  !ZENOH_SELECTIONS.includes(
+                    launchCfg.params.rmw.overrideZenoEnv as (typeof ZENOH_SELECTIONS)[number]
+                  )) && (
+                  <FormGroup
+                    aria-label="position"
+                    row
+                    sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
+                  >
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          size="small"
+                          checked={!!launchCfg.params.rmw.startZenohDaemon}
+                          onChange={(event) => {
+                            launchCfg.params.rmw.startZenohDaemon = event.target.checked;
+                            updateStartParameter();
+                          }}
+                        />
+                      }
+                      label={"start zenoh daemon"}
+                      labelPlacement="end"
                     />
-                  }
-                  label={"start zenoh daemon"}
-                  labelPlacement="end"
-                />
-              </FormGroup>
+                  </FormGroup>
+                )}
+              </Box>
             )}
-            {/* <FormGroup
-              aria-label="position"
-              row
-              sx={{ "&:hover": { backgroundColor: (theme) => theme.palette.action.hover } }}
-            >
-              <FormControlLabel
-                disabled={!(launchCfg.params.daemon.enable && launchCfg.params.discovery.enable)}
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={forceStart}
-                    onChange={(event) => {
-                      launchCfg.params.force = { stop: event.target.checked, start: event.target.checked };
-                      updateStartParameter();
-                      setForceStart(event.target.checked);
-                    }}
-                  />
-                }
-                label="force start MAS nodes"
-                labelPlacement="end"
-              />
-            </FormGroup> */}
+            {launchCfg.params.rmw.current === "rmw_cyclonedds_cpp" && (
+              <Box>
+                <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createCycloneEnvSelector}</Box>
+              </Box>
+            )}
           </Stack>
           <Divider />
           <AccordionAdv
