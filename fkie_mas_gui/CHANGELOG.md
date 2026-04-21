@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.6.7 - 21.04.2026
+
+Added more options to override DDS environment
+Reduced count of updates
+Fixed copy whole command string to clip board
+
 ## 5.6.6 - 15.04.2026
 
 Added long press actions for control buttons
