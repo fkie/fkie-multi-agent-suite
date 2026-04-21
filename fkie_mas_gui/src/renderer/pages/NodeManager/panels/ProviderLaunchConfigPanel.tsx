@@ -36,8 +36,12 @@ import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 import {
+  CYCLONE_ALLOW_MULTICAST,
+  CYCLONE_MAX_PARTICIPANTS,
   CYCLONE_SELECTIONS,
+  CycloneAllowMulticast,
   CycloneEnvSelection,
+  CycloneMaxParticipants,
   RMW_SELECTIONS,
   RmwSelection,
   ZENOH_SELECTIONS,
@@ -98,6 +102,36 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   const settingsCtx = useSettingsContext();
   const launchCfgRef = useRef<ProviderLaunchConfiguration>(config);
   const launchCfg = launchCfgRef.current;
+  if (launchCfg && !launchCfg.params.rmw.zenoh) {
+    // fix for deprecated configuration parameter
+    const rmw = launchCfg.params.rmw as unknown as {
+      overrideZenoEnv: ZenohEnvSelection;
+      remoteZenohHost: string;
+      startZenohDaemon: boolean;
+    };
+    launchCfg.params.rmw.zenoh = {
+      overrideEnv: rmw.overrideZenoEnv,
+      remoteHost: rmw.remoteZenohHost,
+      startDaemon: rmw.startZenohDaemon,
+    };
+  }
+  if (launchCfg && !launchCfg.params.rmw.fastrtps) {
+    launchCfg.params.rmw.fastrtps = {
+      overrideEnv: "",
+    };
+  }
+  if (launchCfg && !launchCfg.params.rmw.connext) {
+    launchCfg.params.rmw.connext = {
+      overrideEnv: "",
+    };
+  }
+  if (launchCfg && !launchCfg.params.rmw.cyclone) {
+    launchCfg.params.rmw.cyclone = {
+      overrideEnv: "env",
+      maxParticipants: "100",
+      allowMulticast: "spdp",
+    };
+  }
   const [_valuesChanged, forceValuesUpdate] = useReducer((x) => x + 1, 0);
 
   const hostArg: string | undefined = settingsCtx.getArgument("host") as string | undefined;
@@ -116,14 +150,27 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   const defaultHost: string = hostArg ? hostArg : config?.params.host || "localhost";
   const [selectedHost, setSelectedHost] = useState<THostIp | null>({ host: defaultHost });
   const [selectedZenohHost, setSelectedZenohHost] = useState<THostIp | null>({
-    host: launchCfg?.params.rmw.remoteZenohHost,
+    host: launchCfg?.params.rmw.zenoh?.remoteHost,
   });
   const [selectedRmw, setSelectedRmw] = useState<RmwSelection>(launchCfg.params.rmw.selected || "RMW_IMPLEMENTATION");
   const [selectedZenohEnv, setSelectedZenohEnv] = useState<ZenohEnvSelection>(
-    launchCfg.params.rmw.overrideZenoEnv || ""
+    launchCfg.params.rmw.zenoh?.overrideEnv || ""
   );
   const [selectedCycloneEnv, setSelectedCycloneEnv] = useState<CycloneEnvSelection>(
-    launchCfg.params.rmw.overrideCycloneEnv || ""
+    launchCfg.params.rmw.cyclone?.overrideEnv || ""
+  );
+  const [cycloneAllowMulticast, setCycloneAllowMulticast] = useState<CycloneAllowMulticast>(
+    launchCfg.params.rmw.cyclone?.allowMulticast || "default"
+  );
+  const [cycloneMaxParticipants, setCycloneMaxParticipants] = useState<CycloneMaxParticipants>(
+    launchCfg.params.rmw.cyclone?.maxParticipants || "default"
+  );
+  const [envOverride, setEnvOverride] = useState<string>(
+    launchCfg.params.rmw.current === "rmw_fastrtps_cpp"
+      ? launchCfg.params.rmw.fastrtps?.overrideEnv || ""
+      : launchCfg.params.rmw.current === "rmw_connextdds"
+        ? launchCfg.params.rmw.connext?.overrideEnv || ""
+        : ""
   );
   const [hostList, setHostList] = useState<THostIp[]>([{ ip: "127.0.0.1", host: "localhost" }]);
   const [robotHostInputValue, setRobotHostInputValue] = useState("");
@@ -303,22 +350,52 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
       launchCfg.params.rmw.selected = selectedRmw;
     }
     if (launchCfg.params.rmw.current === "rmw_zenoh_cpp") {
-      if (launchCfg.params.rmw.startZenohDaemon === undefined) {
-        launchCfg.params.rmw.startZenohDaemon = true;
+      if (launchCfg.params.rmw.zenoh.startDaemon === undefined) {
+        launchCfg.params.rmw.zenoh.startDaemon = true;
       }
+    }
+    if (launchCfg.params.rmw.current === "rmw_fastrtps_cpp") {
+      setEnvOverride(launchCfg.params.rmw.fastrtps.overrideEnv)
+    }
+    if (launchCfg.params.rmw.current === "rmw_connextdds") {
+      setEnvOverride(launchCfg.params.rmw.connext.overrideEnv)
     }
     updateStartParameter();
   }, [selectedRmw]);
 
   useEffect(() => {
-    launchCfg.params.rmw.overrideZenoEnv = selectedZenohEnv;
+    launchCfg.params.rmw.zenoh.overrideEnv = selectedZenohEnv;
     updateStartParameter();
-  }, [selectedZenohEnv]);
+  }, [selectedZenohEnv, launchCfg]);
 
   useEffect(() => {
-    launchCfg.params.rmw.remoteZenohHost = selectedZenohHost?.host || selectedZenohHost?.ip || "";
+    launchCfg.params.rmw.zenoh.remoteHost = selectedZenohHost?.host || selectedZenohHost?.ip || "";
     updateStartParameter();
-  }, [selectedZenohHost]);
+  }, [selectedZenohHost, launchCfg]);
+
+  useEffect(() => {
+    launchCfg.params.rmw.cyclone.overrideEnv = selectedCycloneEnv;
+    updateStartParameter();
+  }, [selectedCycloneEnv, launchCfg]);
+
+  useEffect(() => {
+    launchCfg.params.rmw.cyclone.allowMulticast = cycloneAllowMulticast;
+    updateStartParameter();
+  }, [cycloneAllowMulticast, launchCfg]);
+
+  useEffect(() => {
+    launchCfg.params.rmw.cyclone.maxParticipants = cycloneMaxParticipants;
+    updateStartParameter();
+  }, [cycloneMaxParticipants, launchCfg]);
+
+  useEffect(() => {
+    if (launchCfg.params.rmw.current === "rmw_fastrtps_cpp") {
+      launchCfg.params.rmw.fastrtps.overrideEnv = envOverride;
+    } else if (launchCfg.params.rmw.current === "rmw_connextdds") {
+      launchCfg.params.rmw.connext.overrideEnv = envOverride;
+    }
+    updateStartParameter();
+  }, [envOverride, launchCfg]);
 
   const createHostSelector = useMemo(() => {
     return (
@@ -489,12 +566,40 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
           sx={{ minWidth: 250 }} // optional: horizontales Scrollen erlauben
           renderInput={(params) => <TextField {...params} variant="standard" label="cyclone override configuration" />}
           onInputChange={(_event, newInputValue) => {
-            setSelectedCycloneEnv(newInputValue as ZenohEnvSelection);
+            setSelectedCycloneEnv(newInputValue as CycloneEnvSelection);
           }}
         />
       </Stack>
     );
   }, [selectedCycloneEnv, rosCtx.rosInfo]);
+
+  const createEnvOverride = useMemo(() => {
+    return (
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+        paddingRight={2}
+        sx={{ flexGrow: 1 }} // optional: horizontales Scrollen erlauben
+      >
+        <Autocomplete
+          id="autocomplete-env-override"
+          size="small"
+          autoHighlight
+          freeSolo
+          fullWidth
+          handleHomeEndKeys={false}
+          options={[]}
+          value={envOverride}
+          sx={{ minWidth: 250 }} // optional: horizontales Scrollen erlauben
+          renderInput={(params) => <TextField {...params} variant="standard" label="override environment" />}
+          onInputChange={(_event, newInputValue) => {
+            setEnvOverride(newInputValue);
+          }}
+        />
+      </Stack>
+    );
+  }, [envOverride, rosCtx.rosInfo]);
 
   return (
     <Stack
@@ -1122,9 +1227,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               <Box>
                 <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createZenohEnvSelector}</Box>
 
-                {(launchCfg.params.rmw.overrideZenoEnv === "local" ||
+                {(launchCfg.params.rmw.zenoh.overrideEnv === "local" ||
                   !ZENOH_SELECTIONS.includes(
-                    launchCfg.params.rmw.overrideZenoEnv as (typeof ZENOH_SELECTIONS)[number]
+                    launchCfg.params.rmw.zenoh.overrideEnv as (typeof ZENOH_SELECTIONS)[number]
                   )) && (
                   <FormGroup
                     aria-label="position"
@@ -1135,9 +1240,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                       control={
                         <Checkbox
                           size="small"
-                          checked={!!launchCfg.params.rmw.startZenohDaemon}
+                          checked={!!launchCfg.params.rmw.zenoh.startDaemon}
                           onChange={(event) => {
-                            launchCfg.params.rmw.startZenohDaemon = event.target.checked;
+                            launchCfg.params.rmw.zenoh.startDaemon = event.target.checked;
                             updateStartParameter();
                           }}
                         />
@@ -1150,10 +1255,50 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               </Box>
             )}
             {launchCfg.params.rmw.current === "rmw_cyclonedds_cpp" && (
-              <Box>
+              <Stack direction="column">
                 <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createCycloneEnvSelector}</Box>
-              </Box>
+                {selectedCycloneEnv && (
+                  <Stack direction="column">
+                    <Autocomplete
+                      id="autocomplete-cyclone-allow-multicast"
+                      size="small"
+                      autoHighlight
+                      freeSolo={false}
+                      fullWidth
+                      handleHomeEndKeys={false}
+                      options={CYCLONE_ALLOW_MULTICAST}
+                      value={cycloneAllowMulticast}
+                      sx={{ minWidth: 250 }} // optional: horizontales Scrollen erlauben
+                      renderInput={(params) => (
+                        <TextField {...params} variant="standard" label="cyclone allow multicast" />
+                      )}
+                      onInputChange={(_event, newInputValue) => {
+                        setCycloneAllowMulticast(newInputValue as CycloneAllowMulticast);
+                      }}
+                    />
+                    <Autocomplete
+                      id="autocomplete-cyclone-max-participants"
+                      size="small"
+                      autoHighlight
+                      freeSolo
+                      fullWidth
+                      handleHomeEndKeys={false}
+                      options={CYCLONE_MAX_PARTICIPANTS}
+                      value={cycloneMaxParticipants}
+                      sx={{ minWidth: 250 }} // optional: horizontales Scrollen erlauben
+                      renderInput={(params) => (
+                        <TextField {...params} variant="standard" label="cyclone max participants" />
+                      )}
+                      onInputChange={(_event, newInputValue) => {
+                        setCycloneMaxParticipants(newInputValue as CycloneMaxParticipants);
+                      }}
+                    />
+                  </Stack>
+                )}
+              </Stack>
             )}
+            {launchCfg.params.rmw.current === "rmw_fastrtps_cpp" && createEnvOverride}
+            {launchCfg.params.rmw.current === "rmw_connextdds" && createEnvOverride}
           </Stack>
           <Divider />
           <AccordionAdv
