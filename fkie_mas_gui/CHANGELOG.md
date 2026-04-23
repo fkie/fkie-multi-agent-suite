@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.6.8 - 23.04.2026
+
+Added long press to load a launch file
+Added long press button to restart mas nodes
+Fixed start configuration with deprecated parameter
+
 ## 5.6.7 - 21.04.2026
 
 Added more options to override DDS environment
