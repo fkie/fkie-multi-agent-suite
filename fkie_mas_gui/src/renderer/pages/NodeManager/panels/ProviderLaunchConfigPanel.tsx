@@ -102,36 +102,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   const settingsCtx = useSettingsContext();
   const launchCfgRef = useRef<ProviderLaunchConfiguration>(config);
   const launchCfg = launchCfgRef.current;
-  if (launchCfg && !launchCfg.params.rmw.zenoh) {
-    // fix for deprecated configuration parameter
-    const rmw = launchCfg.params.rmw as unknown as {
-      overrideZenoEnv: ZenohEnvSelection;
-      remoteZenohHost: string;
-      startZenohDaemon: boolean;
-    };
-    launchCfg.params.rmw.zenoh = {
-      overrideEnv: rmw.overrideZenoEnv,
-      remoteHost: rmw.remoteZenohHost,
-      startDaemon: rmw.startZenohDaemon,
-    };
-  }
-  if (launchCfg && !launchCfg.params.rmw.fastrtps) {
-    launchCfg.params.rmw.fastrtps = {
-      overrideEnv: "",
-    };
-  }
-  if (launchCfg && !launchCfg.params.rmw.connext) {
-    launchCfg.params.rmw.connext = {
-      overrideEnv: "",
-    };
-  }
-  if (launchCfg && !launchCfg.params.rmw.cyclone) {
-    launchCfg.params.rmw.cyclone = {
-      overrideEnv: "env",
-      maxParticipants: "100",
-      allowMulticast: "spdp",
-    };
-  }
   const [_valuesChanged, forceValuesUpdate] = useReducer((x) => x + 1, 0);
 
   const hostArg: string | undefined = settingsCtx.getArgument("host") as string | undefined;

@@ -32,7 +32,7 @@ import useLocalStorage from "@/renderer/hooks/useLocalStorage";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
-import { TProviderLaunchParams } from "@/renderer/models/ProviderLaunchConfiguration";
+import { TProviderLaunchParams, ZenohEnvSelection } from "@/renderer/models/ProviderLaunchConfiguration";
 import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 import Provider from "@/renderer/providers/Provider";
 import { LAYOUT_TAB_SETS } from "../layout";
@@ -98,6 +98,36 @@ export default function ProviderPanel(): JSX.Element {
         // fix deprecated networkId parameter
         if (!cfg.domainId && cfg.networkId) {
           cfg.domainId = cfg.networkId;
+        }
+        if (!cfg.rmw.zenoh) {
+          // fix for deprecated configuration parameter
+          const rmw = cfg.rmw as unknown as {
+            overrideZenoEnv: ZenohEnvSelection;
+            remoteZenohHost: string;
+            startZenohDaemon: boolean;
+          };
+          cfg.rmw.zenoh = {
+            overrideEnv: rmw.overrideZenoEnv,
+            remoteHost: rmw.remoteZenohHost,
+            startDaemon: rmw.startZenohDaemon,
+          };
+        }
+        if (!cfg.rmw.fastrtps) {
+          cfg.rmw.fastrtps = {
+            overrideEnv: "",
+          };
+        }
+        if (!cfg.rmw.connext) {
+          cfg.rmw.connext = {
+            overrideEnv: "",
+          };
+        }
+        if (!cfg.rmw.cyclone) {
+          cfg.rmw.cyclone = {
+            overrideEnv: "env",
+            maxParticipants: "100",
+            allowMulticast: "spdp",
+          };
         }
         return new ProviderLaunchConfiguration(cfg);
       })
