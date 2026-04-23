@@ -4,6 +4,7 @@ import { IconButton, Link, Stack, TableCell, TableRow, Tooltip, Typography } fro
 
 import { useCallback, useMemo } from "react";
 
+import LongPressIconButton from "@/renderer/components/UI/LongPressIconButton";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 
@@ -16,9 +17,15 @@ export default function ProviderPanelRowCfg(props: ProviderPanelRowCfgProps): JS
   const { startConfig, editConfiguration } = props;
   const rosCtx = useRosContext();
 
-  const handleStartProvider = useCallback(() => {
-    rosCtx.startConfig(startConfig, null);
-  }, [startConfig, rosCtx.startConfig]);
+  const handleStartProvider = useCallback(
+    (options: { forceRestart: boolean }) => {
+      if (options.forceRestart) {
+        startConfig.params.force.stop = true;
+      }
+      rosCtx.startConfig(startConfig, null);
+    },
+    [startConfig, rosCtx.startConfig]
+  );
 
   const createTableRow = useMemo(() => {
     return (
@@ -52,22 +59,39 @@ export default function ProviderPanelRowCfg(props: ProviderPanelRowCfgProps): JS
           }}
         >
           <Stack direction="row" spacing="0.2em">
-            <Tooltip title={"Click to start provider"} placement="bottom" disableInteractive>
+            <Tooltip
+              title={
+                <div>
+                  <Typography fontWeight="bold" fontSize="inherit">
+                    Click to start provider
+                  </Typography>
+                  <Stack direction="row" spacing={"0.2em"}>
+                    <Typography fontWeight="bold" fontSize="inherit">
+                      Shift or long press:
+                    </Typography>
+                    <Typography fontSize="inherit">force restart mas nodes</Typography>
+                  </Stack>
+                </div>
+              }
+              placement="bottom"
+              disableInteractive
+            >
               <span>
                 {window.commandExecutor && (
-                  <IconButton
-                    onClick={() => {
-                      handleStartProvider();
+                  <LongPressIconButton
+                    onClick={(event) => {
+                      handleStartProvider({ forceRestart: event.nativeEvent.shiftKey });
                     }}
+                    onLongPress={() => handleStartProvider({ forceRestart: true })}
                     color="info"
                     size="small"
                   >
                     <PlayCircleOutlineIcon fontSize="inherit" />
-                  </IconButton>
+                  </LongPressIconButton>
                 )}
               </span>
             </Tooltip>
-            <Tooltip title={"Click to start provider"} placement="bottom" disableInteractive>
+            <Tooltip title={"Click to edit configuration"} placement="bottom" disableInteractive>
               <span>
                 {window.commandExecutor && (
                   <IconButton
@@ -86,7 +110,7 @@ export default function ProviderPanelRowCfg(props: ProviderPanelRowCfgProps): JS
         </TableCell>
       </TableRow>
     );
-  }, [startConfig]);
+  }, [startConfig, handleStartProvider, editConfiguration]);
 
   return createTableRow;
 }

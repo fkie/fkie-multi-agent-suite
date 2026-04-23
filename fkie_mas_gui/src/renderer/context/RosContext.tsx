@@ -675,12 +675,14 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
           provider.startConfiguration = config;
         }
 
-        // ── Try to connect first; only start services if that fails ──────────
-        provider.connectionState = ConnectionState.STATES.CONNECTING;
-        const connectedBeforeStart = await connectToProvider(provider, ConnectionState.STATES.STARTING);
-        if (connectedBeforeStart) {
-          logCtx.info(`Provider '${provider.name()}' is already reachable – skipping service start.`, "");
-          return true;
+        if (!config.params.force.stop) {
+          // ── Try to connect first; only start services if that fails ──────────
+          provider.connectionState = ConnectionState.STATES.CONNECTING;
+          const connectedBeforeStart = await connectToProvider(provider, ConnectionState.STATES.STARTING);
+          if (connectedBeforeStart) {
+            logCtx.info(`Provider '${provider.name()}' is already reachable – skipping service start.`, "");
+            return true;
+          }
         }
 
         // If no service is enabled, default to daemon + discovery + terminal

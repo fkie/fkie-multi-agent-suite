@@ -281,7 +281,7 @@ export default function NodeLoggerPanel(props: NodeLoggerPanelProps): JSX.Elemen
       </Stack>
       {error && (
         <Stack direction="column">
-          <Typography color="error">{error}</Typography>
+          <Typography color="error">{JSON.stringify(error)}</Typography>
           <Typography color="info">Have you enabled enable_logger_service in the options of your ROS node?</Typography>
         </Stack>
       )}

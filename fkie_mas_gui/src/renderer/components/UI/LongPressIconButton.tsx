@@ -8,7 +8,7 @@ type Props = IconButtonProps & {
   delay?: number;
 };
 
-const LongPressIconButton: React.FC<Props> = ({ onLongPress, delay = 800, onClick, children, ...rest }) => {
+const LongPressIconButton: React.FC<Props> = ({ onLongPress, delay = 800, onClick, children, size, ...rest }) => {
   const timerRef = useRef<number | null>(null);
   const intervalRef = useRef<number | null>(null);
 
@@ -47,11 +47,11 @@ const LongPressIconButton: React.FC<Props> = ({ onLongPress, delay = 800, onClic
         <CircularProgress
           variant="determinate"
           value={progress}
-          size={32}
+          size={size === "medium" ? 32 : 24}
           sx={{
             position: "absolute",
-            top: 4,
-            left: 4,
+            top: size === "medium" ? 4 : 2,
+            left: size === "medium" ? 4 : 2,
             pointerEvents: "none",
           }}
         />
@@ -59,6 +59,7 @@ const LongPressIconButton: React.FC<Props> = ({ onLongPress, delay = 800, onClic
 
       <IconButton
         {...rest}
+        size={size}
         onContextMenu={(e) => e.preventDefault()} // important for mobile
         onPointerDown={(e) => {
           if (e.button !== 0 && e.pointerType === "mouse") return;
