@@ -542,7 +542,7 @@ export default class Provider implements IProvider {
     emitCustomEvent(EVENT_PROVIDER_STATE, new EventProviderState(this, state, oldState, details));
     // get provider details depending on new state
     if (state === ConnectionState.STATES.CONNECTING && oldState === ConnectionState.STATES.STARTING) {
-      this.connection.open();
+      // this.connection.open();
     } else if (state === ConnectionState.STATES.SERVER_CONNECTED) {
       this.registerCallbacks()
         .then(() => {

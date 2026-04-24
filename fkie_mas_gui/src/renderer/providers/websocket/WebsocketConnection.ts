@@ -96,7 +96,7 @@ export default class WebsocketConnection extends ProviderConnection {
    * Resolves to true on successful connection, false on clean close, rejects on error/timeout.
 
    */
-  open: () => Promise<boolean> = () => {
+  open: (reconnectTimeout?: number) => Promise<boolean> = (reconnectTimeout = 5000) => {
     // If already open, resolve immediately
     if (this.connected()) return Promise.resolve(true);
 
@@ -179,10 +179,10 @@ export default class WebsocketConnection extends ProviderConnection {
       ws.addEventListener("message", handleMessage);
 
       // Optional: connection timeout for the initial connect
-      if (this.timeout) {
+      if (reconnectTimeout > 0) {
         setTimeout(() => {
           if (!this.connected() && ws.readyState === WebSocket.CONNECTING) {
-            this.log().warn(`[${this.uri}] connection timeout after ${this.timeout}ms`, "");
+            this.log().warn(`[${this.uri}] connection timeout after ${reconnectTimeout}ms`, "");
             try {
               ws.close(); // will trigger handleClose
             } catch {
@@ -195,7 +195,7 @@ export default class WebsocketConnection extends ProviderConnection {
               reject(new Error(`[${this.uri}] connection timeout`));
             }
           }
-        }, this.timeout);
+        }, reconnectTimeout);
       }
     });
 

@@ -34,7 +34,7 @@ export default class ProviderConnection {
   /** Default connection timeout in milliseconds */
   timeout: number = 5000;
 
-  open: () => Promise<boolean> = () => {
+  open: (reconnectTimeout?: number) => Promise<boolean> = () => {
     return Promise.resolve(false);
   };
 

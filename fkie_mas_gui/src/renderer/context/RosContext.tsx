@@ -775,11 +775,10 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         }
 
         // ── After a short delay try to connect again (daemon should be up) ───
-        if (provider.connectionState !== ConnectionState.STATES.CONNECTED)
-          provider.setConnectionState(ConnectionState.STATES.CONNECTING, "");
-        // setTimeout(() => {
-        //   connectToProvider(provider as Provider);
-        // }, 2000);
+        setTimeout(() => {
+          if (provider.connectionState !== ConnectionState.STATES.CONNECTED)
+            provider.setConnectionState(ConnectionState.STATES.CONNECTING, "");
+        }, 2000);
       } catch (error) {
         logCtx.error(`Error starting host: ${config.params.host}`, `${error}`, `${config.params.host} start failed`);
         allStarted = false;
