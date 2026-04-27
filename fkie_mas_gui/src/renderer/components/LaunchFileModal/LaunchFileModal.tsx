@@ -93,8 +93,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
           masteruri,
           host
         );
-        const result: LaunchLoadReply | null = await provider.launchLoadFile(request, false);
-        if (!result) return;
+        const result: LaunchLoadReply = await provider.launchLoadFile(request, false);
         if (result.status.code === "ALREADY_OPEN") {
           logCtx.warn(`Launch file [${getFileName(path)}] was already loaded`, `File: ${path}`, "already loaded");
           setMessageLaunchLoaded("Launch file was already loaded");
@@ -169,9 +168,10 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
           return;
         }
 
-        if (result.status.code === "ERROR") {
+        if (result.status.code === "ERROR" || result.status.code === "CONNECTION_ERROR") {
           setMessageLaunchLoaded(result.status.msg || "");
-          logCtx.error(`Error on load "${getFileName(path)}"`, `Error message: ${result.status.msg}`, "load error");
+          logCtx.error(`Error on load "${getFileName(path)}"`, `Error message: ${result.status.msg}`, result.status.msg);
+          return;
         }
 
         setOpen(true);

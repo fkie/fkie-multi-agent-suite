@@ -1200,27 +1200,32 @@ export default class Provider implements IProvider {
   /**
    * Load a new launch file into launch servicer
    */
-  public launchLoadFile: (request: LaunchLoadRequest, reload: boolean) => Promise<LaunchLoadReply | null> = async (
+  public launchLoadFile: (request: LaunchLoadRequest, reload: boolean) => Promise<LaunchLoadReply> = async (
     request,
     reload
   ) => {
-    let result: LaunchLoadReply | null = null;
+    let result: LaunchLoadReply = {
+      status: { code: "CONNECTION_ERROR", msg: "unknown error" },
+      paths: [],
+      args: [],
+      changed_nodes: [],
+    };
 
-    if (reload)
-      result = await this.makeCall(URI.ROS_LAUNCH_RELOAD, [request], true).then((value: TResultData) => {
+    if (reload) {
+      result = await this.makeCall(URI.ROS_LAUNCH_RELOAD, [request], true, 60000).then((value: TResultData) => {
         if (value.result) {
           return value.data as LaunchLoadReply;
         }
         this.log().error(`Provider [${this.id}]: Error at launchLoadFile()`, `${value.message}`);
-        return null;
+        return { status: { code: "CONNECTION_ERROR", msg: value.message }, paths: [], args: [], changed_nodes: [] };
       });
-    else {
-      result = await this.makeCall(URI.ROS_LAUNCH_LOAD, [request], true).then((value: TResultData) => {
+    } else {
+      result = await this.makeCall(URI.ROS_LAUNCH_LOAD, [request], true, 60000).then((value: TResultData) => {
         if (value.result) {
           return value.data as LaunchLoadReply;
         }
         this.log().error(`Provider [${this.id}]: Error at launchLoadFile()`, `${value.message}`);
-        return null;
+        return { status: { code: "CONNECTION_ERROR", msg: value.message }, paths: [], args: [], changed_nodes: [] };
       });
     }
     return Promise.resolve(result);

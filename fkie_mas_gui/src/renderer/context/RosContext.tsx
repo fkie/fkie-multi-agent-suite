@@ -343,17 +343,8 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         provider.rosState.masteruri ?? "",
         provider.connection.host
       );
-
       logCtx.debug(`launch launch file: ${JSON.stringify(request)}`);
       const reply = await provider.launchLoadFile(request, reload);
-
-      if (!reply) {
-        return {
-          success: false,
-          error: "Invalid response for [launchLoadFile], check DAEMON screen output",
-          reply: null,
-        };
-      }
 
       switch (reply.status.code) {
         case "OK":
