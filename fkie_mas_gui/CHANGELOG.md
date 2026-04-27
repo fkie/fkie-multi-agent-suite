@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.6.9 - 27.04.2026
+
+Increased timeout while load launch call and added info if connection error occurs
+Improved connection performance at startup
+
 ## 5.6.8 - 23.04.2026
 
 Added long press to load a launch file
