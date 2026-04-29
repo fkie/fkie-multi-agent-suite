@@ -166,3 +166,16 @@ export default class DiagnosticInfo {
     return this.diagnosticNodes.find((node) => node.name === nodeName || node.name.startsWith(`${nodeName}/`));
   }
 }
+
+export function parseDiagnostics(diags: DiagnosticArray) {
+  const result: { node: string; status: DiagnosticStatus }[] = [];
+  const diagStatus: DiagnosticStatus[] = diags.status || [];
+  for (const status of diagStatus) {
+    // match the name without leading slash
+    // match the name with dots instead of slashes
+    // match the name with trailing logger name
+    const statusName = `/${status.name.replace(/^\/+/, "").replaceAll(".", "/")}`;
+    result.push({ node: statusName, status: status });
+  }
+  return result;
+}

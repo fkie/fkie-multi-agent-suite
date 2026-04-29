@@ -43,6 +43,7 @@ import {
   SystemWarningGroup,
   URI,
 } from "../models";
+import { parseDiagnostics } from "../models/Diagnostics";
 import { delay } from "../utils";
 import CmdTerminal from "./CmdTerminal";
 import CmdType from "./CmdType";
@@ -51,6 +52,7 @@ import ProviderConnection, { TProviderTimestamp, TResultClearPath, TResultStartN
 import RosProviderState from "./RosProviderState";
 import {
   EVENT_NODE_COMPOSABLE,
+  EVENT_NODE_DIAGNOSTIC,
   EVENT_NODE_LIFECYCLE,
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
@@ -71,6 +73,7 @@ import {
   EVENT_PROVIDER_WARNINGS,
 } from "./eventTypes";
 import {
+  EventNodeDiagnostic,
   EventProviderActivity,
   EventProviderDelay,
   EventProviderDiscovered,
@@ -1563,7 +1566,16 @@ export default class Provider implements IProvider {
     }
     // update the screens
     this.diagnosticInfo.add(diags);
-    await this.mergeNodeStates();
+    for (const n of this.rosNodes) {
+      n.diagnostic = this.diagnosticInfo.get(n.name);
+    }
+    const nodes = parseDiagnostics(diags);
+    for (const n of nodes) {
+      const existingNode = this.rosNodes.find((node: RosNode) => node.name === n.node);
+      if (!existingNode) continue;
+      const newDiag: EventNodeDiagnostic = { provider: this, node: existingNode, status: n.status };
+      emitCustomEvent(EVENT_NODE_DIAGNOSTIC, newDiag);
+    }
     return Promise.resolve(true);
   };
 

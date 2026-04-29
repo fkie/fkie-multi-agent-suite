@@ -33,8 +33,8 @@ import {
   EVENT_FILTER_NODES,
   eventFilterNodes,
 } from "@/renderer/pages/NodeManager/layout/events";
-import { TEventNodeLifecycle } from "@/renderer/providers/events";
-import { EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
+import { EventNodeDiagnostic, TEventNodeLifecycle } from "@/renderer/providers/events";
+import { EVENT_NODE_DIAGNOSTIC, EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
 import { TTag } from "@/types";
 import { TRosMessageStruct } from "@/types/TRosMessageStruct";
@@ -307,11 +307,11 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
     );
   };
 
-  // useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
-  //   if (data.node.name === node.name) {
-  //     setNodeIcon(getNodeIcon(data.node, isDarkMode, lifecycle));
-  //   }
-  // });
+  useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
+    if (data.node.name === node.name) {
+      setNodeIcon(getNodeIcon(data.node, isDarkMode, lifecycle));
+    }
+  });
 
   useCustomEventListener(EVENT_NODE_LIFECYCLE, (data: TEventNodeLifecycle) => {
     if (data.lifecycle.id === node.id && data.provider.id === node.providerId) {

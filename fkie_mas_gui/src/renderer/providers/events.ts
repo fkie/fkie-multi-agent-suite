@@ -2,6 +2,7 @@
 import { ConnectConfig } from "ssh2";
 import {
   Composable,
+  DiagnosticStatus,
   LaunchContent,
   LifecycleState,
   PathEvent,
@@ -250,9 +251,12 @@ export class EventNodeDiagnostic {
 
   node: RosNode;
 
-  constructor(provider: Provider, node: RosNode) {
+  status: DiagnosticStatus;
+
+  constructor(provider: Provider, node: RosNode, status: DiagnosticStatus) {
     this.provider = provider;
     this.node = node;
+    this.status = status;
   }
 }
 

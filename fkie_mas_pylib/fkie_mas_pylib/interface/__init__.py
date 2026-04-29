@@ -9,7 +9,7 @@ class SelfEncoder(json.JSONEncoder):
                 if key[0] != '_':
                     if hasattr(value, "__len__") and len(value) == 0:
                         continue
-                    if value:
+                    if value is not None:
                         result[key] = value
         except Exception as err:
             print(f"[SelfEncoder] skipped {obj}: {err}")
