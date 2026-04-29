@@ -108,9 +108,15 @@ export default function ProviderPanel(): JSX.Element {
           };
           cfg.rmw.zenoh = {
             overrideEnv: rmw.overrideZenoEnv,
-            remoteHost: rmw.remoteZenohHost,
+            remoteHosts: rmw.remoteZenohHost ? [rmw.remoteZenohHost] : [],
             startDaemon: rmw.startZenohDaemon,
           };
+        }
+        if (!cfg.rmw.zenoh.remoteHosts) {
+          const oldZenoh = cfg.rmw.zenoh as unknown as {
+            remoteHost: string;
+          }
+          cfg.rmw.zenoh.remoteHosts = oldZenoh.remoteHost ? [oldZenoh.remoteHost] : [];
         }
         if (!cfg.rmw.fastrtps) {
           cfg.rmw.fastrtps = {

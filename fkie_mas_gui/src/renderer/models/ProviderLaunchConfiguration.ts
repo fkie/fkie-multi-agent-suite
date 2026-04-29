@@ -60,7 +60,7 @@ export type TProviderLaunchParams = {
     };
     zenoh: {
       overrideEnv: string;
-      remoteHost: string;
+      remoteHosts: string[];
       startDaemon: boolean;
     };
     fastrtps: {
@@ -174,7 +174,7 @@ export default class ProviderLaunchConfiguration {
         },
         zenoh: {
           overrideEnv: "local",
-          remoteHost: "0.0.0.0",
+          remoteHosts: [],
           startDaemon: true,
         },
         fastrtps: {
@@ -354,12 +354,13 @@ export default class ProviderLaunchConfiguration {
     }
     if (
       this.params.rmw.zenoh.overrideEnv !== "local" &&
+      this.params.rmw.zenoh.overrideEnv !== "remote" &&
       ZENOH_SELECTIONS.includes(this.params.rmw.zenoh.overrideEnv as (typeof ZENOH_SELECTIONS)[number])
     ) {
       return { result: false, message: "" };
     }
-    const cmd =
-      "ros2 run fkie_mas_daemon mas-remote-node.py --name='zenoh-daemon' --command='ros2 run rmw_zenoh_cpp rmw_zenohd' ";
+    const env = this.params.rmw.zenoh.overrideEnv === "remote" ? this.getZenohRouterOverride() : "";
+    const cmd = `${env} ros2 run fkie_mas_daemon mas-remote-node.py --name='zenoh-daemon' --command='ros2 run rmw_zenoh_cpp rmw_zenohd'`;
     return { result: true, message: cmd } as TResult;
   }
 
@@ -407,9 +408,9 @@ export default class ProviderLaunchConfiguration {
         result.push(this.getZenohRouterCheck());
         result.push(this.getZenohMulticast());
       } else if (this.params.rmw.zenoh.overrideEnv === "remote") {
-        result.push(this.getZenohRemoteRouter());
+        result.push(this.getZenohNodeOverride());
       } else if (this.params.rmw.zenoh.overrideEnv === "local") {
-        result.push(this.getZenohLocalRouter());
+        result.push(this.getZenohNodeOverride());
       } else {
         for (const token of this.splitEnv(this.params.rmw.zenoh.overrideEnv)) {
           result.push(token);
@@ -480,15 +481,15 @@ export default class ProviderLaunchConfiguration {
     return envParam;
   }
 
-  public getZenohRemoteRouter(): string {
-    if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
-    return `ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/<REMOTE-IP>:7447"]'`.replace(
-      "<REMOTE-IP>",
-      this.params.rmw.zenoh.remoteHost
-    );
+  public getZenohRouterOverride(): string {
+    if (this.params.rmw.current !== "rmw_zenoh_cpp" && this.params.rmw.zenoh.remoteHosts.length === 0) return "";
+    const remoteList = this.params.rmw.zenoh.remoteHosts.map((hostname) => {
+      return '"tcp/<REMOTE-IP>:7447"'.replace("<REMOTE-IP>", hostname);
+    });
+    return `ZENOH_CONFIG_OVERRIDE='mode="router";connect/endpoints=[${remoteList.join(",")}]'`;
   }
 
-  public getZenohLocalRouter(): string {
+  public getZenohNodeOverride(): string {
     if (this.params.rmw.current !== "rmw_zenoh_cpp") return "";
     return `ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/0.0.0.0:7447"]'`;
   }

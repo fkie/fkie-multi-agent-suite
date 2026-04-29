@@ -1180,7 +1180,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         connectToProvider(p);
       }
     }
-  }, [providers, connectToProvider]);
+  }, [providers]);
 
   /** Process the provider add queue one entry at a time. */
   useEffect(() => {

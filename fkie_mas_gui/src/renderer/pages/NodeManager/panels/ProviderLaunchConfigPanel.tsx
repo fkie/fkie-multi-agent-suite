@@ -119,9 +119,13 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
 
   const defaultHost: string = hostArg ? hostArg : config?.params.host || "localhost";
   const [selectedHost, setSelectedHost] = useState<THostIp | null>({ host: defaultHost });
-  const [selectedZenohHost, setSelectedZenohHost] = useState<THostIp | null>({
-    host: launchCfg?.params.rmw.zenoh?.remoteHost,
-  });
+  const [selectedZenohHosts, setSelectedZenohHosts] = useState<THostIp[]>(
+    launchCfg?.params.rmw.zenoh?.remoteHosts.map((hostname) => {
+      return {
+        host: hostname,
+      };
+    }) || []
+  );
   const [selectedRmw, setSelectedRmw] = useState<RmwSelection>(launchCfg.params.rmw.selected || "RMW_IMPLEMENTATION");
   const [selectedZenohEnv, setSelectedZenohEnv] = useState<ZenohEnvSelection>(
     launchCfg.params.rmw.zenoh?.overrideEnv || ""
@@ -325,10 +329,10 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
       }
     }
     if (launchCfg.params.rmw.current === "rmw_fastrtps_cpp") {
-      setEnvOverride(launchCfg.params.rmw.fastrtps.overrideEnv)
+      setEnvOverride(launchCfg.params.rmw.fastrtps.overrideEnv);
     }
     if (launchCfg.params.rmw.current === "rmw_connextdds") {
-      setEnvOverride(launchCfg.params.rmw.connext.overrideEnv)
+      setEnvOverride(launchCfg.params.rmw.connext.overrideEnv);
     }
     updateStartParameter();
   }, [selectedRmw]);
@@ -339,9 +343,9 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
   }, [selectedZenohEnv, launchCfg]);
 
   useEffect(() => {
-    launchCfg.params.rmw.zenoh.remoteHost = selectedZenohHost?.host || selectedZenohHost?.ip || "";
+    launchCfg.params.rmw.zenoh.remoteHosts = selectedZenohHosts.map((item) => item.host || item.ip || "");
     updateStartParameter();
-  }, [selectedZenohHost, launchCfg]);
+  }, [selectedZenohHosts, launchCfg]);
 
   useEffect(() => {
     launchCfg.params.rmw.cyclone.overrideEnv = selectedCycloneEnv;
@@ -445,6 +449,13 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
     );
   }, [selectedRmw, rosCtx.rosInfo]);
 
+  function host2host(host: string | THostIp): THostIp {
+    if (Object.keys(host).includes("host")) {
+      return host as THostIp;
+    }
+    return { host: host } as THostIp;
+  }
+
   const createZenohEnvSelector = useMemo(() => {
     return (
       <Stack
@@ -474,46 +485,72 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
             id="autocomplete-zenoh-remote"
             size="small"
             fullWidth={true}
+            multiple
             autoHighlight
             clearOnEscape
             disableListWrap
             handleHomeEndKeys={false}
             noOptionsText="host not found"
             options={hostList}
-            getOptionLabel={(option: string | THostIp) => host2label(option)}
+            getOptionLabel={(option: string | THostIp) => host2string(option)}
             freeSolo
+            disableCloseOnSelect
+            disablePortal
             // This prevents warnings on invalid autocomplete values
-            value={selectedZenohHost}
+            value={selectedZenohHosts}
             renderInput={(params) => (
               <TextField
                 {...params}
                 variant="standard"
-                label="remote zenoh daemon"
-                placeholder="remote zenoh daemon"
+                label="remote zenoh hosts"
+                placeholder="add"
                 onBlur={(event) => {
                   if (event.target.value) {
-                    setSelectedZenohHost({ host: event.target.value.split(" ")[0] });
+                    setSelectedZenohHosts((prev) => [...prev, host2host(event.target.value)]);
                   }
                 }}
               />
             )}
-            renderOption={(props, option) => {
-              return (
-                <Stack {...(props as HTMLAttributes<HTMLDivElement>)} key={option.host} direction="row">
-                  <Typography sx={{ ml: 0 }} noWrap>
-                    {`${option.host} | ${option.ip}`}
-                  </Typography>
-                </Stack>
-              );
+            onChange={(_event, newValue) => {
+              setSelectedZenohHosts(newValue.map((item) => host2host(item)));
             }}
-            onInputChange={(_event, newInputValue) => {
-              setSelectedZenohHost(newInputValue ? { host: newInputValue.split(" ")[0] } : null);
+            // renderOption={(props, option) => {
+            //   return (
+            //     <Stack {...(props as HTMLAttributes<HTMLDivElement>)} key={option.host} direction="row">
+            //       <Typography sx={{ ml: 0 }} noWrap>
+            //         {`${option.host} | ${option.ip}`}
+            //       </Typography>
+            //     </Stack>
+            //   );
+            // }}
+            // onInputChange={(_event, newInputValue) => {
+            //   setSelectedZenohHosts(newInputValue ? { host: newInputValue.split(" ")[0] } : null);
+            // }}
+            renderOption={(props, option, { selected }) => (
+              <li {...props} key={`${host2label(option)}`} style={{ height: "1.5em" }}>
+                <Checkbox
+                  icon={icon}
+                  checkedIcon={checkedIcon}
+                  style={{ marginRight: 8 }}
+                  checked={selected}
+                  size="small"
+                />
+                {`${host2label(option)}`}
+              </li>
+            )}
+            slotProps={{
+              listbox: {
+                style: { maxHeight: 150 },
+              },
+              popper: {
+                placement: "top-start",
+              },
             }}
           />
         )}
       </Stack>
     );
-  }, [selectedZenohEnv, selectedZenohHost, rosCtx.rosInfo]);
+  }, [selectedZenohEnv, selectedZenohHosts, rosCtx.rosInfo]);
 
   const createCycloneEnvSelector = useMemo(() => {
     return (
@@ -1197,7 +1234,7 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
               <Box>
                 <Box sx={{ flexGrow: 1, minWidth: 0, overflowX: "auto" }}>{createZenohEnvSelector}</Box>
 
-                {(launchCfg.params.rmw.zenoh.overrideEnv === "local" ||
+                {(launchCfg.params.rmw.zenoh.overrideEnv !== "multicast" ||
                   !ZENOH_SELECTIONS.includes(
                     launchCfg.params.rmw.zenoh.overrideEnv as (typeof ZENOH_SELECTIONS)[number]
                   )) && (
