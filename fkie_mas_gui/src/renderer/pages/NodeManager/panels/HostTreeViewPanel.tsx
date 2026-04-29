@@ -1157,6 +1157,7 @@ export default function HostTreeViewPanel(): JSX.Element {
    */
   const performQueueMain = useCallback(
     async (index: number): Promise<void> => {
+      console.log("[performQueueMain] index", index, "last", lastProcessedIndexRef.current);
       if (index < 0) return;
 
       const queueItem = queue.get();

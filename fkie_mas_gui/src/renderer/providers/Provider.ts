@@ -1927,6 +1927,7 @@ export default class Provider implements IProvider {
    * Start a ROS node using a given provider and node object
    */
   public startNode: (node: RosNode) => Promise<TResultStartNode> = async (node) => {
+    console.log("[startNode] called", { providerId: this.id, nodeId: node.idGlobal, ts: Date.now() });
     if (node.providerId !== this.id) {
       return {
         success: false,
@@ -2037,6 +2038,7 @@ export default class Provider implements IProvider {
    * Stop a node given a name
    */
   public stopNode: (id: string) => Promise<Result> = async (id) => {
+    console.log("[stopNode] called", { providerId: this.id, nodeId: id, ts: Date.now() });
     const result = await this.makeCall(URI.ROS_NODES_STOP_NODE, [id], false).then((value: TResultData) => {
       if (value.result) {
         const parsed = value.data as Result;
