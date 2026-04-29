@@ -1,7 +1,7 @@
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
-import { Button, Chip, Stack, Tooltip, Typography } from "@mui/material";
+import { Button, Stack, Tooltip, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
@@ -19,6 +19,7 @@ import { EVENT_OPEN_COMPONENT, eventOpenComponent } from "@/renderer/pages/NodeM
 import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import { removeDDSuid } from "@/renderer/utils";
 import { CopyButton } from "../UI";
+import LongPressChip from "../UI/LongPressChip";
 
 type TopicDetailsItemsProps = {
   providerId: string | undefined;
@@ -261,13 +262,20 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
           spacing={"0.1em"}
           style={{ display: "flex", flexGrow: 1, borderBottom: `1px solid ${alpha(grey[600], 0.4)}` }}
         >
-          <Chip
+          <LongPressChip
             size="small"
             onClick={(event) => {
               onPublishClick(
                 topicInfo,
                 event.nativeEvent.shiftKey,
-                event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey
+                event.nativeEvent.ctrlKey
+              );
+            }}
+            onLongPress={() => {
+              onPublishClick(
+                topicInfo,
+                true,
+                false
               );
             }}
             avatar={
@@ -279,13 +287,13 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
                     </Typography>
                     <Stack direction="row" spacing={"0.2em"}>
                       <Typography fontWeight={"bold"} fontSize={"inherit"}>
-                        Shift:
+                        Shift or long press:
                       </Typography>
                       <Typography fontSize={"inherit"}>alternative open location</Typography>
                     </Stack>
                     <Stack direction="row" spacing={"0.2em"}>
                       <Typography fontWeight={"bold"} fontSize={"inherit"}>
-                        Ctrl+Shift:
+                        Ctrl:
                       </Typography>
                       <Typography fontSize={"inherit"}>open in a terminal</Typography>
                     </Stack>
@@ -309,13 +317,20 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
               )
             }
           />
-          <Chip
+          <LongPressChip
             size="small"
             onClick={(event) => {
               onEchoClick(
                 topicInfo,
                 event.nativeEvent.shiftKey,
-                event.nativeEvent.ctrlKey && event.nativeEvent.shiftKey
+                event.nativeEvent.ctrlKey
+              );
+            }}
+            onLongPress={() => {
+              onEchoClick(
+                topicInfo,
+                true,
+                false
               );
             }}
             avatar={
@@ -327,13 +342,13 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
                     </Typography>
                     <Stack direction="row" spacing={"0.2em"}>
                       <Typography fontWeight={"bold"} fontSize={"inherit"}>
-                        Shift:
+                        Shift or long press:
                       </Typography>
                       <Typography fontSize={"inherit"}>alternative open location</Typography>
                     </Stack>
                     <Stack direction="row" spacing={"0.2em"}>
                       <Typography fontWeight={"bold"} fontSize={"inherit"}>
-                        Ctrl+Shift:
+                        Ctrl:
                       </Typography>
                       <Typography fontSize={"inherit"}>open in a terminal</Typography>
                     </Stack>
