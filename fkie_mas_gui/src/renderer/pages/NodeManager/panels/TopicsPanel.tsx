@@ -3,7 +3,7 @@ import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import DvrIcon from "@mui/icons-material/Dvr";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip } from "@mui/material";
+import { alpha, Box, ButtonGroup, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
@@ -12,6 +12,7 @@ import { Virtuoso } from "react-virtuoso";
 import { DomainFlexLayout } from "@/renderer/components/layout/DomainFlexLayout";
 import TopicGroupTreeItem from "@/renderer/components/TopicTreeView/TopicGroupTreeItem";
 import TopicTreeItem from "@/renderer/components/TopicTreeView/TopicTreeItem";
+import LongPressIconButton from "@/renderer/components/UI/LongPressIconButton";
 import OverflowMenu from "@/renderer/components/UI/OverflowMenu";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { BUTTON_LOCATIONS } from "@/renderer/context/SettingsContext";
@@ -448,21 +449,36 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
     () => (
       <ButtonGroup orientation="vertical" aria-label="topic control group">
         <Tooltip
-          title="Echo (shift+click for alternative open location)"
+          title={
+            <div>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Echo
+              </Typography>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight="bold" fontSize="inherit">
+                  Shift or long press:
+                </Typography>
+                <Typography fontSize="inherit">alternative open location</Typography>
+              </Stack>
+            </div>
+          }
           placement="left"
           enterDelay={settings.tooltipDelay}
           disableInteractive
         >
           <span>
-            <IconButton
+            <LongPressIconButton
               disabled={!topicForSelected}
               size="medium"
               onClick={(e) =>
                 onEchoClick(topicForSelected, e.nativeEvent.shiftKey as boolean, e.nativeEvent.ctrlKey as boolean)
               }
+              onLongPress={() => {
+                onEchoClick(topicForSelected, true, false);
+              }}
             >
               <ChatBubbleOutlineIcon fontSize="inherit" />
-            </IconButton>
+            </LongPressIconButton>
           </span>
         </Tooltip>
 
@@ -470,7 +486,19 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
           disabled={!topicForSelected}
           icon={
             <Tooltip
-              title="Echo with provider selection (shift+click for alternative)"
+              title={
+                <div>
+                  <Typography fontWeight="bold" fontSize="inherit">
+                    Echo with provider selection
+                  </Typography>
+                  <Stack direction="row" spacing={"0.2em"}>
+                    <Typography fontWeight="bold" fontSize="inherit">
+                      Shift:
+                    </Typography>
+                    <Typography fontSize="inherit">alternative open location</Typography>
+                  </Stack>
+                </div>
+              }
               placement="left"
               enterDelay={settings.tooltipDelay}
               disableInteractive
@@ -501,15 +529,35 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
           </span>
         </Tooltip>
 
-        <Tooltip title="Create a publisher" placement="left" enterDelay={settings.tooltipDelay} disableInteractive>
-          <IconButton
+        <Tooltip
+          title={
+            <div>
+              <Typography fontWeight="bold" fontSize="inherit">
+                Create a publisher
+              </Typography>
+              <Stack direction="row" spacing={"0.2em"}>
+                <Typography fontWeight="bold" fontSize="inherit">
+                  Shift or long press:
+                </Typography>
+                <Typography fontSize="inherit">alternative open location</Typography>
+              </Stack>
+            </div>
+          }
+          placement="left"
+          enterDelay={settings.tooltipDelay}
+          disableInteractive
+        >
+          <LongPressIconButton
             size="medium"
             onClick={(e) =>
               onPublishClick(topicForSelected, e.nativeEvent.shiftKey as boolean, e.nativeEvent.ctrlKey as boolean)
             }
+            onLongPress={() => {
+              onPublishClick(topicForSelected, true, false);
+            }}
           >
             <PlayCircleOutlineIcon fontSize="inherit" />
-          </IconButton>
+          </LongPressIconButton>
         </Tooltip>
       </ButtonGroup>
     ),
