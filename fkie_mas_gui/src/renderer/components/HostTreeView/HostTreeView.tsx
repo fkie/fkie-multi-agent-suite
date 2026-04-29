@@ -120,7 +120,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     nodes: RosNode[],
     namespaceSystemNodes?: string,
     spamNodesRegExp?: RegExp
-  ) => { providerNodeTree: NodeTreeItem[]; keyNodeList: KeyTreeItem[] } = useCallback(
+  ) => { providerNodeTree: NodeTreeItem[]; keyNodeList: KeyTreeItem[]; expandedGroups: string[] } = useCallback(
     (nodes, namespaceSystemNodes, spamNodesRegExp) => {
       const expandedGroups: string[] = [];
       const nodeItemMap = new Map();
@@ -212,35 +212,40 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           }, level);
         }
       }
-      if (isFiltered) {
-        setExpanded((prev) => {
-          return {
-            expanded: expandedGroups,
-            filterIsOn: isFiltered,
-            initialized: prev.initialized,
-          };
-        });
-      } else if (expandedGroups.length > 0) {
-        // use either the expanded state or the key of the node tree (expand the first layer)
-        // only at first load
-        setExpanded((prev) => {
-          const usePrev = prev.initialized && !prev.filterIsOn;
-          return {
-            expanded: usePrev ? prev.expanded : nodeTree.map((item) => item.providerId as string),
-            filterIsOn: isFiltered,
-            initialized: true,
-          };
-        });
-      }
-      return { providerNodeTree: nodeTree, keyNodeList: newKeyNodeList };
+      return { providerNodeTree: nodeTree, keyNodeList: newKeyNodeList, expandedGroups: expandedGroups };
     },
     [spamNodesRegExp, isFiltered, namespaceSystemNodes]
   );
 
-  const { providerNodeTree, keyNodeList } = useMemo(
+  const { providerNodeTree, keyNodeList, expandedGroups } = useMemo(
     () => createTreeFromNodes(visibleNodes, namespaceSystemNodes, spamNodesRegExp),
     [visibleNodes, namespaceSystemNodes, spamNodesRegExp]
   );
+
+  useEffect(() => {
+    setExpanded((prev) => {
+      // Filter is on → use groups of the filter
+      if (isFiltered) {
+        return {
+          expanded: expandedGroups,
+          filterIsOn: true,
+          initialized: prev.initialized,
+        };
+      }
+
+      const filterSwitchedOff = prev.filterIsOn && !isFiltered;
+      if ((filterSwitchedOff || !prev.initialized) && providerNodeTree.length > 0) {
+        // expand the provider level
+        return {
+          expanded: providerNodeTree.map((item) => item.providerId as string).filter(Boolean),
+          filterIsOn: false,
+          initialized: true,
+        };
+      }
+
+      return prev;
+    });
+  }, [isFiltered, expandedGroups, providerNodeTree]);
 
   /**
    * List of providerIds that are present in this tree (top-level items).
@@ -557,6 +562,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    */
   const handleSelect = useCallback(
     (event: React.SyntheticEvent | null, itemIds: string[], notifyNavCtx: boolean = true): void => {
+      let newSelectedItems: string[] = [];
       setSelectedItems((prevSelected) => {
         // start with the clicked items, preserving the previous order
         let selectedIds = prevSelected.filter((prevId) => itemIds.includes(prevId));
@@ -582,12 +588,13 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           }
         }
         // add child items for selected groups
-        const newSelectedItems = getParentAndChildrenIds(selectedIds);
-        if (notifyNavCtx) {
-          notifyNavCtxSelection(newSelectedItems);
-        }
+        newSelectedItems = getParentAndChildrenIds(selectedIds);
         return newSelectedItems;
       });
+
+      if (notifyNavCtx) {
+        notifyNavCtxSelection(newSelectedItems);
+      }
 
       // Only fire this event for user selections
       if (event) {
@@ -621,6 +628,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    * since the running node has an DDS id at the end of the node name separated by '-'
    */
   const updateSelectedNodeIds = useCallback((): void => {
+    let newSelection: string[] = [];
     setSelectedItems((prevItems) => {
       const remapped = prevItems.map((selItem) => {
         const selItemSplitted = keyToNodeName(selItem);
@@ -643,11 +651,11 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         return selItem;
       });
 
-      const newSel = getParentAndChildrenIds(remapped);
-      // IMPORTANT: update NavigationContext
-      notifyNavCtxSelection(newSel);
-      return newSel;
+      newSelection = getParentAndChildrenIds(remapped);
+      return newSelection;
     });
+    // IMPORTANT: update NavigationContext
+    notifyNavCtxSelection(selectedItems);
   }, [keyNodeList, getParentAndChildrenIds, notifyNavCtxSelection]);
 
   /**
