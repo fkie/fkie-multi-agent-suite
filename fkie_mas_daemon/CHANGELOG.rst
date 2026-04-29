@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.6.5 (29.04.2026)
+------------------
+* fixed update diagnostics state of the nodes
+
 5.6.4 (29.04.2026)
 ------------------
 * Changed the initialization of subscriber node to avoid lost messages on echo topic

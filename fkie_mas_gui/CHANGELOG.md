@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.6.12 - 29.04.2026
+
+Added long press button to topics
+Added long press for topic actions in details panel
+Changed long press actions to open terminal
+Fixed: bad setState() call inside `HostTreeView`
+Performance updates in host tree view
+Reduced react states in group item
+Improved performance while setting node icon
+Fixed update diagnostics state of the nodes
+
 ## 5.6.11 - 29.04.2026
 
 Changed the initialization of subscriber node to avoid lost messages on echo topic

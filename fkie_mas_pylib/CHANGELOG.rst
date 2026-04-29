@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.6.1 (29.04.2026)
+------------------
+* fixed SelfEncoder to include values with 0
+
 5.6.0 (02.04.2026)
 ------------------
 * Updated SubscriberFilter to reset stats for echo topic
