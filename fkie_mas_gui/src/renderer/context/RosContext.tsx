@@ -548,6 +548,7 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
             logCtx.debug(`refreshProvider ${p.name()} failed`, JSON.stringify(err));
             connectToProvider(p);
           });
+          p.updateSystemWarnings();
         } catch (error: unknown) {
           logCtx.debug("refreshProviderList failed", JSON.stringify(error));
         }

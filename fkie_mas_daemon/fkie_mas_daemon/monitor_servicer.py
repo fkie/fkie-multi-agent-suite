@@ -54,6 +54,11 @@ class MonitorServicer:
     def stop(self):
         self._monitor.stop()
 
+    def remove_warning_group(self, group: SystemWarningGroup):
+        if group in self._warning_groups:
+            del self._warning_groups[group]
+            self.websocket.publish('ros.provider.warnings', list(self._warning_groups.values()))
+
     def update_warning_groups(self, warnings: List[SystemWarningGroup]):
         updated = False
         for group in warnings:
@@ -90,6 +95,14 @@ class MonitorServicer:
 
     def getProviderWarnings(self) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_warnings]")
+        now = time.time()
+        # add only newest messages
+        for group_id, group in self._warning_groups.items():
+            new_group = SystemWarningGroup(group_id)
+            for ogw in group.warnings:
+                if now - ogw.timestamp < self.WARNING_LIFETIME_SEC:
+                    new_group.warnings.append(ogw)
+            self._warning_groups[group_id] = new_group
         return json.dumps(list(self._warning_groups.values()), cls=SelfEncoder)
 
     def _toJsonDiagnostics(self, ros_msg):

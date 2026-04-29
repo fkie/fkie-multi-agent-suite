@@ -248,6 +248,9 @@ class RosStateJsonify:
         if forceRefresh:
             with self._lock:
                 self._composable_nodes = {}
+                if self.monitor_servicer:
+                    self.monitor_servicer.remove_warning_group(SystemWarningGroup.ID_ROS_STATE)
+
         # clear the warnings
         cached_data: CachedData = CachedData()
         cached_data.screens = screen.get_active_screens()
