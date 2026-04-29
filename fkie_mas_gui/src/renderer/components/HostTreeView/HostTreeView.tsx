@@ -586,39 +586,34 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    * since the running node has an DDS id at the end of the node name separated by '-'
    */
   const updateSelectedNodeIds = useCallback((): void => {
-    setSelectedItems((prevItems) => [
-      ...getParentAndChildrenIds(
-        prevItems.map((selItem) => {
-          const selItemSplitted = keyToNodeName(selItem);
-          if (selItemSplitted.isValidNode) {
-            const newKey = keyNodeList.filter((keyItem) => {
-              const keyItemSplitted = keyToNodeName(keyItem.key);
-              if (keyItemSplitted.isValidNode) {
-                if (selItemSplitted.provider === keyItemSplitted.provider) {
-                  // running nodes ends with id in their name, loaded from launch file not
-                  // we have to remove id if we compare running with not running nodes
-                  const [entryName, entryId] = keyItemSplitted.node_name.split(ID_SEP);
-                  const [itemName, itemId] = selItemSplitted.node_name.split(ID_SEP);
-                  if (entryName === itemName) {
-                    if (entryId && itemId) {
-                      return entryId === itemId;
-                    }
-                    return true;
-                  }
-                }
-                return false;
-              }
-              return false;
-            });
-            if (newKey.length > 0) {
-              return newKey[0].key;
-            }
-          }
-          return selItem;
-        })
-      ),
-    ]);
-  }, [keyNodeList, getParentAndChildrenIds]);
+    setSelectedItems((prevItems) => {
+      const remapped = prevItems.map((selItem) => {
+        const selItemSplitted = keyToNodeName(selItem);
+        if (selItemSplitted.isValidNode) {
+          const newKey = keyNodeList.find((keyItem) => {
+            const keyItemSplitted = keyToNodeName(keyItem.key);
+            if (!keyItemSplitted.isValidNode) return false;
+
+            if (selItemSplitted.provider !== keyItemSplitted.provider) return false;
+
+            // Vergleich Name ohne DDS‑GUID
+            const [entryName] = keyItemSplitted.node_name.split(ID_SEP);
+            const [itemName] = selItemSplitted.node_name.split(ID_SEP);
+
+            return entryName === itemName;
+          });
+
+          if (newKey) return newKey.key;
+        }
+        return selItem;
+      });
+
+      const newSel = getParentAndChildrenIds(remapped);
+      // IMPORTANT: update NavigationContext
+      notifyNavCtxSelection(newSel);
+      return newSel;
+    });
+  }, [keyNodeList, getParentAndChildrenIds, notifyNavCtxSelection]);
 
   /**
    * synchronize selected items and available nodes (important in ROS2)
