@@ -333,13 +333,13 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
             </Typography>
             <Stack direction="row" spacing={"0.2em"}>
               <Typography fontWeight="bold" fontSize="inherit">
-                Shift:
+                Shift or long press:
               </Typography>
               <Typography fontSize="inherit">alternative open location</Typography>
             </Stack>
             <Stack direction="row" spacing={"0.2em"}>
               <Typography fontWeight="bold" fontSize="inherit">
-                Ctrl or long press:
+                Ctrl:
               </Typography>
               <Typography fontSize="inherit">open in Terminal</Typography>
             </Stack>
@@ -356,8 +356,8 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
             onClick={handleScreens}
             onLongPress={() =>
               onScreensClick({
-                external: false,
-                openInTerminal: true,
+                external: true,
+                openInTerminal: false,
               })
             }
           >
@@ -375,13 +375,13 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
             </Typography>
             <Stack direction="row" spacing={"0.2em"}>
               <Typography fontWeight="bold" fontSize="inherit">
-                Shift:
+                Shift or long press:
               </Typography>
               <Typography fontSize="inherit">alternative open location</Typography>
             </Stack>
             <Stack direction="row" spacing={"0.2em"}>
               <Typography fontWeight="bold" fontSize="inherit">
-                Ctrl or long press:
+                Ctrl:
               </Typography>
               <Typography fontSize="inherit">open in Terminal</Typography>
             </Stack>
@@ -398,8 +398,8 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
             onClick={handleLogs}
             onLongPress={() =>
               onLogsClick({
-                external: false,
-                openInTerminal: true,
+                external: true,
+                openInTerminal: false,
               })
             }
           >
