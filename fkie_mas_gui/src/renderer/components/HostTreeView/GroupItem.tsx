@@ -233,22 +233,21 @@ interface GroupIconProps {
 export function GroupIcon(props: GroupIconProps): JSX.Element {
   const { treeItems, groupName, isDarkMode = false } = props;
   const rosCtx = useRosContext();
-  const [groupLifecycleStatus, setGroupLifecycleStatus] = useState<number>(getGroupLifecycleStatus(treeItems, rosCtx));
-  const [groupStatus, setGroupStatus] = useState<number>(getGroupStatus(treeItems));
-  const [groupStatusLocal, setGroupStatusLocal] = useState<number>(getGroupStatusLocal(treeItems));
   const [color, setColor] = useState<string>(getGroupIconColor(treeItems, isDarkMode));
-  const [colorBorder, setColorBorder] = useState<string>(getColorFromLifecycle(groupLifecycleStatus, isDarkMode));
 
-  useEffect(() => {
-    setGroupLifecycleStatus(getGroupLifecycleStatus(treeItems, rosCtx));
-    setGroupStatus(getGroupStatus(treeItems));
-    setColor(getGroupIconColor(treeItems, isDarkMode));
-    setGroupStatusLocal(getGroupStatusLocal(treeItems));
-  }, [treeItems, isDarkMode]);
-
-  useEffect(() => {
-    setColorBorder(getColorFromLifecycle(groupLifecycleStatus, isDarkMode));
-  }, [groupLifecycleStatus, isDarkMode]);
+  const { groupLifecycleStatus, groupStatus, groupStatusLocal, colorBorder } = useMemo(() => {
+    const lifecycle = getGroupLifecycleStatus(treeItems, rosCtx);
+    const status = getGroupStatus(treeItems);
+    const local = getGroupStatusLocal(treeItems);
+    const border = getColorFromLifecycle(lifecycle, isDarkMode);
+    setColor(getGroupIconColor(treeItems, isDarkMode))
+    return {
+      groupLifecycleStatus: lifecycle,
+      groupStatus: status,
+      groupStatusLocal: local,
+      colorBorder: border,
+    };
+  }, [treeItems, rosCtx, isDarkMode]);
 
   useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
     // update group icon if the name of the node contains the group name
