@@ -2,9 +2,9 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-5.6.3 (29.04.2026)
+5.6.4 (29.04.2026)
 ------------------
-* Fixed removing old warning states
+* Changed the initialization of subscriber node to avoid lost messages on echo topic
 
 5.6.2 (15.04.2026)
 ------------------

@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.6.11 - 29.04.2026
+
+Changed the initialization of subscriber node to avoid lost messages on echo topic
+
 ## 5.6.10 - 29.04.2026
 
 Added config override for zenoh daemon
