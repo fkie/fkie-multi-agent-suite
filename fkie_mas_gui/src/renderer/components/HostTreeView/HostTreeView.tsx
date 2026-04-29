@@ -50,6 +50,12 @@ function compareTreeProvider(a: NodeTreeItem, b: NodeTreeItem): number {
   return 0;
 }
 
+type ExpandedItems = {
+  expanded: string[];
+  filterIsOn: boolean;
+  initialized?: boolean;
+};
+
 type HostTreeViewProps = {
   triggerId: string;
   visibleNodes: RosNode[];
@@ -74,67 +80,48 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   const logCtx = useLoggingContext();
   const settingsCtx = useSettingsContext();
 
-  // providerNodeTree: list of {providerId: string, nodeTree: object}
-  const [providerNodeTree, setProviderNodeTree] = useState<NodeTreeItem[]>([]);
-  const [expanded, setExpanded] = useState<string[]>([]);
+  const [expanded, setExpanded] = useState<ExpandedItems>({ expanded: [], filterIsOn: false });
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [keyNodeList, setKeyNodeList] = useState<KeyTreeItem[]>([]);
-  const [avoidGroupWithOneItem, setAvoidGroupWithOneItem] = useState<string>(
-    settingsCtx.get("avoidGroupWithOneItem") as string
-  );
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(settingsCtx.get("useDarkMode") as boolean);
-  const [namespaceSystemNodes, setNamespaceSystemNodes] = useState<string>(
-    settingsCtx.get("namespaceSystemNodes") as string
-  );
-  const [openScreenByDefault, setOpenScreenByDefault] = useState<string>(
-    settingsCtx.get("openScreenByDefault") as string
-  );
-  const [spamNodesRegExp, setSpamNodesRegExp] = useState<RegExp | undefined>(getSpamNodesRegExp());
 
   useCustomEventListener(
     EVENT_PROVIDER_LAUNCH_LOADED,
     (data: EventProviderLaunchLoaded) => {
       if (providerIdsInTree.includes(data.provider.id)) {
-        setExpanded((prev) => [...prev, data.provider.id]);
+        setExpanded((prev) => {
+          return {
+            expanded: [...prev.expanded, data.provider.id],
+            filterIsOn: prev.filterIsOn,
+            initialized: prev.initialized,
+          };
+        });
       }
     },
     [setExpanded]
   );
 
-  /**
-   * List of providerIds that are present in this tree (top-level items).
-   * We use this to decide whether an external navCtx.selectedProviders
-   * update is relevant for this HostTreeView.
+  const { avoidGroupWithOneItem, isDarkMode, spamNodesRegExp, openScreenByDefault, namespaceSystemNodes } =
+    useMemo(() => {
+      const spamNodes = (settingsCtx.get("spamNodes") as string)
+        .split(",")
+        .filter((item) => item.length > 0)
+        .map((item) => `(${item})`)
+        .join("|");
 
-   */
-  const providerIdsInTree = useMemo(
-    () =>
-      providerNodeTree
-        .map((item) => item.providerId)
-        .filter((id): id is string => typeof id === "string" && id.length > 0),
-    [providerNodeTree]
-  );
+      return {
+        avoidGroupWithOneItem: settingsCtx.get("avoidGroupWithOneItem") as string,
+        isDarkMode: settingsCtx.get("useDarkMode") as boolean,
+        spamNodesRegExp: spamNodes ? new RegExp(String.raw`${spamNodes}`, "g") : undefined,
+        openScreenByDefault: settingsCtx.get("openScreenByDefault") as string,
+        namespaceSystemNodes: settingsCtx.get("namespaceSystemNodes") as string,
+      };
+    }, [settingsCtx.changed]);
 
-  function getSpamNodesRegExp(): RegExp | undefined {
-    const spamNodes = (settingsCtx.get("spamNodes") as string)
-      .split(",")
-      .filter((item) => item.length > 0)
-      .map((item) => `(${item})`)
-      .join("|");
-    return spamNodes ? new RegExp(String.raw`${spamNodes}`, "g") : undefined;
-  }
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  useEffect(() => {
-    setAvoidGroupWithOneItem(settingsCtx.get("avoidGroupWithOneItem") as string);
-    setIsDarkMode(settingsCtx.get("useDarkMode") as boolean);
-    setSpamNodesRegExp(getSpamNodesRegExp());
-    setOpenScreenByDefault(settingsCtx.get("openScreenByDefault") as string);
-    setNamespaceSystemNodes(settingsCtx.get("namespaceSystemNodes") as string);
-  }, [settingsCtx.changed]);
-
-  const createTreeFromNodes: (nodes: RosNode[]) => void = useCallback(
-    (nodes) => {
+  const createTreeFromNodes: (
+    nodes: RosNode[],
+    namespaceSystemNodes?: string,
+    spamNodesRegExp?: RegExp
+  ) => { providerNodeTree: NodeTreeItem[]; keyNodeList: KeyTreeItem[] } = useCallback(
+    (nodes, namespaceSystemNodes, spamNodesRegExp) => {
       const expandedGroups: string[] = [];
       const nodeItemMap = new Map();
       const newKeyNodeList: KeyTreeItem[] = [];
@@ -225,31 +212,61 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
           }, level);
         }
       }
-      setKeyNodeList(newKeyNodeList);
-      setProviderNodeTree((prevTree) => {
-        if (prevTree.length === 0) {
-          // use either the expanded state or the key of the node tree (expand the first layer)
-          // only at first load
-          setExpanded(nodeTree?.map((item) => item.providerId as string));
-        }
-        return nodeTree;
-      });
       if (isFiltered) {
-        setExpanded(expandedGroups);
+        setExpanded((prev) => {
+          return {
+            expanded: expandedGroups,
+            filterIsOn: isFiltered,
+            initialized: prev.initialized,
+          };
+        });
+      } else if (expandedGroups.length > 0) {
+        // use either the expanded state or the key of the node tree (expand the first layer)
+        // only at first load
+        setExpanded((prev) => {
+          const usePrev = prev.initialized && !prev.filterIsOn;
+          return {
+            expanded: usePrev ? prev.expanded : nodeTree.map((item) => item.providerId as string),
+            filterIsOn: isFiltered,
+            initialized: true,
+          };
+        });
       }
+      return { providerNodeTree: nodeTree, keyNodeList: newKeyNodeList };
     },
     [spamNodesRegExp, isFiltered, namespaceSystemNodes]
   );
 
-  useEffect(() => {
-    createTreeFromNodes(visibleNodes);
-  }, [visibleNodes, avoidGroupWithOneItem, spamNodesRegExp]);
+  const { providerNodeTree, keyNodeList } = useMemo(
+    () => createTreeFromNodes(visibleNodes, namespaceSystemNodes, spamNodesRegExp),
+    [visibleNodes, namespaceSystemNodes, spamNodesRegExp]
+  );
+
+  /**
+   * List of providerIds that are present in this tree (top-level items).
+   * We use this to decide whether an external navCtx.selectedProviders
+   * update is relevant for this HostTreeView.
+
+   */
+  const providerIdsInTree = useMemo(
+    () =>
+      providerNodeTree
+        .map((item) => item.providerId)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    [providerNodeTree]
+  );
 
   /**
    * Callback when items on the tree are expanded/retracted
    */
   function handleToggle(_event: React.SyntheticEvent | null, nodeIds: string[]): void {
-    setExpanded(nodeIds);
+    setExpanded((prev) => {
+      return {
+        expanded: nodeIds,
+        filterIsOn: isFiltered,
+        initialized: prev.initialized,
+      };
+    });
   }
 
   /**
@@ -257,25 +274,43 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    */
   const handleDoubleClick = useCallback(
     (_event: React.MouseEvent, id: string): void => {
-      if (!expanded || !id) {
+      if (!expanded.expanded || !id) {
         return;
       }
 
       // check if providers exists on expanded items
-      if (expanded.length === 0) {
-        setExpanded([...providerNodeTree.map((item) => item.providerId as string), id]);
+      if (expanded.expanded.length === 0) {
+        setExpanded((prev) => {
+          return {
+            expanded: [...providerNodeTree.map((item) => item.providerId as string), id],
+            filterIsOn: isFiltered,
+            initialized: prev.initialized,
+          };
+        });
         return;
       }
 
       // check if items are already expanded, and if yes, remove to collapse
-      const alreadyExpanded = expanded.find((item) => item === id);
+      const alreadyExpanded = expanded.expanded.find((item) => item === id);
       if (alreadyExpanded) {
-        setExpanded((prev) => [...prev.filter((item) => item !== id)]);
+        setExpanded((prev) => {
+          return {
+            expanded: [...(prev.expanded || []).filter((item) => item !== id)],
+            filterIsOn: isFiltered,
+            initialized: prev.initialized,
+          };
+        });
         return;
       }
 
       // finally, just add item to expanded array
-      setExpanded((prev) => [...prev, id]);
+      setExpanded((prev) => {
+        return {
+          expanded: [...(prev.expanded || []), id],
+          filterIsOn: isFiltered,
+          initialized: prev.initialized,
+        };
+      });
     },
     [expanded, providerNodeTree]
   );
@@ -657,7 +692,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     }
 
     setSelectedItems([]);
-  }, [navCtx.selection, handleSelect, providerIdsInTree, triggerId, keyNodeList]);
+  }, [navCtx.selection, providerIdsInTree, triggerId, keyNodeList]);
 
   /**
    * Callback when the event of removing a launch file is triggered
@@ -858,7 +893,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         aria-label="node list"
         slots={{ collapseIcon: ArrowDropDownIcon, expandIcon: ArrowRightIcon }}
         multiSelect
-        expandedItems={expanded}
+        expandedItems={expanded.expanded}
         // sx={{ height: '100%' }}
         selectedItems={selectedItems}
         onExpandedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) => handleToggle(event, itemIds)}
