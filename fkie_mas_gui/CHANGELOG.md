@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.6.10 - 29.04.2026
+
+Added config override for zenoh daemon
+Added debug output to find issues with restart node
+Fixed removing old warning states
+Fixed deselected item after start/stop nodes
+
 ## 5.6.9 - 27.04.2026
 
 Increased timeout while load launch call and added info if connection error occurs

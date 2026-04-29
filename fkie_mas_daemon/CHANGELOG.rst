@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.6.3 (29.04.2026)
+------------------
+* Fixed removing old warning states
+
 5.6.2 (15.04.2026)
 ------------------
 * Added local check to find changes without discovery node
