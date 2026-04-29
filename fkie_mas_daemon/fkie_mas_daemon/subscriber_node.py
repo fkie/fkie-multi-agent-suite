@@ -99,24 +99,23 @@ class RosSubscriberLauncher:
         # get a reference to the global node for logging
         Log.set_ros2_logging_node(self.ros_node)
 
-        Log.info(f"start ROS subscriber for {self._topic}[{self._message_type}]")
-        self.__msg_class = get_message(self._message_type)
-        qos_state_profile = self.choose_qos(self._parsed_args, self._topic)
-        # self.sub = nmd.ros_node.create_subscription(
-        #     self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
-        self.sub_raw = nmd.ros_node.create_subscription(
-            self.__msg_class, self._topic, self._msg_handle_raw, qos_profile=qos_state_profile, raw=True)
         self.wsClient = WebSocketClient(self._port)
         # qos_state_profile = QoSProfile(depth=100,
         #                                # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
         #                                # history=QoSHistoryPolicy.KEEP_LAST,
         #                                # reliability=QoSReliabilityPolicy.RELIABLE)
         #                                )
-        Log.info(f"subscribe to ROS topic: {self._topic} [{self.__msg_class}]")
         self.wsClient.subscribe(
             f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
         self.wsClient.subscribe("event", self._on_ws_event)
         self._on_shutdown = False
+        self.__msg_class = get_message(self._message_type)
+        Log.info(f"start ROS subscriber for {self._topic}[{self._message_type}]")
+        qos_state_profile = self.choose_qos(self._parsed_args, self._topic)
+        # self.sub = nmd.ros_node.create_subscription(
+        #     self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
+        self.sub_raw = nmd.ros_node.create_subscription(
+            self.__msg_class, self._topic, self._msg_handle_raw, qos_profile=qos_state_profile, raw=True)
 
     def __del__(self):
         self.stop()
