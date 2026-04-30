@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.6.14 - 30.04.2026
+
+Fixed expand
+
 ## 5.6.13 - 30.04.2026
 
 Changed expanded provider on connect
