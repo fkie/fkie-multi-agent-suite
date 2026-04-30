@@ -80,6 +80,8 @@ export default function ProviderPanelRowCfg(props: ProviderPanelRowCfgProps): JS
                 {window.commandExecutor && (
                   <LongPressIconButton
                     onClick={(event) => {
+                      // remove focus to ignore Enter propagation from PasswortDialog
+                      (event.currentTarget as HTMLElement).blur();
                       handleStartProvider({ forceRestart: event.nativeEvent.shiftKey });
                     }}
                     onLongPress={() => handleStartProvider({ forceRestart: true })}

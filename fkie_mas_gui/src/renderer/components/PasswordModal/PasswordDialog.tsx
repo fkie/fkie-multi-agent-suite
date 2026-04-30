@@ -105,6 +105,7 @@ export default function PasswordDialog(props: PasswordDialogProps): JSX.Element 
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               handleSubmit();
+              e.stopPropagation();
             }
           }}
         />
