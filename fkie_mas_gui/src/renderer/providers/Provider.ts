@@ -2343,7 +2343,8 @@ export default class Provider implements IProvider {
     const msgObj = msg as unknown as TProviderDaemonReady;
     if (msgObj.status && !this.daemon) {
       this.updateDaemonInit();
-    } else if (msgObj.timestamp) {
+    }
+    if (msgObj.timestamp) {
       // update diff state
       this.currentDelay = (Date.now() - msgObj.timestamp + this.timeDiff) / 1000.0;
       emitCustomEvent(EVENT_PROVIDER_DELAY, new EventProviderDelay(this, this.currentDelay));
