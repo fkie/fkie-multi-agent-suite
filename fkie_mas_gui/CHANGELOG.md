@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.6.13 - 30.04.2026
+
+Changed expanded provider on connect
+Fixed delay visualization after reconnect
+Fixed multiple starts on password request
+
 ## 5.6.12 - 29.04.2026
 
 Added long press button to topics
