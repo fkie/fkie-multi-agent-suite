@@ -234,7 +234,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       }
 
       const filterSwitchedOff = prev.filterIsOn && !isFiltered;
-      if (filterSwitchedOff || !prev.initialized || providerNodeTree.length === 1) {
+      if ((filterSwitchedOff || !prev.initialized) && providerNodeTree.length > 0) {
         // expand the provider level
         return {
           expanded: providerNodeTree.map((item) => item.providerId as string).filter(Boolean),
