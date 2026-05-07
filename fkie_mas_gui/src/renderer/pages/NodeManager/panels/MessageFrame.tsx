@@ -88,7 +88,7 @@ export default function MessageFrame(props: MessageFrameProps): JSX.Element {
   }
 
   function filterJson(data: object | Array<object> | null, filter: string): object | Array<object> | null {
-    if (filter.length < 2) {
+    if (filter.length < 1) {
       return data;
     }
     const result = {};

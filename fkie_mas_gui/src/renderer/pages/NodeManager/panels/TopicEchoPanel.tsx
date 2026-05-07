@@ -566,7 +566,7 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
                 onSearch={(value) => {
                   setFilterText(value);
                 }}
-                placeholder="grep for (OR: <space>, AND: +, NOT: !)"
+                placeholder="filter (OR: <space>, AND: +, NOT: !)"
                 defaultValue={filterText}
                 searchIcon={
                   <Tooltip
