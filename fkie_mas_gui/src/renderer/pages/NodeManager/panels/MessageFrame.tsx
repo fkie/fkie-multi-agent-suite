@@ -104,7 +104,7 @@ export default function MessageFrame(props: MessageFrameProps): JSX.Element {
             if (showWholeFilteredMessage) return data;
           }
         } else {
-          if (findIn(filter, [JSON.stringify(data[key])])) {
+          if (findIn(filter, [`${key}: ${JSON.stringify(data[key])}`])) {
             result[key] = data[key];
             if (showWholeFilteredMessage) return data;
           }
