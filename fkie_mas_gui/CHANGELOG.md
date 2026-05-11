@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.6.15 - 11.05.2026
+
+Changed filter in topic echo panel
+
 ## 5.6.14 - 30.04.2026
 
 Fixed expand
