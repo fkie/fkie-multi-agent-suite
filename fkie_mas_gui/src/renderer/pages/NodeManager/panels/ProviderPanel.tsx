@@ -115,7 +115,7 @@ export default function ProviderPanel(): JSX.Element {
         if (!cfg.rmw.zenoh.remoteHosts) {
           const oldZenoh = cfg.rmw.zenoh as unknown as {
             remoteHost: string;
-          }
+          };
           cfg.rmw.zenoh.remoteHosts = oldZenoh.remoteHost ? [oldZenoh.remoteHost] : [];
         }
         if (!cfg.rmw.fastrtps) {
@@ -157,10 +157,8 @@ export default function ProviderPanel(): JSX.Element {
       }
       const connectedToDomainIds: number[] = [];
       for (const startCfg of startConfigurations) {
-        if (startCfg.host === "localhost") {
-          connectedToDomainIds.push(startCfg.domainId);
-          await rosCtx.hiddenConnect(startCfg);
-        }
+        connectedToDomainIds.push(startCfg.domainId);
+        await rosCtx.hiddenConnect(startCfg);
       }
 
       if (startConfigurations.length === 0) {
