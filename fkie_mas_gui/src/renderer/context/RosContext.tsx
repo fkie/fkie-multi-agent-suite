@@ -952,10 +952,13 @@ export function RosProviderReact(props: IRosProviderComponent): ReturnType<React
         configParams.useSSL
       );
       providerColors.current.set(provider.id, colorFromHostname(provider.id));
-      setHiddenProviders((prev) => [...prev, provider]);
-      provider.isLocalHost = isLocalHost(provider.connection.host);
-      provider.startConfiguration = new ProviderLaunchConfiguration(configParams);
-      provider.init();
+      setHiddenProviders((prev) => {
+        if (prev.find((p) => p.id === provider.id)) return prev;
+        provider.isLocalHost = isLocalHost(provider.connection.host);
+        provider.startConfiguration = new ProviderLaunchConfiguration(configParams);
+        provider.init();
+        return [...prev, provider];
+      });
     },
     [logCtxRef, settingsCtxRef, isLocalHost]
   );
