@@ -2076,7 +2076,7 @@ export default class Provider implements IProvider {
       if (value.result) {
         const parsed = value.data as Result;
         if (!parsed.result) {
-          this.log().error(`Provider [${this.id}]: Fail to kill the node [${name}]: ${parsed.message}`, parsed.message);
+          this.log().debug(`Provider [${this.id}]: Fail to kill the node [${name}]: ${parsed.message}`, parsed.message);
         }
         return parsed;
       }
