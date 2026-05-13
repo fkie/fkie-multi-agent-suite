@@ -1132,13 +1132,13 @@ export default function HostTreeViewPanel(): JSX.Element {
   }, [nodesToStart, queue]);
 
   useEffect(() => {
-    if (!pendingRestart) return;
+    if (!pendingRestart) return undefined;
 
     // queue still processing (STOP/KILL/UNREGISTER/... in progress)
-    if (queue.currentIndex >= 0) return;
+    if (queue.currentIndex >= 0) return undefined;
 
     // wait until all kill process questions have been handled by the user
-    if (killProcessQuestion.length > 0) return;
+    if (killProcessQuestion.length > 0) return undefined;
 
     // if (Date.now() < pendingRestart.notBefore) return;
 
@@ -1163,6 +1163,7 @@ export default function HostTreeViewPanel(): JSX.Element {
     );
 
     setPendingRestart(null);
+    return undefined;
   }, [pendingRestart, queue.currentIndex, killProcessQuestion]);
 
   /**
