@@ -568,7 +568,7 @@ export default function DetailsPanel(): JSX.Element {
                   </Typography>
                   {launchInfo.cmd && (
                     <Stack direction="column" paddingBottom={0.5}>
-                      {launchInfo.timer_period && launchInfo.timer_period > 0 && (
+                      {launchInfo.timer_period !== null && launchInfo.timer_period > 0 && (
                         <Typography variant="caption">
                           <Stack direction="row" spacing={0.5}>
                             <Box sx={{ fontWeight: "bold", color: "orange" }}>Delayed start:</Box>
@@ -576,7 +576,7 @@ export default function DetailsPanel(): JSX.Element {
                           </Stack>
                         </Typography>
                       )}
-                      {launchInfo.sigkill_timeout && launchInfo.sigkill_timeout > 0 && (
+                      {launchInfo.sigkill_timeout !== null && launchInfo.sigkill_timeout > 0 && (
                         <Typography variant="caption">
                           <Stack direction="row" spacing={0.5}>
                             <Box sx={{ fontWeight: "bold", color: "orange" }}>Kill on stop:</Box>
@@ -593,6 +593,9 @@ export default function DetailsPanel(): JSX.Element {
                         {(envPrefix || launchPrefix) && (
                           <Tooltip title={`${envPrefix} ${launchPrefix} ${launchInfo.cmd}`} disableInteractive>
                             <Stack direction="row" spacing="0.3em">
+                              <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
+                                env & cmd:
+                              </Typography>
                               <CopyButton value={`${envPrefix} ${launchPrefix} ${launchInfo.cmd}`} fontSize="0.6em" />
                             </Stack>
                           </Tooltip>
