@@ -1,7 +1,12 @@
 # Changelog
 
-## 5.6.15 - 11.05.2026
+## 5.6.15 - 13.05.2026
 
+Fixed restart nodes
+Connect to all available configurations, not just local ones
+If multiple configurations are available, do not establish multiple connections to the same host
+Changed error output on kill nodes to debug
+Bump version of dependencies
 Changed filter in topic echo panel
 
 ## 5.6.14 - 30.04.2026
