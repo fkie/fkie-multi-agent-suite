@@ -151,6 +151,7 @@ export default function HostTreeViewPanel(): JSX.Element {
   >([]);
   // remember last processed queue index to avoid double execution (e.g. in StrictMode)
   const lastProcessedIndexRef = useRef<number | null>(null);
+  const pendingKillNodesRef = useRef<RosNode[]>([]);
 
   // keep UI-related settings in sync with SettingsContext
   useEffect(() => {
@@ -648,12 +649,25 @@ export default function HostTreeViewPanel(): JSX.Element {
     }
   }
 
+  function removePendingNodes(nodes: RosNode[]): void {
+    const idsToRemove = new Set(nodes.map((n) => n.id));
+    pendingKillNodesRef.current = pendingKillNodesRef.current.filter((n) => !idsToRemove.has(n.id));
+
+    setPendingRestart((prev) => {
+      if (!prev) return null;
+      const remaining = prev.nodes.filter((n) => !idsToRemove.has(n.id));
+      return remaining.length > 0 ? { ...prev, nodes: remaining } : null;
+    });
+  }
+
   /**
    * Start nodes in the selected list
 
    */
   function startSelectedNodes(ignoreTimer: boolean = false): void {
-    startNodesWithLaunchCheck(getSelectedNodes(), false, {}, ignoreTimer);
+    const nodes = getSelectedNodes();
+    removePendingNodes(nodes);
+    startNodesWithLaunchCheck(nodes, false, {}, ignoreTimer);
   }
 
   /**
@@ -662,6 +676,7 @@ export default function HostTreeViewPanel(): JSX.Element {
    */
   function startNodesFromId(itemIds: string[]): void {
     const nodeList = getNodesFromIds(itemIds);
+    removePendingNodes(nodeList);
     startNodesWithLaunchCheck(nodeList);
   }
 
@@ -787,13 +802,16 @@ export default function HostTreeViewPanel(): JSX.Element {
       }
 
       if (maxKillTime > 0) {
+        pendingKillNodesRef.current = [...pendingKillNodesRef.current, ...nodesKillTimeout];
         window.setTimeout(() => {
-          queue.update(
-            nodesKillTimeout.map((node) => ({
-              node,
-              action: "KILL",
-            }))
+          const toKill = pendingKillNodesRef.current.filter((n) => nodesKillTimeout.some((nk) => nk.id === n.id));
+          // update the ref
+          pendingKillNodesRef.current = pendingKillNodesRef.current.filter(
+            (n) => !nodesKillTimeout.some((nk) => nk.id === n.id)
           );
+          if (toKill.length > 0) {
+            queue.update(toKill.map((node) => ({ node, action: "KILL" })));
+          }
         }, maxKillTime);
       }
     }
@@ -1122,8 +1140,19 @@ export default function HostTreeViewPanel(): JSX.Element {
     // wait until all kill process questions have been handled by the user
     if (killProcessQuestion.length > 0) return;
 
+    // if (Date.now() < pendingRestart.notBefore) return;
+
     // ensure that at least maxKillTime has passed since the last stop
-    if (Date.now() < pendingRestart.notBefore) return;
+    const remaining = pendingRestart.notBefore - Date.now();
+
+    if (remaining > 0) {
+      // set timer to evaluate the effect
+      const timer = setTimeout(() => {
+        // force Re-Evaluation
+        setPendingRestart((prev) => (prev ? { ...prev } : null));
+      }, remaining + 50);
+      return () => clearTimeout(timer);
+    }
 
     // Now everything is done, we can safely restart the nodes.
     startNodesWithLaunchCheck(
@@ -1464,13 +1493,16 @@ export default function HostTreeViewPanel(): JSX.Element {
     }
   };
 
-  const shutdownProvider = useCallback(async (id: string, killRos2: boolean) => {
-    const provider = rosCtx.getProviderById(id);
-    if (!provider) return;
-    console.log(`shutdown ${provider.id}`);
-    const result = await provider.shutdown(killRos2);
-    console.log(`finished shutdown ${provider.id} ${JSON.stringify(result)}`);
-  }, [rosCtx.getProviderById]);
+  const shutdownProvider = useCallback(
+    async (id: string, killRos2: boolean) => {
+      const provider = rosCtx.getProviderById(id);
+      if (!provider) return;
+      console.log(`shutdown ${provider.id}`);
+      const result = await provider.shutdown(killRos2);
+      console.log(`finished shutdown ${provider.id} ${JSON.stringify(result)}`);
+    },
+    [rosCtx.getProviderById]
+  );
 
   const createActions = () => {
     return (
