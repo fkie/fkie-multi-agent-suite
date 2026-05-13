@@ -20,7 +20,7 @@
   {
     "name": "@emotion/styled",
     "licenseType": "MIT",
-    "installedVersion": "11.14.0",
+    "installedVersion": "11.14.1",
     "author": "n/a"
   },
   {
@@ -38,19 +38,19 @@
   {
     "name": "@mui/icons-material",
     "licenseType": "MIT",
-    "installedVersion": "7.1.0",
+    "installedVersion": "7.3.9",
     "author": "MUI Team"
   },
   {
     "name": "@mui/material",
     "licenseType": "MIT",
-    "installedVersion": "7.1.0",
+    "installedVersion": "7.3.9",
     "author": "MUI Team"
   },
   {
     "name": "@mui/x-tree-view",
     "licenseType": "MIT",
-    "installedVersion": "8.3.1",
+    "installedVersion": "8.27.2",
     "author": "MUI Team"
   },
   {
@@ -104,7 +104,7 @@
   {
     "name": "electron-log",
     "licenseType": "MIT",
-    "installedVersion": "5.4.0",
+    "installedVersion": "5.4.3",
     "author": "Alexey Prokhorov"
   },
   {
@@ -116,7 +116,7 @@
   {
     "name": "electron-updater",
     "licenseType": "MIT",
-    "installedVersion": "6.6.2",
+    "installedVersion": "6.8.3",
     "author": "Vladimir Krivosheev"
   },
   {
@@ -128,19 +128,19 @@
   {
     "name": "express",
     "licenseType": "MIT",
-    "installedVersion": "5.1.0",
+    "installedVersion": "5.2.1",
     "author": "TJ Holowaychuk <tj@vision-media.ca>"
   },
   {
     "name": "express-rate-limit",
     "licenseType": "MIT",
-    "installedVersion": "8.3.0",
+    "installedVersion": "8.5.1",
     "author": "Nathan Friedly http://nfriedly.com/"
   },
   {
     "name": "flexlayout-react",
     "licenseType": "ISC",
-    "installedVersion": "0.8.17",
+    "installedVersion": "0.8.19",
     "author": "Caplin Systems Ltd"
   },
   {
@@ -194,7 +194,7 @@
   {
     "name": "react-draggable",
     "licenseType": "MIT",
-    "installedVersion": "4.4.6",
+    "installedVersion": "4.5.0",
     "author": "Matt Zabriskie"
   },
   {
@@ -218,7 +218,7 @@
   {
     "name": "react-virtuoso",
     "licenseType": "MIT",
-    "installedVersion": "4.12.7",
+    "installedVersion": "4.18.4",
     "author": "Petyo Ivanov"
   },
   {
@@ -230,7 +230,7 @@
   {
     "name": "react18-json-view",
     "licenseType": "MIT",
-    "installedVersion": "0.2.9",
+    "installedVersion": "0.2.10",
     "author": "Suni"
   },
   {
@@ -248,19 +248,19 @@
   {
     "name": "ssh2",
     "licenseType": "MIT",
-    "installedVersion": "1.16.0",
+    "installedVersion": "1.17.0",
     "author": "Brian White <mscdex@mscdex.net>"
   },
   {
     "name": "systeminformation",
     "licenseType": "MIT",
-    "installedVersion": "5.31.1",
+    "installedVersion": "5.31.5",
     "author": "Sebastian Hildebrandt <hildebrandt@plus-innovations.com> (https://plus-innovations.com)"
   },
   {
     "name": "uuid",
     "licenseType": "MIT",
-    "installedVersion": "11.1.0",
+    "installedVersion": "11.1.1",
     "author": "n/a"
   },
   {
@@ -296,7 +296,7 @@
   {
     "name": "@types/react",
     "licenseType": "MIT",
-    "installedVersion": "18.3.21",
+    "installedVersion": "18.3.28",
     "author": "n/a"
   },
   {
@@ -308,31 +308,31 @@
   {
     "name": "@typescript-eslint/eslint-plugin",
     "licenseType": "MIT",
-    "installedVersion": "8.57.2",
+    "installedVersion": "8.58.0",
     "author": "n/a"
   },
   {
     "name": "@typescript-eslint/parser",
     "licenseType": "MIT",
-    "installedVersion": "8.57.2",
+    "installedVersion": "8.58.0",
     "author": "n/a"
   },
   {
     "name": "@vitejs/plugin-react",
     "licenseType": "MIT",
-    "installedVersion": "4.4.1",
+    "installedVersion": "4.7.0",
     "author": "Evan You"
   },
   {
     "name": "electron",
     "licenseType": "MIT",
-    "installedVersion": "36.8.1",
+    "installedVersion": "41.1.1",
     "author": "Electron Community"
   },
   {
     "name": "electron-builder",
     "licenseType": "MIT",
-    "installedVersion": "26.8.2",
+    "installedVersion": "26.8.1",
     "author": "Vladimir Krivosheev"
   },
   {
@@ -356,13 +356,13 @@
   {
     "name": "globals",
     "licenseType": "MIT",
-    "installedVersion": "16.1.0",
+    "installedVersion": "16.5.0",
     "author": "Sindre Sorhus sindresorhus@gmail.com https://sindresorhus.com"
   },
   {
     "name": "prettier",
     "licenseType": "MIT",
-    "installedVersion": "3.5.3",
+    "installedVersion": "3.8.1",
     "author": "James Long"
   },
   {
@@ -380,19 +380,19 @@
   {
     "name": "typescript",
     "licenseType": "Apache-2.0",
-    "installedVersion": "5.8.3",
+    "installedVersion": "5.9.3",
     "author": "Microsoft Corp."
   },
   {
     "name": "typescript-eslint",
     "licenseType": "MIT",
-    "installedVersion": "8.57.2",
+    "installedVersion": "8.58.0",
     "author": "n/a"
   },
   {
     "name": "vite",
     "licenseType": "MIT",
-    "installedVersion": "6.4.1",
+    "installedVersion": "6.4.2",
     "author": "Evan You"
   }
 ]
