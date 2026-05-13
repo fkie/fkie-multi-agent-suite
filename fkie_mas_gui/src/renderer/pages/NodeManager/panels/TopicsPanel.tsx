@@ -547,17 +547,19 @@ export default function TopicsPanel({ initialSearchTerm = "" }: TopicsPanelProps
           enterDelay={settings.tooltipDelay}
           disableInteractive
         >
-          <LongPressIconButton
-            size="medium"
-            onClick={(e) =>
-              onPublishClick(topicForSelected, e.nativeEvent.shiftKey as boolean, e.nativeEvent.ctrlKey as boolean)
-            }
-            onLongPress={() => {
-              onPublishClick(topicForSelected, true, false);
-            }}
-          >
-            <PlayCircleOutlineIcon fontSize="inherit" />
-          </LongPressIconButton>
+          <span>
+            <LongPressIconButton
+              size="medium"
+              onClick={(e) =>
+                onPublishClick(topicForSelected, e.nativeEvent.shiftKey as boolean, e.nativeEvent.ctrlKey as boolean)
+              }
+              onLongPress={() => {
+                onPublishClick(topicForSelected, true, false);
+              }}
+            >
+              <PlayCircleOutlineIcon fontSize="inherit" />
+            </LongPressIconButton>
+          </span>
         </Tooltip>
       </ButtonGroup>
     ),
