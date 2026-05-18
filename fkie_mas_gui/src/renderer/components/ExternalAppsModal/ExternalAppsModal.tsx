@@ -119,7 +119,7 @@ export default function ExternalAppsModal(): JSX.Element {
         .map((prov) => prov.connection.domainId)
         .sort()
     );
-  }, [rosCtx.providers, rosCtx.getLocalProvider]);
+  }, [rosCtx.providers, rosCtx.mapProviderRosNodes, rosCtx.getLocalProvider]);
 
   function handleOpen(): void {
     setOpen(true);
