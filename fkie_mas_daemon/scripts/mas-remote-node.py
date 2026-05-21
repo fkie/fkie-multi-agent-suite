@@ -387,7 +387,6 @@ def run_command(name: str, command: str, additional_args: List[str], respawn: bo
     screen_command += ' ' + ' '.join(additional_args)
 
     if not force:
-        command = command
         running_processes = find_process_by_name(screen_cmd, None, [])
         if len(running_processes) > 0:
             Log.warn(

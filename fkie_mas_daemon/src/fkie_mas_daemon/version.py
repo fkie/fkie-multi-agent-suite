@@ -33,7 +33,6 @@ def detect_version(package):
             version_tags = doc.getElementsByTagName("version")
             if version_tags:
                 version = version_tags[0].firstChild.data
-                version = version
             else:
                 sys.stderr.write(
                     "version detection: no version tag in package.xml found!"
