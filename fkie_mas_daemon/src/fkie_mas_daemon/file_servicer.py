@@ -154,7 +154,6 @@ class FileServicer:
 
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
         Log.info("Request to [ros.packages.get_list]")
-        clear_cache = False
         try:
             if clear_cache:
                 try:

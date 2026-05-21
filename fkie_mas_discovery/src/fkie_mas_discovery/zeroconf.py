@@ -108,10 +108,8 @@ class MasterInfo(object):
             return 0.0
         except Exception:
             # deprecated
-            if not (timestamp is None):
+            if timestamp is not None:
                 t = datetime.strptime(timestamp, '%Y%m%d%H%M%S.%f')
-            else:
-                t = datetime.now()
             return time.mktime(t.timetuple()) + t.microsecond / 1e6
 
     @staticmethod

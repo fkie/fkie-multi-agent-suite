@@ -72,7 +72,6 @@ class LaunchLoadReply:
 
     def __str__(self):
         return json.dumps(self, cls=SelfEncoder, ensure_ascii=False)
-        return json.dumps(dict(self), ensure_ascii=False)
 
 
 class LaunchFile:
@@ -85,7 +84,6 @@ class LaunchFile:
 
     def __str__(self):
         return json.dumps(self, cls=SelfEncoder, ensure_ascii=False)
-        return json.dumps(dict(self), ensure_ascii=False)
 
 
 class LaunchLoadRequest:
