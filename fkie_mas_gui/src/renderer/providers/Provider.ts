@@ -1206,12 +1206,7 @@ export default class Provider implements IProvider {
     request,
     reload
   ) => {
-    let result: LaunchLoadReply = {
-      status: { code: "CONNECTION_ERROR", msg: "unknown error" },
-      paths: [],
-      args: [],
-      changed_nodes: [],
-    };
+    let result: LaunchLoadReply;
 
     if (reload) {
       result = await this.makeCall(URI.ROS_LAUNCH_RELOAD, [request], true, 60000).then((value: TResultData) => {
