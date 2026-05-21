@@ -3,8 +3,8 @@ import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import EditIcon from "@mui/icons-material/Edit";
 import EditNoteIcon from "@mui/icons-material/EditNote";
-import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import StarIcon from "@mui/icons-material/Star";
 import StarOutlineIcon from "@mui/icons-material/StarOutline";
 import StorageOutlinedIcon from "@mui/icons-material/StorageOutlined";
@@ -629,7 +629,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
                 selected={useSimTime}
                 onChange={() => setUseSimTime((prev) => !prev)}
               >
-                <MonitorHeartIcon sx={{ fontSize: "inherit" }} />
+                <ScheduleIcon sx={{ fontSize: "inherit" }} />
               </ToggleButton>
             </Tooltip>
           )}
