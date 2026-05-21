@@ -83,7 +83,6 @@ def main(argv=sys.argv):
     ) + 30, 480 if _dynreconf_client.height() > 480 else _dynreconf_client.height())
     _scroll_area.setWidget(_dynreconf_client)
     _scroll_area.show()
-    exit_code = -1
     rospy.on_shutdown(finish)
     exit_code = app.exec_()
 

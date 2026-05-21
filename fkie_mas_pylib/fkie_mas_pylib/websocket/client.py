@@ -146,10 +146,10 @@ class WebSocketClient:
             result = callback(*(arg for arg in args))
             if not isinstance(result, str):
                 result = json.dumps(result, cls=SelfAllEncoder)
-        except Exception as err:
+        except Exception: # as err:
             import traceback
             error = traceback.format_exc()
-            error = err
+            # error = err
         if error is None:
             reply = f'{{"id": {id}, "result": {result}}}'
         else:

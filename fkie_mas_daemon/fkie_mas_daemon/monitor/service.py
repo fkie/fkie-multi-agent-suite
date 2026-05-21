@@ -90,7 +90,7 @@ class Service:
         with self._mutex:
             stamp = float(msg.header.stamp.sec) + \
                 float(msg.header.stamp.nanosec) / 1000000000.0
-            stamp = time.time()
+            # stamp = time.time()
             for status in msg.status:
                 try:
                     idx = self._diagnostics.index(status)

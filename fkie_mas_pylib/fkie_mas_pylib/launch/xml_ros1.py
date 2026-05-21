@@ -315,7 +315,6 @@ def find_included_files(string: str,
     :return: Returns an iterator with IncludedFile-class
     :rtype: iterator with IncludedFile
     '''
-    re_filelist = EMPTY_PATTERN
     pattern = [r"\s*(\$\(find-pkg-share .*?\)[^\n\t\"]*)",
                r"\s*(\$\(find .*?\)[^\n\t\"]*)",
                r"\s*(\$\(dirname\)[^\n\t\"]*)",

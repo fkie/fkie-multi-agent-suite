@@ -1094,12 +1094,12 @@ class LaunchServicer(LoggingEventHandler):
                 f"{self.__class__.__name__}: run ros2 publisher with: {cmd}")
             SupervisedPopen(shlex.split(cmd),
                             object_id=f"ros_topic_pub_{request.topic_name}", description=f"publish to topic {request.topic_name}")
+            result = {"result": True, "message": ""}
         except Exception:
             import traceback
             error_msg = traceback.format_exc()
             print(error_msg)
             result = {"result": False, "message": error_msg}
-        result = {"result": True, "message": ""}
         return json.dumps(result, cls=SelfEncoder)
 
     def _is_action_type(self, identifier: str) -> bool:
