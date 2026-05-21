@@ -129,7 +129,7 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
     } else {
       console.error(`can't remove array element, it is set to ${messageStruct.value}`);
     }
-  }, [messageStruct.value]);
+  }, [messageStruct]);
 
   function structToSearchableString(msgStruct: TRosMessageStruct): string {
     if (msgStruct) {
@@ -179,18 +179,19 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
   // };
 
   // create element depending on the base type defined in Components
-  if (typeof Components[fieldType] !== "undefined") {
+  if (fieldType in Components) {
     if (isVisible !== "") {
       return <></>;
     }
-    return React.createElement(Components[fieldType], {
+    const component = Components[fieldType as keyof typeof Components];
+    return React.createElement(component, {
       id: idSuffix,
       messageStruct,
       filterText,
     });
   }
   // create input mask for an element of the array
-  function createListEntry(element, index: number): JSX.Element {
+  function createListEntry(element: TRosMessageStruct[], index: number): JSX.Element {
     return (
       <Stack direction="column" spacing={1} key={`liststack-${messageStruct.name}-${index}`}>
         <Divider textAlign="left">{`${messageStruct.name}[${index}]`}</Divider>
@@ -277,7 +278,7 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
                       <Checkbox
                         checked={useNow}
                         onChange={(event) => {
-                          setUseNow((prev) => !prev);
+                          setUseNow(event.target.checked);
                           event.stopPropagation();
                         }}
                         onClick={(event) => {
