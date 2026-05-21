@@ -117,7 +117,7 @@ class WebSocketClient:
                         print(traceback.format_exc())
                     except websockets.exceptions.ConnectionClosedError as recv_error:
                         Log.warn(
-                            f"websocket connection 'ws: // localhost: {self.port}' closed while recv: {recv_error}")
+                            f"websocket connection 'ws://localhost:{self.port}' closed while recv: {recv_error}")
                     except Exception:
                         import traceback
                         print(traceback.format_exc())
@@ -137,7 +137,9 @@ class WebSocketClient:
                 self._conn_try += 1
                 time.sleep(1)
 
-    def handle_callback(self, id, callback: Callable[[Any], Union[str, object]], args=[]) -> None:
+    def handle_callback(self, id, callback: Callable[[Any], Union[str, object]], args=None) -> None:
+        if args is None:
+            args = []
         Log.info(f"handle callback {id}: {args}")
         result = None
         error = None
@@ -146,10 +148,9 @@ class WebSocketClient:
             result = callback(*(arg for arg in args))
             if not isinstance(result, str):
                 result = json.dumps(result, cls=SelfAllEncoder)
-        except Exception: # as err:
+        except Exception:
             import traceback
             error = traceback.format_exc()
-            # error = err
         if error is None:
             reply = f'{{"id": {id}, "result": {result}}}'
         else:
@@ -176,9 +177,9 @@ class WebSocketClient:
                 except websockets.exceptions.ConnectionClosedOK:
                     pass
                 except websockets.exceptions.ConnectionClosedError as send_error:
-                    Log.warn(f"websocket connection 'ws: // localhost: {self.port}' closed: {send_error}")
+                    Log.warn(f"websocket connection 'ws://localhost:{self.port}' closed: {send_error}")
                 except (ConnectionRefusedError, ConnectionResetError) as send_reset:
-                    Log.warn(f"websocket connection 'ws: // localhost: {self.port}' reset: {send_reset}")
+                    Log.warn(f"websocket connection 'ws://localhost:{self.port}' reset: {send_reset}")
                     pass
                 except Exception:
                     import traceback
