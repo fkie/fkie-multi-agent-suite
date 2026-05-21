@@ -333,7 +333,7 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
               {messageStruct.is_array &&
                 messageStruct.value &&
                 arrayCount > 0 &&
-                (messageStruct.value as TRosMessageStruct[]).map((item, index) => createListEntry(item, index))}
+                (messageStruct.value as TRosMessageStruct[][]).map((item, index) => createListEntry(item, index))}
             </Stack>
           </AccordionDetails>
         </Accordion>
@@ -355,7 +355,7 @@ export default function InputElements(props: InputElementsProps): JSX.Element {
         {messageStruct.is_array &&
           messageStruct.value &&
           arrayCount > 0 &&
-          (messageStruct.value as TRosMessageStruct[]).map((item, index) => createListEntry(item, index))}
+          (messageStruct.value as TRosMessageStruct[][]).map((item, index) => createListEntry(item, index))}
       </Stack>
     );
   }
