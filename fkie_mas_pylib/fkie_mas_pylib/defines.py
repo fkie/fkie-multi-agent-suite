@@ -36,7 +36,7 @@ NM_DISCOVERY_NAME = f'_discovery_{ROS_DOMAIN_ID}{nm_name_suffix}'
 NM_DAEMON_NAME = f'_daemon_{ROS_DOMAIN_ID}{nm_name_suffix}'
 NM_SUBSCRIBER_NAME = f'_subscriber_{ROS_DOMAIN_ID}{nm_name_suffix}'
 EMPTY_PATTERN = re.compile('\b', re.I)
-SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.py'
+SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.py',
                  '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
 
 PACKAGE_FILE = 'package.xml'
