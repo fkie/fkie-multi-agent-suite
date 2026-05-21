@@ -57,9 +57,9 @@ class PQueue(object):
     def clear(self) -> None:
         Log.debug(f"Queue {self._logger_name}: clear queue")
         with self._cv:
+            self._count = 0
             for idx in self._idx:
                 del self._pq[idx][:]
-                self._count = 0
                 self._counts[idx] = 0
             self._cv.notify()
 
