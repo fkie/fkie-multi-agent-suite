@@ -121,7 +121,7 @@ def read_interface(interface_file):
     return data
 
 
-def create_pattern(param, data, has_interface, default=[], mastername=''):
+def create_pattern(param, data, has_interface, default=None, mastername=''):
     '''
     Create and compile the regular expression for given parameter. The data is
     taken from `data`. If the data was read from the interface file, then you have
@@ -138,7 +138,7 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
     :return: the compiled regular expression
     :rtype: The result of `re.compile()`
     '''
-    def_list = default
+    def_list = default if default is not None else []
     if has_interface:  # read the parameter from the sync interface data
         if param in data and data[param]:
             for item in data[param]:

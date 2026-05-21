@@ -422,7 +422,7 @@ class LaunchServicer(LoggingEventHandler):
         Loads launch file by request
         """
         Log.debug("Request to [ros.launch.load]")
-        result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
+        result = LaunchLoadReply()
 
         # Covert input dictionary into a proper python object
         request = request_json
@@ -570,7 +570,7 @@ class LaunchServicer(LoggingEventHandler):
         Reloads launch file by request
         """
         Log.debug("Request to [ros.launch.reload]")
-        result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
+        result = LaunchLoadReply()
 
         # Covert input dictionary into a proper python object
         request = request_json
@@ -682,7 +682,7 @@ class LaunchServicer(LoggingEventHandler):
         request = request_json
 
         Log.debug("UnloadLaunch request:\n%s" % str(request))
-        result = LaunchLoadReply(paths=[], changed_nodes=[], args=[])
+        result = LaunchLoadReply()
 
         result.paths.append(request.path)
         cfgid = CfgId(request.path, request.masteruri)
@@ -851,7 +851,7 @@ class LaunchServicer(LoggingEventHandler):
         # Covert input dictionary into a proper python object
         request = request_json
 
-        result = LaunchNodeReply(name=request.name, paths=[], launch_files=[])
+        result = LaunchNodeReply(name=request.name)
 
         try:
             launch_configs = []

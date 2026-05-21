@@ -346,7 +346,7 @@ class LaunchServicer(LoggingEventHandler):
         Loads launch file by interface request
         '''
         Log.debug(f"{self.__class__.__name__}: Request to [ros.launch.load]")
-        result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
+        result = LaunchLoadReply()
 
         # Covert input dictionary into a proper python object
         request = request_json
@@ -457,7 +457,7 @@ class LaunchServicer(LoggingEventHandler):
         Reloads launch file by interface request
         '''
         Log.info(f"{self.__class__.__name__}: Request to [ros.launch.reload]")
-        result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
+        result = LaunchLoadReply()
         # Covert input dictionary into a proper python object
         request = request_json
 
@@ -586,7 +586,7 @@ class LaunchServicer(LoggingEventHandler):
 
         Log.debug(
             f"{self.__class__.__name__}: Unload Launch request:\n {request}")
-        result = LaunchLoadReply(paths=[], changed_nodes=[], args=[])
+        result = LaunchLoadReply()
 
         result.paths.append(request.path)
         # cfgid = CfgId(request.path, request.masteruri)
@@ -728,7 +728,7 @@ class LaunchServicer(LoggingEventHandler):
 
         # Covert input dictionary into a proper python object
         request = request_json
-        result = LaunchNodeReply(name=request.name, paths=[], launch_files=[])
+        result = LaunchNodeReply(name=request.name)
         daemonuri = ""
         if hasattr(request, 'masteruri'):
             daemonuri = request.masteruri

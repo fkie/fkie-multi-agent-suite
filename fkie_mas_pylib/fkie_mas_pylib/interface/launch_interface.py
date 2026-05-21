@@ -62,13 +62,13 @@ class LaunchArgument:
 class LaunchLoadReply:
 
     def __init__(self, *, status: LaunchReturnStatus = LaunchReturnStatus('OK'),
-                 paths: List[str] = [],
-                 args: List[LaunchArgument] = [],
-                 changed_nodes: List[str] = []) -> None:
+                 paths: List[str] = None,
+                 args: List[LaunchArgument] = None,
+                 changed_nodes: List[str] = None) -> None:
         self.status = status
-        self.paths = paths
-        self.args = args
-        self.changed_nodes = changed_nodes
+        self.paths = paths if paths is not None else []
+        self.args = args if args is not None else []
+        self.changed_nodes = changed_nodes if changed_nodes is not None else []
 
     def __str__(self):
         return json.dumps(self, cls=SelfEncoder, ensure_ascii=False)
@@ -368,12 +368,12 @@ class LaunchNodeReply:
 
     def __init__(self, name: str, *,
                  status: str = 'OK',
-                 paths: List[str] = [],
-                 launch_files: List[str] = []) -> None:
+                 paths: List[str] = None,
+                 launch_files: List[str] = None) -> None:
         self.name = name
         self.status = LaunchReturnStatus(status)
-        self.paths = paths
-        self.launch_files = launch_files
+        self.paths = paths if paths is not None else []
+        self.launch_files = launch_files if launch_files is not None else []
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)

@@ -480,11 +480,11 @@ class RosStateServicer:
                 return json.dumps(filtered, cls=SelfEncoder)
             return self._ros_topic_list_str
 
-    def get_loggers(self, name: str, loggers: List[str] = []) -> str:
+    def get_loggers(self, name: str, loggers: List[str] = None) -> str:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}', loggers: {loggers}")
         if not HAS_LOGGER_INTERFACE:
             raise Exception("ros2 version on this client does not support logger interface!")
-        logger_names = loggers
+        logger_names = loggers if loggers is not None else []
         if not logger_names or len(loggers) == 0:
             logger_names = [name.replace("/", ".").strip("."), "rcl"]
         loggerConfigs: List[LoggerConfig] = []

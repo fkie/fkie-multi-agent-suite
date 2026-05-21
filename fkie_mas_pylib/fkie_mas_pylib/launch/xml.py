@@ -288,7 +288,7 @@ def find_included_files(string: str,
                         unique: bool = False,
                         search_in_ext: List[str] = SEARCH_IN_EXT,
                         resolve_args: Dict[str, str] = {},
-                        unique_files: List[str] = [],
+                        unique_files: List[str] = None,
                         rec_depth: int = 0,
                         filename: str = None) -> List[IncludedFile]:
     '''
@@ -354,9 +354,7 @@ def find_included_files(string: str,
         internal_args = get_internal_args(content, filename, resolve_args, True)
         # Determine the parameters that are used for loading
         inc_files_forward_params = _get_include_params(content, resolve_args)
-    my_unique_files = unique_files
-    if not unique_files:
-        my_unique_files = list()
+    my_unique_files = unique_files if unique_files is not None else list()
     # search for include pattern in the content without comments
     for groups in re_filelist.finditer(content):
         if groups.lastindex is None:
