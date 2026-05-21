@@ -14,7 +14,6 @@ import re
 import time
 
 from typing import Dict
-from typing import List
 from typing import Tuple
 
 from fkie_mas_pylib.defines import LOG_PATH

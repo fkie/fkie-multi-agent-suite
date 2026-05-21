@@ -2,7 +2,6 @@ from typing import List
 import rospy
 
 from fkie_mas_pylib.interface.runtime_interface import RosParameter
-from fkie_mas_pylib.logging.logging import Log
 
 
 class ROS1Parameters:

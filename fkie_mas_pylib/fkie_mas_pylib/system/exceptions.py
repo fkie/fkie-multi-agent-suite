@@ -6,8 +6,6 @@
 #
 # ****************************************************************************
 
-from typing import Text
-
 
 class ListSelectionRequest(Exception):
     ''' '''

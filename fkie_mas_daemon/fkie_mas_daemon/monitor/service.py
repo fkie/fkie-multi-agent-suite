@@ -19,7 +19,6 @@ from fkie_mas_pylib.system.host import get_host_name
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from fkie_mas_daemon.time_helpers import rostime2float
 from .cpu_load import CpuLoad
-from .cpu_temperatur import CpuTemperatur
 from .hdd_usage import HddUsage
 from .mem_usage import MemUsage
 from .net_load import NetLoad

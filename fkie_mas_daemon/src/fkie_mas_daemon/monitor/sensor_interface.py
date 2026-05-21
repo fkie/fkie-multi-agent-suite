@@ -6,7 +6,6 @@
 #
 # ****************************************************************************
 
-import rospy
 import threading
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue

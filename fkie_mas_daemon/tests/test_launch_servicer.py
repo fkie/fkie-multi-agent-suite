@@ -8,14 +8,10 @@
 
 import os
 import unittest
-import time
 import json
 from types import SimpleNamespace
 
 from fkie_mas_daemon.launch_servicer import LaunchServicer
-from fkie_mas_daemon.launch_description import RobotDescription, Capability
-from fkie_mas_pylib.interface.launch_interface import LaunchIncludedFilesRequest
-# from fkie_mas_pylib.launch import xml
 
 PKG = 'fkie_mas_daemon'
 

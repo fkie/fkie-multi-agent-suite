@@ -3,7 +3,7 @@ import json
 import os
 import platform
 import psutil
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union
 import re
 import time
 from fkie_mas_pylib.logging.logging import Log

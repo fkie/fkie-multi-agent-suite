@@ -10,16 +10,13 @@ from pathlib import Path
 
 from typing import Dict
 from typing import List
-from typing import Set
 from typing import Text
 from typing import Tuple
 from typing import Union
 
 import ruamel.yaml
-from xml.dom.minidom import parse  # , parseString
 import os
 import re
-import shlex
 import sys
 import threading
 import time
@@ -29,7 +26,6 @@ from ament_index_python.packages import PackageNotFoundError
 import launch
 from launch.launch_context import LaunchContext
 from launch.launch_description_sources import get_launch_description_from_any_launch_file
-from launch.frontend.parser import Parser
 from launch.substitutions.substitution_failure import SubstitutionFailure
 import launch.utilities
 from launch.utilities import normalize_to_list_of_substitutions
@@ -41,7 +37,6 @@ import composition_interfaces.srv
 from launch_ros.parameter_descriptions import ParameterFile
 from launch_ros.parameter_descriptions import ParameterFile
 
-from launch_ros.substitutions.find_package import FindPackage
 from launch_ros.utilities import make_namespace_absolute
 from launch_ros.utilities import prefix_namespace
 from launch_ros.utilities.normalize_parameters import normalize_parameter_dict

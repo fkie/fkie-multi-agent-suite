@@ -13,15 +13,12 @@ import re
 import json
 
 from fkie_mas_pylib import ros_pkg
-from fkie_mas_pylib import settings
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.file_interface import FileItem
 from fkie_mas_pylib.interface.file_interface import RosPackage
 from fkie_mas_pylib.interface.file_interface import PathItem
 from fkie_mas_pylib.interface.file_interface import LogPathItem
 from fkie_mas_pylib.interface.file_interface import LogPathClearResult
-from fkie_mas_pylib.defines import PACKAGE_FILE
-from fkie_mas_pylib.launch import xml
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system.screen import get_logfile
 from fkie_mas_pylib.system.screen import get_ros_logfile

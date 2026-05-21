@@ -8,7 +8,6 @@
 # ****************************************************************************
 
 import fkie_mas_daemon as nmd
-import time
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -17,7 +16,6 @@ from typing import Tuple
 from typing import Union
 
 from functools import partial
-import json
 import os
 import psutil
 import threading
@@ -52,7 +50,6 @@ from fkie_mas_pylib.service.future import create_service_future
 from fkie_mas_pylib.service.future import wait_until_futures_done
 from fkie_mas_msgs.msg import ParticipantEntitiesInfo
 from fkie_mas_msgs.msg import Participants
-from fkie_mas_pylib.interface import SelfEncoder
 
 LIFECYCLE_AVAILABLE = False
 try:

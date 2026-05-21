@@ -6,7 +6,6 @@
 #
 # ****************************************************************************
 
-from fkie_mas_daemon.strings import utf8
 from fkie_mas_pylib.system.host import get_hostname
 
 

@@ -8,7 +8,6 @@
 
 import os
 import unittest
-import time
 
 import fkie_mas_pylib.system.host as host
 

@@ -19,7 +19,6 @@ from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import process
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.websocket.server import WebSocketServer
-import fkie_mas_daemon as nmd
 
 
 class ScreenServicer:

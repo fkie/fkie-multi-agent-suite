@@ -9,9 +9,6 @@
 
 from typing import Dict
 from typing import List
-from typing import Text
-from typing import Tuple
-from typing import Union
 
 import os
 import re
@@ -20,7 +17,6 @@ from xml.dom import minidom
 
 from fkie_mas_pylib import ros_pkg
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.defines import EMPTY_PATTERN
 from fkie_mas_pylib.defines import SEARCH_IN_EXT
 
 

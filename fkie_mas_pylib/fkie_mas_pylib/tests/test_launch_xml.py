@@ -10,7 +10,6 @@ import os
 import unittest
 import rospkg
 
-from fkie_mas_pylib import ros_pkg
 from fkie_mas_pylib.launch import xml
 
 PKG = 'fkie_mas_pylib'

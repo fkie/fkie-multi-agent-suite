@@ -10,7 +10,6 @@ try:
     import queue
 except ImportError:
     import Queue as queue  # python 2 compatibility
-import json
 import errno
 import rospy
 import socket
@@ -29,7 +28,6 @@ from rosgraph.network import get_local_addresses, get_local_address
 from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
-from fkie_mas_pylib.defines import MAX_ROS1_NETWORKS, NMD_DEFAULT_PORT
 from fkie_mas_pylib.interface.runtime_interface import RosProvider
 from fkie_mas_pylib.interface.runtime_interface import SystemWarning
 from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup

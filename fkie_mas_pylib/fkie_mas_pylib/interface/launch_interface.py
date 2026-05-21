@@ -11,10 +11,7 @@ import json
 from typing import Any
 from typing import List
 from typing import Dict
-from typing import Iterable
-from typing import Optional
 from typing import Tuple
-from typing import Union
 from numbers import Number
 
 from fkie_mas_pylib.defines import SEARCH_IN_EXT

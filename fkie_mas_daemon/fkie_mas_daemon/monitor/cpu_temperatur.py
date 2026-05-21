@@ -7,7 +7,6 @@
 # ****************************************************************************
 
 import psutil
-import rclpy
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue

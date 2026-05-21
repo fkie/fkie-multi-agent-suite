@@ -16,7 +16,6 @@ import rospy
 
 from .common import get_hostname
 from .filter_interface import FilterInterface
-from fkie_mas_pylib import names
 from fkie_mas_pylib.interface.runtime_interface import EndpointInfo
 from fkie_mas_pylib.interface.runtime_interface import RosNode
 from fkie_mas_pylib.interface.runtime_interface import RosService

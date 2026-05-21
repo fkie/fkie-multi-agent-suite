@@ -57,8 +57,7 @@ from fkie_mas_pylib.websocket.client import WebSocketClient
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
-    from fkie_mas_msgs.msg import LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo, SyncServiceInfo
-    from fkie_mas_msgs.srv import DiscoverMasters, GetSyncInfo
+    from fkie_mas_msgs.srv import GetSyncInfo
 except:
     pass
 

@@ -10,7 +10,6 @@ import os
 
 import roslib
 import rospy
-from urllib.parse import urlparse
 import xmlrpc.client as xmlrpcclient
 
 

@@ -14,15 +14,13 @@ from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.websocket.server import WebSocketServer
 from fkie_mas_daemon.rosstate_servicer import RosStateServicer
 import fkie_mas_daemon as nmd
-from . import version
+from fkie_mas_daemon.version import detect_version
 
 
 class VersionServicer:
     def __init__(self, websocket: WebSocketServer, rosStateServicer: RosStateServicer):
         Log.info("Create ROS2 version servicer")
-        self._version, self._date = version.detect_version(
-            nmd.ros_node, "fkie_mas_daemon"
-        )
+        self._version, self._date = detect_version(nmd.ros_node, "fkie_mas_daemon")
         self.rosStateServicer = rosStateServicer
         websocket.register("ros.daemon.get_version", self.get_version)
 

@@ -14,7 +14,6 @@ from typing import Tuple
 import argparse
 import json
 import time
-from types import SimpleNamespace
 
 import rospy
 from roslib import message

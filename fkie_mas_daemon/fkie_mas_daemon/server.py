@@ -14,11 +14,9 @@ import time
 from rclpy.qos import (
     QoSProfile,
     QoSDurabilityPolicy,
-    QoSHistoryPolicy,
     QoSReliabilityPolicy,
 )
 from fkie_mas_msgs.msg import Endpoint
-from fkie_mas_msgs.srv import ListNodes
 from fkie_mas_msgs.srv import LoadLaunch
 from fkie_mas_msgs.srv import Task
 from fkie_mas_pylib.interface.launch_interface import LaunchNode
@@ -51,9 +49,7 @@ class Server:
         self.ros_node = ros_node
         self.ws_port = ws_port()
         self._on_shutdown = False
-        self._version, self._date = detect_version(
-            nmd.ros_node, "fkie_mas_daemon"
-        )
+        self._version, self._date = detect_version(nmd.ros_node, "fkie_mas_daemon")
         self.ros_node.create_service(
             LoadLaunch, "~/start_launch", self._rosservice_start_launch
         )

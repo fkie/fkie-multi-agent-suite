@@ -9,7 +9,7 @@
 VERSION = 'unknown'
 DATE = ''
 
-def detect_version(rosNode, package):
+def detect_version(rosNode, package="fkie_mas_daemon"):
     '''
     Try to detect the current version from git, installed VERSION/DATE files or package.xml from file created while build.
     '''
@@ -21,7 +21,7 @@ def detect_version(rosNode, package):
     try:
         from fkie_mas_pylib import ros_pkg
         import xml.etree.ElementTree as ET
-        paths = ros_pkg.get_share_files_path_from_package('fkie_mas_daemon', 'package.xml')
+        paths = ros_pkg.get_share_files_path_from_package(package, 'package.xml')
         if paths:
             tree = ET.parse(paths[0])
             root = tree.getroot()

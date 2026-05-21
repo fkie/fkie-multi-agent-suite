@@ -16,7 +16,6 @@ from fkie_mas_daemon.rosstate_jsonify import TopicNameWoPrefix
 from fkie_mas_daemon.rosstate_jsonify import TopicType
 import fkie_mas_daemon as nmd
 from fkie_mas_msgs.msg import Endpoint
-from fkie_mas_msgs.msg import ParticipantEntitiesInfo
 from fkie_mas_msgs.msg import Participants
 from fkie_mas_msgs.msg import ChangedState
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
@@ -29,7 +28,6 @@ from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
 from fkie_mas_pylib.defines import NM_NAMESPACE
 from fkie_mas_pylib.defines import NM_DISCOVERY_NAME
-from fkie_mas_pylib.interface.launch_interface import LaunchContent
 from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
 from fkie_mas_pylib.interface.runtime_interface import RosComposable
 from fkie_mas_pylib.interface.runtime_interface import RosLifecycleState
@@ -44,7 +42,6 @@ from fkie_mas_pylib.interface import SelfEncoder
 from typing import Dict
 from typing import List
 from numbers import Number
-from typing import Text
 from typing import Tuple
 from typing import Union
 
@@ -64,7 +61,6 @@ try:
     from rcl_interfaces.srv import GetLoggerLevels
     from rcl_interfaces.srv import SetLoggerLevels
     from rcl_interfaces.msg import LoggerLevel
-    from rcl_interfaces.msg import SetLoggerLevelsResult
     HAS_LOGGER_INTERFACE = True
 except:
     print("Can't include rcl_interfaces.srv.GetLoggerLevels: logger interface disabled!")

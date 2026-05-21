@@ -22,7 +22,6 @@ from rclpy.executors import MultiThreadedExecutor
 from fkie_mas_daemon.server import Server
 from fkie_mas_pylib.defines import NM_DAEMON_NAME
 from fkie_mas_pylib.defines import NM_NAMESPACE
-from fkie_mas_pylib.system.host import ros_host_suffix
 from fkie_mas_pylib.system.screen import test_screen
 from fkie_mas_pylib.websocket import ws_port
 import fkie_mas_daemon as nmd
