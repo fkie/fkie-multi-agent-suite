@@ -79,7 +79,7 @@ export default function EditorApp(): JSX.Element {
     setConnectingHost(`${prov.connection.uri}`);
     if (await prov.init()) {
       rosCtx.addProvider(prov);
-      setConnectingHost("")
+      setConnectingHost("");
       setLaunchInfo({
         id: id,
         provider: prov,
