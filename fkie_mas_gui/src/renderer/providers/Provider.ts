@@ -1350,14 +1350,12 @@ export default class Provider implements IProvider {
                     if (!rosParameters) {
                       rosParameters = allNodes;
                     }
-                    if (rosParameters !== undefined) {
-                      const capabilityGroup = rosParameters["capability_group"];
-                      if (capabilityGroup) {
-                        nodeGroup = this.toNodeGroup(`${capabilityGroup}`);
-                      }
-                      allJoinedParams = { ...allJoinedParams, ...rosParameters };
-                      joinedParam = true;
+                    const capabilityGroup = rosParameters["capability_group"];
+                    if (capabilityGroup) {
+                      nodeGroup = this.toNodeGroup(`${capabilityGroup}`);
                     }
+                    allJoinedParams = { ...allJoinedParams, ...rosParameters };
+                    joinedParam = true;
                   }
                 } catch (error) {
                   console.error(`ERROR: ${error}: ${JSON.stringify(p)}`);

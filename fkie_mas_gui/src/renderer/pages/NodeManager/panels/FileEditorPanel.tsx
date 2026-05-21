@@ -354,7 +354,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       });
       return;
     }
-    if (provider !== undefined && !provider.host()) {
+    if (!provider.host()) {
       logCtx.error("The provider does not have configured any host.", "Please check your provider configuration");
       setNotificationDescription({
         message: "The provider does not have configured any host.",
