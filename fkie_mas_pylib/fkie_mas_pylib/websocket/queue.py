@@ -21,7 +21,14 @@ class QueueItem:
         self.data = data
         self.priority = priority
 
+    def __eq__(self, other):
+        if not isinstance(other, QueueItem):
+            return False
+        return self.priority == other.priority
+
     def __lt__(self, other):
+        if not isinstance(other, QueueItem):
+            return False
         return self.priority < other.priority
 
     def __str__(self):

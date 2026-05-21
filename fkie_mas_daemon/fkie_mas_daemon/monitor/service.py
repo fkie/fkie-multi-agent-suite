@@ -48,7 +48,27 @@ class DiagnosticObj(DiagnosticStatus):
             return self.msg.name > item.name
         return False
 
+    def __ge__(self, item):
+        if isinstance(item, DiagnosticObj):
+            return self.msg.name >= item.msg.name
+        if isinstance(item, DiagnosticStatus):
+            return self.msg.name >= item.name
+        return False
 
+    def __lt__(self, item):
+        if isinstance(item, DiagnosticObj):
+            return self.msg.name < item.msg.name
+        if isinstance(item, DiagnosticStatus):
+            return self.msg.name < item.name
+        return False
+    def __le__(self, item):
+        if isinstance(item, DiagnosticObj):
+            return self.msg.name <= item.msg.name
+        if isinstance(item, DiagnosticStatus):
+            return self.msg.name <= item.name
+        return False
+
+   
 class Service:
 
     DEBOUNCE_DIAGNOSTICS = 0.5
