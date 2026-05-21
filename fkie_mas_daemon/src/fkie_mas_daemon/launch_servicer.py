@@ -1290,7 +1290,7 @@ class LaunchServicer(LoggingEventHandler):
                                             arg_name, args[arg_name])
                                     )
                                 else:
-                                    req_args.append(LaunchArgument(arg_name))
+                                    req_args.append(LaunchArgument(arg_name), "")
                             reply = LaunchInterpretPathReply(
                                 text=search_for, status="PARAMS_REQUIRED", args=req_args
                             )
