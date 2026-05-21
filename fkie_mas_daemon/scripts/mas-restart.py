@@ -76,7 +76,6 @@ if __name__ == '__main__':
         gone, alive = psutil.wait_procs(mas_processes, timeout=3)
         for p in alive:
             p.kill()
-        result = True
     except Exception as error:
         import traceback
         print(traceback.format_exc())

@@ -33,12 +33,12 @@ else:
         'test_included_launch.py',
     ]
 
-    resource_files = [
-        'tests/resources/description_example.launch',
-        'tests/resources/include_dummy.launch',
-        'tests/resources/included1.launch',
-        'tests/resources/included2.launch',
-    ]
+    # resource_files = [
+    #     'tests/resources/description_example.launch',
+    #     'tests/resources/include_dummy.launch',
+    #     'tests/resources/included1.launch',
+    #     'tests/resources/included2.launch',
+    # ]
 
     version = "0.0.0"
 
