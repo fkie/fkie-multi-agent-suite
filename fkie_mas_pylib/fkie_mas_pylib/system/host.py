@@ -250,11 +250,11 @@ def get_local_address() -> str:
         # pick first non 127/8 address
         if not addr.startswith('127.') and not addr == '::1':
             return addr
-    else:  # loopback
-        if use_ipv6():
-            return '::1'
-        else:
-            return '127.0.0.1'
+    # loopback
+    if use_ipv6():
+        return '::1'
+    else:
+        return '127.0.0.1'
 
 
 def get_local_addresses() -> List[str]:
