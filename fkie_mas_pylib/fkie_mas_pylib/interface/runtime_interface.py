@@ -754,6 +754,7 @@ class LoggerConfig:
                 return "ERROR"
             elif level == 50:
                 return "FATAL"
+            return "UNKNOWN"
 
         def toRos2(level: str):
             if level.upper() == "UNKNOWN":
@@ -768,6 +769,7 @@ class LoggerConfig:
                 return 40
             elif level.upper() == "FATAL":
                 return 50
+            return 0
 
     def __init__(self, level: LogLevelType, name: str) -> None:
         self.level = level

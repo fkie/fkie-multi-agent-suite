@@ -36,6 +36,7 @@ class DiagnosticObj(DiagnosticStatus):
             return self.msg.name == item.msg.name
         if isinstance(item, DiagnosticStatus):
             return self.msg.name == item.name
+        return False
 
     def __ne__(self, item):
         return not (self == item)
@@ -45,6 +46,7 @@ class DiagnosticObj(DiagnosticStatus):
             return self.msg.name > item.msg.name
         if isinstance(item, DiagnosticStatus):
             return self.msg.name > item.name
+        return False
 
 
 class Service:

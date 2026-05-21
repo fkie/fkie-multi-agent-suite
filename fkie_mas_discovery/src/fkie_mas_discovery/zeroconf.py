@@ -103,8 +103,9 @@ class MasterInfo(object):
         returns it.
         '''
         try:
-            if not (timestamp is None):
+            if timestamp is not None:
                 return float(timestamp)
+            return 0.0
         except Exception:
             # deprecated
             if not (timestamp is None):

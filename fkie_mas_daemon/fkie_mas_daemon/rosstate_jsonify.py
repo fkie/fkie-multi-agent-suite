@@ -555,6 +555,7 @@ class RosStateJsonify:
         except Exception:
             import traceback
             Log.debug(f"{self.__class__.__name__}: ignored exception: {traceback.format_exc()}")
+        return False
 
     def _get_qos(self, tp: TopicEndpointInfo) -> RosQos:
         return RosQos(tp.durability,
