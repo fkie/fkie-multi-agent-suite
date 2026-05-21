@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.6.16 - 21.05.2026
+
+Changed icon for "use-sim-time" in publisher dialog
+Fixed update domain ids for external apps dialog
+Fixed format in details panel
+updated versions in dependencies info
+
 ## 5.6.15 - 13.05.2026
 
 Fixed restart nodes
