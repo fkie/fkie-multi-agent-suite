@@ -10,10 +10,9 @@ import os
 import unittest
 
 import fkie_mas_pylib.system.screen as screen
-from fkie_mas_pylib.system.screen import SCREEN_SLASH_SEP
 
 PKG = 'fkie_mas_pylib'
-TEST_NODE_NAME = f'{SCREEN_SLASH_SEP}test{SCREEN_SLASH_SEP}node'
+TEST_NODE_NAME = f'{screen.SCREEN_SLASH_SEP}test{screen.SCREEN_SLASH_SEP}node'
 
 
 class TestScreen(unittest.TestCase):

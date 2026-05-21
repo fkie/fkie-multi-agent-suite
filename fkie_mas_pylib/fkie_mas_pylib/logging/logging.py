@@ -1,12 +1,11 @@
 import os
 import json
-from json import JSONEncoder
 from .generic_logger import GenericLogger, LoggingLevel
 from .ros1_logger import ROS1Logger
 from .ros2_logger import ROS2Logger
 
 
-class LoggingEncoder(JSONEncoder):
+class LoggingEncoder(json.JSONEncoder):
     def default(self, obj):
         return obj.__dict__
 
