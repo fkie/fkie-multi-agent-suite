@@ -326,9 +326,7 @@ export default function ParameterRootTree(props: ParameterRootTreeProps): JSX.El
                     ? expanded.indexOf(itemId)
                     : expandedFiltered.indexOf(itemId);
                 if (index === -1) {
-                  if (itemId) {
-                    copyExpanded.push(itemId);
-                  }
+                  copyExpanded.push(itemId);
                 } else {
                   copyExpanded.splice(index, 1);
                 }

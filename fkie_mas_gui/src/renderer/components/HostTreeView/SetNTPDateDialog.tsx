@@ -33,8 +33,8 @@ export default function SetNTPDateDialog(props: SetNTPDateDialogProps): JSX.Elem
         setTimerServer([timerServerValue, ...(settingsCtx.get("ntpServer") as string[])]);
         settingsCtx.set("ntpServer", [timerServerValue, ...(settingsCtx.get("ntpServer") as string[])]);
       }
-      onClose(timerServerValue ? `${value} ${timerServerValue}` : "");
     }
+    onClose(timerServerValue ? `${value} ${timerServerValue}` : "");
   }
 
   return (
