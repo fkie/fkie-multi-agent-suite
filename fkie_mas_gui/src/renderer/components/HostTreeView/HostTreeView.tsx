@@ -620,7 +620,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     namespace.unshift("");
     // add node name
     namespace.push(node);
-    return { isValidNode: node !== undefined, provider: provider, node_name: removeDDSuid(namespace.join("/")) };
+    return { isValidNode: node !== "", provider: provider, node_name: removeDDSuid(namespace.join("/")) };
   }
 
   /**
