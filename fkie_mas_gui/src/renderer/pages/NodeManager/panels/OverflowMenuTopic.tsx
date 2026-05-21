@@ -93,7 +93,7 @@ export default function OverflowMenuTopic(props: OverflowMenuTopicProps): JSX.El
             },
           },
         ]}
-        id="Topic Options"
+        id="topic-options"
       />
     );
   }, [topicName, providerId]);

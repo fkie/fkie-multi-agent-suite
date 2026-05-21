@@ -65,7 +65,7 @@ export default function OverflowMenuService(props: OverflowMenuServiceProps): JS
             },
           },
         ]}
-        id="Service Options"
+        id="service-options"
       />
     );
   }, [serviceName, providerId]);
