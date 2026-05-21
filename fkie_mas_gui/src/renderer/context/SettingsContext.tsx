@@ -293,18 +293,16 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
     options: [".*_impl_,/*_ros2cli", ".*_impl_,/*_ros2cli,/mas/*,/_mas_*,ttyd*", ".*_impl_,/*_ros2cli,/mas/*,/_mas_*,ttyd*,zenoh-daemon"],
     description: "Nodes to be placed in a {SPAM} group.",
     isValid: (value: JSONValue) => {
-      let result = true;
       const splits: string[] = ((value as string) || "").split(",");
       for (const item of splits) {
         try {
           new RegExp(`/(${item})/`);
-          return true;
         } catch (error) {
-          result = false;
+          console.log(`error while test: ${JSON.stringify(error)}`);
           return false;
         }
       }
-      return result;
+      return true;
     },
     validate: (value: JSONValue) => {
       const splits: string[] = ((value as string) || "").split(",");
@@ -313,7 +311,7 @@ export const SETTINGS_DEF: { [id: string]: ISettingsParam } = {
           new RegExp(`/(${item})/`);
           return true;
         } catch (error) {
-          console.log("error while test");
+          console.log(`error while test: ${JSON.stringify(error)}`);
         }
         return false;
       });

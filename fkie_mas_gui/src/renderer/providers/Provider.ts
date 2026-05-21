@@ -927,7 +927,6 @@ export default class Provider implements IProvider {
           else if (n.status && n.status === "inactive") status = RosNodeStatus.INACTIVE;
           else if (n.status && n.status === "not_monitored") status = RosNodeStatus.NOT_MONITORED;
           else if (n.status && n.status === "dead") status = RosNodeStatus.DEAD;
-          else status = RosNodeStatus.UNKNOWN;
 
           const rn = new RosNode(
             n.id,
