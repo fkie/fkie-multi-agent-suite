@@ -993,7 +993,7 @@ class LaunchServicer(LoggingEventHandler):
         try:
             mclass = roslib.message.get_message_class(msg_type)
             if mclass is None:
-                result.error_msg = f"invalid message type: '{msg_type}'. If this is a valid message type, perhaps you need to run 'catkin build'"
+                result.message = f"invalid message type: '{msg_type}'. If this is a valid message type, perhaps you need to run 'catkin build'"
                 return json.dumps(result, cls=SelfEncoder)
             slots = mclass.__slots__
             types = mclass._slot_types
@@ -1008,7 +1008,7 @@ class LaunchServicer(LoggingEventHandler):
             import traceback
 
             print(traceback.format_exc())
-            result.error_msg = repr(err)
+            result.message = repr(err)
         return json.dumps(result, cls=SelfEncoder)
 
     def get_srv_struct(self, srv_type: str) -> LaunchMessageStruct:
@@ -1017,7 +1017,7 @@ class LaunchServicer(LoggingEventHandler):
         try:
             mclass = roslib.message.get_service_class(srv_type)
             if mclass is None:
-                result.error_msg = f"invalid service type: '{srv_type}'. If this is a valid service type, perhaps you need to run 'catkin build'"
+                result.message = f"invalid service type: '{srv_type}'. If this is a valid service type, perhaps you need to run 'catkin build'"
                 return json.dumps(result, cls=SelfEncoder)
             slots = mclass._request_class.__slots__
             types = mclass._request_class._slot_types
@@ -1032,7 +1032,7 @@ class LaunchServicer(LoggingEventHandler):
             import traceback
 
             print(traceback.format_exc())
-            result.error_msg = repr(err)
+            result.message = repr(err)
         return json.dumps(result, cls=SelfEncoder)
 
     @classmethod
@@ -1196,7 +1196,7 @@ class LaunchServicer(LoggingEventHandler):
         try:
             service_class = roslib.message.get_service_class(request.srv_type)
             if service_class is None:
-                result.error_msg = f"invalid service type: '{request.srv_type}'. If this is a valid service type, perhaps you need to run 'catkin build'"
+                result.message = f"invalid service type: '{request.srv_type}'. If this is a valid service type, perhaps you need to run 'catkin build'"
                 return json.dumps(result, cls=SelfEncoder)
 
             request_class = service_class._request_class()
@@ -1221,18 +1221,18 @@ class LaunchServicer(LoggingEventHandler):
                 else:
                     return ' * %s (type %s)' % (args, type(args).__name__)
 
-            result.error_msg = f"Incompatible arguments to call service:\n{e}\nProvided arguments are:\n{argsummary(request.data)}\n\nService arguments are: [{genpy.message.get_printable_message_args(request)}]"
+            result.messsage = f"Incompatible arguments to call service:\n{e}\nProvided arguments are:\n{argsummary(request.data)}\n\nService arguments are: [{genpy.message.get_printable_message_args(request)}]"
             return json.dumps(result, cls=SelfEncoder)
         except rospy.ServiceException as e:
-            result.error_msg = str(e)
+            result.message = str(e)
             return json.dumps(result, cls=SelfEncoder)
         except (rospy.ROSSerializationException, genpy.SerializationError) as e:
-            result.error_msg = f"Unable to send request. One of the fields has an incorrect type: {e}"
+            result.message = f"Unable to send request. One of the fields has an incorrect type: {e}"
             return json.dumps(result, cls=SelfEncoder)
         except Exception as err:
             import traceback
             print(traceback.format_exc())
-            result.error_msg = repr(err)
+            result.message = repr(err)
         return json.dumps(result, cls=SelfEncoder)
 
     def get_message_types(self, mode: str = "message") -> str:

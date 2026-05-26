@@ -18,6 +18,8 @@ import fkie_mas_daemon as nmd
 from fkie_mas_msgs.msg import Endpoint
 from fkie_mas_msgs.msg import Participants
 from fkie_mas_msgs.msg import ChangedState
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_mas_pylib.websocket.server import WebSocketServer
 from fkie_mas_pylib.system.url import get_port
@@ -78,18 +80,17 @@ class RosStateServicer:
         self._endpoints_ts: Dict[str, float] = {}  # uri : timestamp
         self._ros_node_list: List[RosNode] = []
         self._ros_node_list_str: str = json.dumps(self._ros_node_list, cls=SelfEncoder)
-        self._ros_topic_list: List[RosNode] = []
-        self._ros_topic_list_str: str = json.dumps(self._ros_topic_list, cls=SelfEncoder)
-        self._ros_service_list: List[RosNode] = []
-        self._ros_service_list_str: str = json.dumps(self._ros_service_list, cls=SelfEncoder)
+        self._ros_topic_list_str: str = json.dumps([], cls=SelfEncoder)
+        self._ros_service_list_str: str = json.dumps([], cls=SelfEncoder)
+        self._ros_service_name_list: List[str] = []
         self._ros_service_dict: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService] = {}
         self._ros_topic_dict: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic] = {}
         self._count_nodes = 0
         self._count_topics = 0
         self._count_services = 0
-        self._ros_node_list_mutex = threading.RLock()
-        self._ros_topic_list_mutex = threading.RLock()
-        self._ros_service_list_mutex = threading.RLock()
+        self._ros_node_state_mutex = threading.RLock()
+        self._ros_topic_state_mutex = threading.RLock()
+        self._ros_service_state_mutex = threading.RLock()
         self._ros_lifecycle_mutex = threading.RLock()
         self._ros_composable_mutex = threading.RLock()
         self._is_dds = os.environ["RMW_IMPLEMENTATION"] != "rmw_zenoh_cpp" if "RMW_IMPLEMENTATION" in os.environ else True
@@ -119,6 +120,8 @@ class RosStateServicer:
         self._discovered_nodes_count = 0
         self._topic_types = ""
         self._timestamp = 0
+        self._callback_group_logger = MutuallyExclusiveCallbackGroup()
+        self._callback_group_composed = ReentrantCallbackGroup()
         websocket.register("ros.provider.get_list", self.get_provider_list)
         websocket.register("ros.nodes.get_list", self.get_node_list)
         websocket.register("ros.services.get_list", self.get_service_list)
@@ -182,7 +185,7 @@ class RosStateServicer:
         with self._ros_composable_mutex:
             # remove from current list
             filtered_list = []
-            for state in self._composables_nodes:
+            for state in composables:
                 if len([state for cm in composables if cm.nodeId == state.nodeId]) == 0:
                     filtered_list.append(state)
             filtered_list.extend(composables)
@@ -191,7 +194,7 @@ class RosStateServicer:
 
     def _callback_nodes(self, nodes: List[RosNode]):
         new_nodes_str = json.dumps(nodes, cls=SelfEncoder)
-        with self._ros_node_list_mutex:
+        with self._ros_node_state_mutex:
             nodes_set = set()
             for n in nodes:
                 nodes_set.add(n.name)
@@ -207,9 +210,9 @@ class RosStateServicer:
 
     def _callback_topics(self, topics: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic]):
         new_topic_str = json.dumps([v for v in topics.values()], cls=SelfEncoder)
-        with self._ros_topic_list_mutex:
+        with self._ros_topic_state_mutex:
             # self._count_topics = len(topics)
-            self._ros_topic_list = topics
+            self._ros_topic_dict = topics
             self._ts_state_notified = time.time()
             if self._ros_topic_list_str != new_topic_str:
                 self._ros_topic_list_str = new_topic_str
@@ -218,12 +221,13 @@ class RosStateServicer:
 
     def _callback_services(self, services: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService]):
         new_service_str = json.dumps([v for v in services.values()], cls=SelfEncoder)
-        with self._ros_service_list_mutex:
+        with self._ros_service_state_mutex:
             # self._count_services = len(services)
-            self._ros_service_list = services
+            self._ros_service_dict = services
             self._ts_state_notified = time.time()
             if self._ros_service_list_str != new_service_str:
                 self._ros_service_list_str = new_service_str
+                self._ros_service_name_list = [key[0] for key in services.keys()]
                 Log.debug(f"new services list; size: {sys.getsizeof(new_service_str) / 1024 / 1024:,.4f} Mbit")
                 self.websocket.publish('ros.services.changed', {"timestamp": self._ts_state_notified})
 
@@ -323,7 +327,7 @@ class RosStateServicer:
                         # trigger the update of the ros state
                         # The updates are received by callback defined in the __init__()
                         self._state_jsonify.update_state(self._force_refresh)
-                        with self._ros_node_list_mutex:
+                        with self._ros_node_state_mutex:
                             self._force_refresh = False
                     except Exception:
                         import traceback
@@ -436,7 +440,7 @@ class RosStateServicer:
 
     def get_node_list(self, forceRefresh: bool = False) -> str:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]; forceRefresh: {forceRefresh}")
-        with self._ros_node_list_mutex:
+        with self._ros_node_state_mutex:
             self._get_ros_node_list(forceRefresh)
             return self._ros_node_list_str
 
@@ -456,7 +460,7 @@ class RosStateServicer:
 
     def get_service_list(self, filter: List[RosTopicId] = []) -> str:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.topics.get_list]")
-        with self._ros_node_list_mutex:
+        with self._ros_node_state_mutex:
             filtered: List[RosService] = []
             if len(filter) > 0:
                 for id, service in self._ros_service_dict.items():
@@ -467,7 +471,7 @@ class RosStateServicer:
 
     def get_topic_list(self, filter: List[RosTopicId] = []) -> str:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.services.get_list]")
-        with self._ros_node_list_mutex:
+        with self._ros_node_state_mutex:
             filtered: List[RosTopic] = []
             if len(filter) > 0:
                 for id, topic in self._ros_topic_dict.items():
@@ -488,23 +492,37 @@ class RosStateServicer:
         if len(loggers) == 0:
             try:
                 service_name = '%s/logger_list' % name
-                request_list = GetLoggerLevels.Request()
-                request_list.names = []
-                get_logger = nmd.launcher.call_service(service_name, GetLoggerLevels, request_list)
-                if get_logger:
-                    for logger in get_logger.levels:
-                        logger_names.append(logger.name)
-            except:
-                pass
+                service_available = False
+                with self._ros_service_state_mutex:
+                    service_available = service_name in self._ros_service_name_list
+                if service_available:
+                    Log.debug(f"{self.__class__.__name__}: call service '{service_name}'")
+                    request_list = GetLoggerLevels.Request()
+                    request_list.names = []
+                    get_logger = nmd.launcher.call_service(
+                        service_name, GetLoggerLevels, request_list, callback_group=self._callback_group_logger)
+                    if get_logger:
+                        for logger in get_logger.levels:
+                            logger_names.append(logger.name)
+            except Exception as e:
+                Log.warn(f"{self.__class__.__name__}: failed call service '{service_name}': {e}")
         # get current logger levels
         service_name = '%s/get_logger_levels' % name
+        with self._ros_service_state_mutex:
+            if service_name not in self._ros_service_name_list:
+                raise Exception(f"logger service '{service_name}' not found")
+        Log.debug(f"{self.__class__.__name__}: call service '{service_name}'")
         request_list = GetLoggerLevels.Request()
         request_list.names = logger_names
-        get_logger = nmd.launcher.call_service(service_name, GetLoggerLevels, request_list)
+        get_logger = nmd.launcher.call_service(service_name, GetLoggerLevels,
+                                               request_list, timeout_sec=5.0, callback_group=self._callback_group_logger)
         if get_logger:
+            Log.debug(f"{self.__class__.__name__}: found {len(get_logger.levels)} logger levels on '{service_name}'")
             for logger in get_logger.levels:
                 loggerConfigs.append(LoggerConfig(
                     level=LoggerConfig.LogLevelType.fromRos2(logger.level), name=logger.name))
+        else:
+            raise Exception(f"failed logger service call '{service_name}'; response: {get_logger}")
         return json.dumps(loggerConfigs, cls=SelfEncoder)
 
     def set_logger_level(self, name: str, loggers: List[LoggerConfig]) -> str:
@@ -513,13 +531,17 @@ class RosStateServicer:
             raise Exception("ros2 version on this client does not support logger interface!")
         # request the current logger
         service_name_get = '%s/set_logger_levels' % name
+        with self._ros_service_state_mutex:
+            if service_name_get not in self._ros_service_name_list:
+                raise Exception(f"logger service '{service_name_get}' not found")
         request_set = SetLoggerLevels.Request()
         for logger in loggers:
             log_level = LoggerLevel()
             log_level.name = logger.name
             log_level.level = LoggerConfig.LogLevelType.toRos2(logger.level)
             request_set.levels.append(log_level)
-        set_logger = nmd.launcher.call_service(service_name_get, SetLoggerLevels, request_set)
+        set_logger = nmd.launcher.call_service(service_name_get, SetLoggerLevels,
+                                               request_set, callback_group=self._callback_group_logger)
         result = True
         reason = ""
         if set_logger:
@@ -586,7 +608,7 @@ class RosStateServicer:
                     request = UnloadNode.Request()
                     request.unique_id = unique_id_in_container
                     response = nmd.launcher.call_service(
-                        service_unload_node, UnloadNode, request)
+                        service_unload_node, UnloadNode, request, callback_group=self._callback_group_composed)
                     if hasattr(response, "success") and response.success:
                         return True
                     elif not hasattr(response, "success"):
@@ -604,7 +626,8 @@ class RosStateServicer:
         service_list_nodes = f'{container_name}/_container/list_nodes'
         Log.debug(f"{self.__class__.__name__}: list nodes from '{service_list_nodes}'")
         request_list = ListNodes.Request()
-        response_list = nmd.launcher.call_service(service_list_nodes, ListNodes, request_list)
+        response_list = nmd.launcher.call_service(
+            service_list_nodes, ListNodes, request_list, callback_group=self._callback_group_composed)
         for name, unique_id in zip(response_list.full_node_names, response_list.unique_ids):
             if name == node_name:
                 return unique_id
@@ -624,7 +647,7 @@ class RosStateServicer:
         return self._ros_node_list
 
     def get_ros_node(self, node_name: str) -> Union[RosNode, None]:
-        with self._ros_node_list_mutex:
+        with self._ros_node_state_mutex:
             node_list: List[RosNode] = self._get_ros_node_list()
             for node in node_list:
                 if node_name == node.name:
@@ -632,7 +655,7 @@ class RosStateServicer:
             return None
 
     def get_ros_node_by_id(self, node_id: str) -> Union[RosNode, None]:
-        with self._ros_node_list_mutex:
+        with self._ros_node_state_mutex:
             node_list: List[RosNode] = self._get_ros_node_list()
             for node in node_list:
                 if node_id == node.id:

@@ -285,7 +285,7 @@ export default class WebsocketConnection extends ProviderConnection {
    * @param timeout - Per-call timeout in ms (falls back to this.timeout if not provided)
 
    */
-  call: (uri: string, params: unknown[], timeout?: number) => Promise<TResultData> = (uri, params, timeout = 5000) => {
+  call: (uri: string, params: unknown[], timeout?: number) => Promise<TResultData> = (uri, params, timeout = 11000) => {
     return new Promise((resolve, reject) => {
       if (!this.connected()) {
         reject(new Error(`[${this.uri}] socket not ready`));

@@ -20,7 +20,7 @@ import os
 import psutil
 import threading
 
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.callback_groups import ReentrantCallbackGroup # MutuallyExclusiveCallbackGroup
 from rclpy.node import Subscription
 from rclpy.qos import QoSCompatibility, qos_check_compatible
 from rclpy.topic_endpoint_info import TopicEndpointInfo
@@ -112,7 +112,7 @@ class RosStateJsonify:
                  cb_lifecycle: Callable[[List[RosLifecycleState]], None],
                  monitor_servicer: MonitorServicer = None):
         Log.debug("Create RosStateJsonify")
-        self._lifecycle_state_group = MutuallyExclusiveCallbackGroup()
+        self._callback_group = ReentrantCallbackGroup()
         self._shutdown = False
         self._cb_nodes = cb_nodes
         self._cb_topics = cb_topics
@@ -139,13 +139,13 @@ class RosStateJsonify:
             result = os.environ["RMW_IMPLEMENTATION"]
         distro = os.environ.get("ROS_DISTRO", "")
         if not result and distro == "jazzy":
-                result = "rmw_fastrtps_cpp"
+            result = "rmw_fastrtps_cpp"
         return result
 
     def _on_lifecycle_event(self, msg: TransitionEvent, node_id: str, node_name: NodeFullName = "invalid"):
         if (node_name != "invalid"):
             update_thread = threading.Thread(target=self._thread_update_lifecycle_call,
-                                             args=(node_id, node_name,), daemon=True)
+                                             args=([RosNode(node_id, node_name)],), daemon=True)
             update_thread.start()
 
     def _subscribe_lifecycle(self, *, topic_name, node_id: str, node_name: NodeFullName) -> bool:
@@ -411,20 +411,19 @@ class RosStateJsonify:
                 nmd.ros_node.destroy_subscription(self._lifecycle_subscriptions[node_id])
                 del self._lifecycle_subscriptions[node_id]
             # update life cycle status using services, as messages may have been missed via topics
-            for node in new_transition_event_nodes:
-                update_thread = threading.Thread(target=self._thread_update_lifecycle_call,
-                                                 args=(node.id, node.name), daemon=True)
-                update_thread.start()
+            update_thread = threading.Thread(target=self._thread_update_lifecycle_call,
+                                             args=(new_transition_event_nodes,), daemon=True)
+            update_thread.start()
 
             # cleanup the composable nodes
             old_container_nodes = set(list(self._composable_nodes.keys())) - set(found_composable_nodes)
             for node_id in old_container_nodes:
                 del self._composable_nodes[node_id]
             # update the composable node list
-            for node in new_composable_nodes:
-                update_thread = threading.Thread(target=self._thread_update_composables_call,
-                                                 args=(node.id, node.name), daemon=True)
-                update_thread.start()
+            # for node in new_composable_nodes:
+            update_thread = threading.Thread(target=self._thread_update_composables_call,
+                                             args=(new_composable_nodes,), daemon=True)
+            update_thread.start()
 
         self._ros_service_dict = cached_data.service_objs
         self._ros_topic_dict = cached_data.topic_objs
@@ -575,31 +574,39 @@ class RosStateJsonify:
 
     # Updates the lifecycle state of the specified node.
     # It calls the services /get_state and /get_available_transitions
-    def _thread_update_lifecycle_call(self, node_id: str, node_name: NodeFullName):
+    def _thread_update_lifecycle_call(self, nodes: List[RosNode]):
         error_msgs: List[str] = []
         try:
             wait_futures: List[WaitFuture] = []
-            Log.debug(f"{self.__class__.__name__}:  update lifecycle state '{node_name}'")
-            create_service_future(nmd.ros_node,
-                                  wait_futures=wait_futures,
-                                  type="lifecycle state",
-                                  node_name="",
-                                  service_name=f"{node_name}/get_state",
-                                  srv_type=GetState,
-                                  request=GetState.Request())
-            Log.debug(f"{self.__class__.__name__}:  update lifecycle transitions '{node_name}'")
-            create_service_future(nmd.ros_node,
-                                  wait_futures=wait_futures,
-                                  type="lifecycle transition",
-                                  node_name="",
-                                  service_name=f"{node_name}/get_available_transitions",
-                                  srv_type=GetAvailableTransitions,
-                                  request=GetAvailableTransitions.Request())
+            for node in nodes:
+                Log.debug(f"{self.__class__.__name__}:  update lifecycle state '{node.name}'")
+                create_service_future(nmd.ros_node,
+                                      wait_futures=wait_futures,
+                                      type="lifecycle state",
+                                      node_id=node.id,
+                                      node_name=node.name,
+                                      service_name=f"{node.name}/get_state",
+                                      srv_type=GetState,
+                                      request=GetState.Request(),
+                                      callback_group=self._callback_group)
+                Log.debug(f"{self.__class__.__name__}:  update lifecycle transitions '{node.name}'")
+                create_service_future(nmd.ros_node,
+                                      wait_futures=wait_futures,
+                                      type="lifecycle transition",
+                                      node_id=node.id,
+                                      node_name=node.name,
+                                      service_name=f"{node.name}/get_available_transitions",
+                                      srv_type=GetAvailableTransitions,
+                                      request=GetAvailableTransitions.Request(),
+                                      callback_group=self._callback_group)
             # wait until all service are finished of timeouted
             wait_until_futures_done(wait_futures, 10)
             # handle response
-            lifecycle_state = RosLifecycleState(id=node_id, name=node_name)
+            lifecycle_states: Dict[str, RosLifecycleState] = {}
             for wait_future in wait_futures:
+                lifecycle_states[wait_future.node_id] = RosLifecycleState(id=wait_future.node_id, name=wait_future.node_name)
+            for wait_future in wait_futures:
+                lifecycle_state = lifecycle_states[wait_future.node_id]
                 if wait_future.finished:
                     if wait_future.type == "lifecycle state":
                         if wait_future.finished:
@@ -609,7 +616,7 @@ class RosStateJsonify:
                                     lifecycle_state.state = response.current_state.label
                             except Exception as exception:
                                 error_msgs.append(
-                                    f"{self.__class__.__name__}:-> failed to update lifecycle state of '{node_name}': '{exception}'")
+                                    f"{self.__class__.__name__}:-> failed to update lifecycle state of '{wait_future.node_name}': '{exception}'")
                     elif wait_future.type == "lifecycle transition":
                         try:
                             response = wait_future.future.result()
@@ -619,15 +626,15 @@ class RosStateJsonify:
                                         LifecycleTransition(transition.transition.label, transition.transition.id))
                         except Exception as exception:
                             error_msgs.append(
-                                f"{self.__class__.__name__}:-> failed to update lifecycle transitions of '{node_name}': '{exception}'")
+                                f"{self.__class__.__name__}:-> failed to update lifecycle transitions of '{wait_future.node_name}': '{exception}'")
                 else:
                     error_msgs.append(
-                        f"{self.__class__.__name__}:-> Timeout while update {wait_future.type} of '{node_name}'")
+                        f"{self.__class__.__name__}:-> Timeout while update {wait_future.type} of '{wait_future.node_name}'")
                 wait_future.client.destroy()
             # callback
             with self._lock:
                 if not self._shutdown and self._cb_lifecycle:
-                    self._cb_lifecycle([lifecycle_state])
+                    self._cb_lifecycle(list(lifecycle_states.values()))
         except:
             import traceback
             error_msgs.append(traceback.format_exc())
@@ -642,24 +649,29 @@ class RosStateJsonify:
                         self.monitor_servicer.update_warning_groups([warnings_group])
 
     # Updates the list of composable nodes in the specified container node.
-    def _thread_update_composables_call(self, node_id: str, node_name: NodeFullName, retry: int = 1):
+    def _thread_update_composables_call(self, nodes: List[RosNode], retry: int = 1):
         error_msgs: List[str] = []
         try:
             wait_futures: List[WaitFuture] = []
-            Log.debug(f"{self.__class__.__name__}:  update composables nodes for '{node_name}'")
-            create_service_future(nmd.ros_node,
-                                  wait_futures=wait_futures,
-                                  type="composable",
-                                  node_name="",
-                                  service_name=f"{node_name}/_container/list_nodes",
-                                  srv_type=ListNodes,
-                                  request=ListNodes.Request())
+            for node in nodes:
+                Log.debug(f"{self.__class__.__name__}:  update composables nodes for '{node.name}'")
+                create_service_future(nmd.ros_node,
+                                      wait_futures=wait_futures,
+                                      type="composable",
+                                      node_id=node.id,
+                                      node_name=node.name,
+                                      service_name=f"{node.name}/_container/list_nodes",
+                                      srv_type=ListNodes,
+                                      request=ListNodes.Request(),
+                                      callback_group=self._callback_group)
             # wait until all service are finished of timeouted
-            print(f"wait_futures: {len(wait_futures)}")
+            if len(wait_futures) == 0:
+                return
             wait_until_futures_done(wait_futures, 10)
             # handle response
-            composable = RosComposable(container_name=node_name, node_id=node_id)
+            retry_nodes: List[RosNode] = []
             for wait_future in wait_futures:
+                composable = RosComposable(container_name=wait_future.node_name, node_id=wait_future.node_id)
                 finished = False
                 if wait_future.finished:
                     finished = True
@@ -671,24 +683,27 @@ class RosStateJsonify:
                                     for cn_name in response.full_node_names:
                                         composable.nodes.append(cn_name)
                                     with self._lock:
-                                        self._composable_nodes[node_id] = composable
-                                        if not self._shutdown and self._cb_composables:
-                                            self._cb_composables([composable])
+                                        self._composable_nodes[wait_future.node_id] = composable
                             except Exception as exception:
                                 error_msgs.append(
-                                    f"{self.__class__.__name__}:-> failed to update composable nodes of '{node_name}': '{exception}'")
+                                    f"{self.__class__.__name__}:-> failed to update composable nodes of '{wait_future.node_name}': '{exception}'")
                 wait_future.client.destroy()
                 if not finished:
-                    print(f"  NOT FINISCHED")
                     if retry < 3:
-                        print(f"RETRY {retry}")
-                        update_thread = threading.Thread(target=self._thread_update_composables_call,
-                                                         args=(node_id, node_name, retry + 1), daemon=True)
-                        update_thread.start()
+                        retry_nodes.append(RosNode(node.id, node.name))
                     else:
                         error_msgs.append(
-                            f"{self.__class__.__name__}:-> Timeout while update {wait_future.type} of '{node_name}'")
-                print(f"FINISCHED")
+                            f"{self.__class__.__name__}:-> Timeout while update {wait_future.type} of '{wait_future.node_name}'")
+
+            if len(retry_nodes) > 0 and retry < 3:
+                print(f"RETRY {retry} for {len(retry_nodes)} nodes")
+                update_thread = threading.Thread(target=self._thread_update_composables_call,
+                                                 args=(retry_nodes, retry + 1), daemon=True)
+                update_thread.start()
+
+            with self._lock:
+                if not self._shutdown and self._cb_composables:
+                    self._cb_composables(list(self._composable_nodes.values()))
 
         except:
             import traceback

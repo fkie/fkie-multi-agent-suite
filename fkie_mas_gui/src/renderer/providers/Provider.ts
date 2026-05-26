@@ -1712,7 +1712,7 @@ export default class Provider implements IProvider {
         if (response.valid) {
           return response;
         }
-        this.log().error(`Provider [${this.id}]: Can't parse message: ${request}`, response.error_msg);
+        this.log().error(`Provider [${this.id}]: Can't parse message: ${request}`, response.message);
         return null;
       }
       this.log().error(`Provider [${this.id}]: Error at getMessageStruct()`, `${value.message}`);
@@ -1731,7 +1731,7 @@ export default class Provider implements IProvider {
         if (response.valid) {
           return response;
         }
-        this.log().error(`Provider [${this.id}]: Can't parse service: ${request}`, response.error_msg);
+        this.log().error(`Provider [${this.id}]: Can't parse service: ${request}`, response.message);
         return null;
       }
       this.log().error(`Provider [${this.id}]: Error at getServiceStruct()`, `${value.message}`);
@@ -1764,6 +1764,9 @@ export default class Provider implements IProvider {
           return null;
         }
         const response = value.data as LaunchMessageStruct;
+        if (!response.valid) {
+          this.log().error(`Provider [${this.id}]: Error at callService()`, `${response.message}`, 'service call failed');
+        }
         return response;
       }
       this.log().error(`Provider [${this.id}]: Error at callService()`, `${value.message}`);
@@ -2667,9 +2670,12 @@ export default class Provider implements IProvider {
    *  - ros.nodes.composable
    */
 
-  public getComposableForNode(id: string): Composable | undefined {
+  public getComposableForNode(id: string, name: string): Composable | undefined {
     for (const ci of this.composable) {
-      if (ci.nodeId === id) {
+      if (ci.nodeId === id || ci.containerName === name) {
+        return ci;
+      }
+      if (ci.nodes.includes(name)) {
         return ci;
       }
     }

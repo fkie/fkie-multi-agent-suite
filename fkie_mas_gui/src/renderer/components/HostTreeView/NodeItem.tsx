@@ -362,13 +362,20 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
       }, [])
     );
     // set composition node tag, in case no launch info is available
-    const ci = provider?.getComposableForNode(node.id);
-    if (ci) {
+    const ci = provider?.getComposableForNode(node.id, node.name);
+    if (ci?.containerName === node.name) {
       setComposableTag({
         id: "Manager",
         data: "Manager",
         color: getTagColor(ci.containerName),
         tooltip: "Manager of a composable nodes",
+      } as TTag);
+    } else if (ci) {
+      setComposableTag({
+        id: "Nodelet",
+        data: "Nodelet",
+        color: getTagColor(ci.containerName),
+        tooltip: `Composable node, container: ${ci.containerName}`,
       } as TTag);
     }
     // create composition tag from launch file

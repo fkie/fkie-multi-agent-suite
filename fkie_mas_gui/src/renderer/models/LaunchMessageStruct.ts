@@ -22,12 +22,12 @@ export default class LaunchMessageStruct {
   /**
    * Error message if valid is False.
    */
-  error_msg: string;
+  message: string;
 
-  constructor(msg_type: string, data: TRosMessageStruct, valid: boolean, error_msg: string) {
+  constructor(msg_type: string, data: TRosMessageStruct, valid: boolean, message: string) {
     this.msg_type = msg_type;
     this.data = data;
     this.valid = valid;
-    this.error_msg = error_msg;
+    this.message = message;
   }
 }

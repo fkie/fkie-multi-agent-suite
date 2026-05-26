@@ -2,6 +2,7 @@ from typing import List
 from typing import Tuple
 from typing import Union
 import rclpy
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from rcl_interfaces.srv import GetParameters
 from rcl_interfaces.srv import ListParameters
@@ -29,6 +30,7 @@ class ParameterInterface:
         self.include_hidden_nodes = True  # Consider hidden nodes as well
         self.param_prefixes = []  # Only list parameters with the provided prefixes
         self.global_node = global_node
+        self._callback_group = ReentrantCallbackGroup()
 
     def list(self, nodes: List[str] = None) -> Tuple[List[RosParameter], List[str]]:
         param_list: List[RosParameter] = []
@@ -53,10 +55,12 @@ class ParameterInterface:
                 ready = create_service_future(self.global_node,
                                               wait_futures=wait_futures,
                                               type="list_parameters",
+                                              node_id=node_name.full_name,
                                               node_name=node_name.full_name,
                                               service_name=service_name,
                                               srv_type=ListParameters,
-                                              request=ListParameters.Request())
+                                              request=ListParameters.Request(),
+                                              callback_group=self._callback_group)
                 if not ready:
                     Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
                     errors.append(f"service '{service_name}' is not ready, skip")
@@ -90,10 +94,12 @@ class ParameterInterface:
             ready = create_service_future(self.global_node,
                                           wait_futures=wait_futures,
                                           type="get_parameters",
+                                          node_id=node_name,
                                           node_name=node_name,
                                           service_name=service_name,
                                           srv_type=GetParameters,
-                                          request=request)
+                                          request=request,
+                                          callback_group=self._callback_group)
             if not ready:
                 Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
                 errors.append(f"service '{service_name}' is not ready, skip")
@@ -129,10 +135,12 @@ class ParameterInterface:
             ready = create_service_future(self.global_node,
                                           wait_futures=wait_futures,
                                           type="describe_parameters",
+                                          node_id=node_name,
                                           node_name=node_name,
                                           service_name=service_name,
                                           srv_type=DescribeParameters,
-                                          request=request)
+                                          request=request,
+                                          callback_group=self._callback_group)
             if not ready:
                 Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
                 errors.append(f"service '{service_name}' is not ready, skip")
@@ -355,10 +363,12 @@ class ParameterInterface:
         ready = create_service_future(node,
                                       wait_futures=wait_futures,
                                       type="set_parameters",
+                                      node_id=node_name,
                                       node_name=node_name,
                                       service_name=service_name,
                                       srv_type=SetParameters,
-                                      request=request)
+                                      request=request,
+                                      callback_group=self._callback_group)
         if not ready:
             Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
 
@@ -387,10 +397,12 @@ class ParameterInterface:
         ready = create_service_future(node,
                                       wait_futures=wait_futures,
                                       type="get_parameter",
+                                      node_id=node_name,
                                       node_name=node_name,
                                       service_name=service_name,
                                       srv_type=GetParameters,
-                                      request=request)
+                                      request=request,
+                                      callback_group=self._callback_group)
         if not ready:
             Log.debug(f"{self.__class__.__name__}:    service '{service_name}' is not ready, skip")
 

@@ -949,7 +949,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
   "msg_type": str,    // Type of the message.
   "data": {},        // structure of the ROS message as dictionary. Each field is at least described by MessageField.
   "valid": bool,             // True if the data for the message type was loaded successfully.
-  "error_msg": str
+  "message": str
 }
 ```
 
@@ -1020,7 +1020,7 @@ Definitions: [Daemon](../fkie_mas_pylib/fkie_mas_pylib/interface/launch_interfac
 ```json
 {
   "code": str,  // see Codes
-  "msg": str
+  "message": str
 }
 ```
 

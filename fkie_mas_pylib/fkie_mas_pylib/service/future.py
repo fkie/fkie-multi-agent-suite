@@ -14,6 +14,7 @@ DEFAULT_FEATURE_GROUP = ReentrantCallbackGroup()
 
 class WaitFuture:
     type: str
+    node_id: str
     node_name: str
     service_name: str
     future: rclpy.task.Future
@@ -22,11 +23,13 @@ class WaitFuture:
 
     def __init__(self,
                  type: str,
+                 node_id: str,
                  node_name: str,
                  service_name: str,
                  future: rclpy.task.Future,
                  client: rclpy.client.Client):
         self.type = type
+        self.node_id = node_id
         self.node_name = node_name
         self.service_name = service_name
         self.future = future
@@ -38,12 +41,12 @@ class WaitFuture:
         self.finished = future.done()
 
 
-def create_service_future(node: Node, *, wait_futures: List[WaitFuture], type: str, node_name: str, service_name: str, srv_type: SrvType, request: SrvTypeRequest, callback_group: Optional[CallbackGroup] = None) -> bool:
+def create_service_future(node: Node, *, wait_futures: List[WaitFuture], type: str, node_id: str, node_name: str, service_name: str, srv_type: SrvType, request: SrvTypeRequest, callback_group: Optional[CallbackGroup] = None) -> bool:
     client = node.create_client(srv_type, service_name,
                                 callback_group=callback_group if callback_group is not None else DEFAULT_FEATURE_GROUP)
     if client.service_is_ready():
         ros_future = client.call_async(request)
-        wait_futures.append(WaitFuture(type, node_name, service_name, ros_future, client))
+        wait_futures.append(WaitFuture(type, node_id, node_name, service_name, ros_future, client))
         return True
     else:
         client.destroy()

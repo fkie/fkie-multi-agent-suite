@@ -15,6 +15,7 @@ import threading
 
 import rclpy
 from rclpy.action import ActionClient
+from rclpy.callback_groups import CallbackGroup
 from rclpy.client import SrvType
 from rclpy.client import SrvTypeRequest
 from rclpy.client import SrvTypeResponse
@@ -162,7 +163,7 @@ class RosNodeLauncher(object):
         for start_file in start_files:
             self.server.load_launch_file(start_file, autostart=True)
 
-    def call_service(self, srv_name: str, srv_type: SrvType, request: SrvTypeRequest, timeout_sec: float = 10.0) -> SrvTypeResponse:
+    def call_service(self, srv_name: str, srv_type: SrvType, request: SrvTypeRequest, *, timeout_sec: float = 10.0, callback_group: CallbackGroup | None = None) -> SrvTypeResponse:
         """
         Make a service request and wait for the result.
 
@@ -171,7 +172,7 @@ class RosNodeLauncher(object):
         :param request: The service request.
         :return: The service response.
         """
-        client = self.ros_node.create_client(srv_type, srv_name)
+        client = self.ros_node.create_client(srv_type, srv_name, callback_group=callback_group)
         try:
             if not client.wait_for_service(timeout_sec=timeout_sec):
                 raise Exception(f"Service '{srv_name}' of type '{srv_type}' not available")

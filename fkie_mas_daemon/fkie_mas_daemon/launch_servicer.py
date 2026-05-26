@@ -41,6 +41,7 @@ from fkie_mas_pylib.interface.runtime_interface import RosQos
 from fkie_mas_pylib.interface.runtime_interface import SubscriberNode
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib import ros_pkg
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rosidl_runtime_py.utilities import get_message
 from rosidl_runtime_py.utilities import get_service
 from rosidl_runtime_py.utilities import get_action
@@ -144,6 +145,8 @@ class LaunchServicer(LoggingEventHandler):
         self._observed_launch_files: Dict[str, List[str]] = {}
         self._watchdog_observer.start()
         self.websocket = websocket
+        self._callback_service_group = ReentrantCallbackGroup()
+        
         websocket.register("ros.launch.load", self.load_launch)
         websocket.register("ros.launch.reload", self.reload_launch)
         websocket.register("ros.launch.unload", self.unload_launch)
@@ -361,7 +364,7 @@ class LaunchServicer(LoggingEventHandler):
                     request.ros_package, request.launch)
                 if not paths:
                     result.status.code = 'FILE_NOT_FOUND'
-                    result.status.error_msg = "Launch files %s in package %s not found!" % (
+                    result.status.message = "Launch files %s in package %s not found!" % (
                         request.launch, request.ros_package)
                     return json.dumps(result, cls=SelfEncoder) if return_as_json else result
                 elif len(paths) > 1:
@@ -933,7 +936,7 @@ class LaunchServicer(LoggingEventHandler):
             else:
                 msg_class = get_message(msg_type)
             if not hasattr(msg_class, 'get_fields_and_field_types'):
-                result.error_msg = f"unexpected message class: '{msg_class}', no 'get_fields_and_field_types' attribute found!"
+                result.message = f"unexpected message class: '{msg_class}', no 'get_fields_and_field_types' attribute found!"
                 return json.dumps(result, cls=SelfEncoder)
             field_and_types = msg_class.get_fields_and_field_types()
             msg_dict = {'type': msg_type,
@@ -944,7 +947,7 @@ class LaunchServicer(LoggingEventHandler):
         except Exception as err:
             import traceback
             print(traceback.format_exc())
-            result.error_msg = repr(err)
+            result.message = repr(err)
             result.valid = False
         return json.dumps(result, cls=SelfEncoder)
 
@@ -1141,7 +1144,7 @@ class LaunchServicer(LoggingEventHandler):
             else:
                 request_class = get_service(srv_type).Request
             if not hasattr(request_class, 'get_fields_and_field_types'):
-                result.error_msg = f"unexpected service class: '{request_class}', no 'get_fields_and_field_types' attribute found!"
+                result.message = f"unexpected service class: '{request_class}', no 'get_fields_and_field_types' attribute found!"
                 return json.dumps(result, cls=SelfEncoder)
             field_and_types = request_class.get_fields_and_field_types()
             msg_dict = {'type': srv_type,
@@ -1152,7 +1155,7 @@ class LaunchServicer(LoggingEventHandler):
         except Exception as err:
             import traceback
             print(traceback.format_exc())
-            result.error_msg = repr(err)
+            result.message = repr(err)
             result.valid = False
         return json.dumps(result, cls=SelfEncoder)
 
@@ -1175,19 +1178,18 @@ class LaunchServicer(LoggingEventHandler):
                 service_request = request_class.Request()
                 data = json.loads(request.data)
                 set_message_fields(service_request, self._str_from_dict(data))
-                response = nmd.launcher.call_service(request.service_name, request_class, service_request, 10)
-        except Exception as e:
-            result.error_msg = 'Exception while calling service: %r' % e
-        else:
+                response = nmd.launcher.call_service(request.service_name, request_class, service_request, timeout_sec=10, callback_group=self._callback_service_group)
             if response is not None:
                 result.data = message_to_ordereddict(response)
                 result.valid = True
+        except Exception as e:
+            result.message = 'Exception while calling service: %r' % e
         finally:
             nmd.ros_node.destroy_client(request.service_name)
         return json.dumps(result, cls=SelfEncoder)
 
     def get_message_types(self, mode: str = "message") -> str:
-        Log.info(f"Request to [ros.launch.get_message_types]")
+        Log.debug(f"Request to [ros.launch.get_message_types]")
         result = []
         interfaces = {}
         if (mode == "service"):

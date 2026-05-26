@@ -175,8 +175,8 @@ export default function ServiceCallerPanel(props: ServiceCallerPanelProps): JSX.
     if (provider) {
       const srvResult = await provider.callService(new LaunchCallService(serviceName, serviceType, serviceStruct));
       if (srvResult) {
-        if (srvResult.error_msg) {
-          setResultError(srvResult.error_msg);
+        if (srvResult.message) {
+          setResultError(srvResult.message);
         }
         if (srvResult.valid) {
           setResultMessage(srvResult.data);

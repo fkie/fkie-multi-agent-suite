@@ -37,7 +37,7 @@ class LaunchReturnStatus:
 
     def __init__(self, code: str, msg: str = '') -> None:
         self.code = code
-        self.msg = msg
+        self.message = msg
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
@@ -489,18 +489,18 @@ class LaunchMessageStruct:
     def __init__(self, msg_type: str, *,
                  data: Dict = {},
                  valid: bool = False,
-                 error_msg: str = '') -> None:
+                 message: str = '') -> None:
         '''
         Represend the structure of a ROS message.
         :param str msg_type: Type of the message.
         :param dict data: structure of the ROS message as dictionary. Each field is at least described by {type: 'msg_type', name: 'slot', def: 'subresult or []', default_value: '[]', is_array: 'true or false'}.
         :param bool valid: True if the data for the message type was loaded successfully.
-        :param string error_msg: Error message if valid is False.
+        :param string message: Error message if valid is False.
         '''
         self.msg_type = msg_type
         self.data = data
         self.valid = valid
-        self.error_msg = error_msg
+        self.message = message
 
 
 class LaunchPublishMessage:
