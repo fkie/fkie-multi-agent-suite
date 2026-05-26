@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.7.0 (26.05.2026)
+------------------
+* Changed callback group for services
+* Fixed code warnings
+
 5.6.1 (29.04.2026)
 ------------------
 * fixed SelfEncoder to include values with 0

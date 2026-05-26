@@ -1,5 +1,10 @@
 # Changelog
 
+## 5.7.0 - 26.05.2026
+
+Changed callback group for services
+Fixed code warnings
+
 ## 5.6.16 - 21.05.2026
 
 Changed icon for "use-sim-time" in publisher dialog

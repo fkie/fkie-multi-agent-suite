@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.3.0 (26.05.2026)
+------------------
+* Fixed code warnings
+
 5.2.0 (02.04.2026)
 ------------------
 * Do not create participants topics if started with zenoh

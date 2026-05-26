@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.7.0 (26.05.2026)
+------------------
+* Changed callback group for services
+* Fixed code warnings
+
 5.6.5 (29.04.2026)
 ------------------
 * fixed update diagnostics state of the nodes
