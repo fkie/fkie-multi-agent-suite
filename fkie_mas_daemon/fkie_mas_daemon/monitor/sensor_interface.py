@@ -27,6 +27,7 @@ class SensorInterface(object):
         self.mutex = threading.RLock()
         self._interval = interval
         self._timer = None
+        self._stopped = False
         self._stat_msg = DiagnosticStatus()
         self._stat_msg.name = '%s' % sensorname
         self._stat_msg.level = DiagnosticStatus.STALE
@@ -81,10 +82,16 @@ class SensorInterface(object):
         return True
 
     def start_timer(self, interval: float, callback: Callable):
-        self._timer = threading.Timer(interval, callback)
-        self._timer.start()
+        with self.mutex:
+            if self._stopped:
+                return
+            self._timer = threading.Timer(interval, callback)
+            self._timer.daemon = True
+            self._timer.start()
 
     def cancel_timer(self):
-        if self._timer is not None:
-            self._timer.cancel()
-            self._timer = None
+        with self.mutex:
+            self._stopped = True
+            if self._timer is not None:
+                self._timer.cancel()
+                self._timer = None
