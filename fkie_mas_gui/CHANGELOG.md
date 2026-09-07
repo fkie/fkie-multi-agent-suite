@@ -1,5 +1,11 @@
 # Changelog
 
+## 5.10.1 - 07.09.2026
+
+- fix crash after close terminal tab
+- [fkie_mas_daemon] fix: prevent monitors from re-arming their timer after cancellation
+- [fkie_mas_daemon] fix: do not let monitor timers block mas-daemon shutdown
+
 ## 5.10.0 - 28.08.2026
 
 - [fkie_mas_daemon] Prevent ros2 component containers from being quit too early on launch
