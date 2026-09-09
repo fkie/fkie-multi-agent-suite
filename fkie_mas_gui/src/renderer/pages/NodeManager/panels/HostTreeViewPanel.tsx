@@ -146,6 +146,46 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
   // remember last processed queue index to avoid double execution (e.g. in StrictMode)
   const lastProcessedIndexRef = useRef<number | null>(null);
   const pendingKillNodesRef = useRef<RosNode[]>([]);
+  // pending SIGKILL timers, must be cancelled on clear/unmount
+  const killTimersRef = useRef<number[]>([]);
+  // guards against re-processing the same batch when an effect re-runs
+  const handledStartBatchRef = useRef<RosNode[] | null>(null);
+  const handledRestartRef = useRef<TPendingRestart | null>(null);
+
+  /** Synchronous check whether an action for a node is already queued. */
+  const isQueued = useCallback(
+    (action: QueueActionType, nodeName: string): boolean => {
+      return queue.has((item) => item.action === action && item.node?.name === nodeName);
+    },
+    [queue]
+  );
+
+  /** Central enqueue point – single place for logging and de-duplication. */
+  const enqueue = useCallback(
+    (items: TQueueAction[], source: string): void => {
+      if (items.length === 0) return;
+      console.log(
+        `[queue] enqueue from '${source}': ${items.map((i) => `${i.action}:${i.node?.name ?? i.service ?? "?"}`).join(", ")}`
+      );
+      queue.update(items);
+    },
+    [queue]
+  );
+
+  /** Remove nodes from the pending SIGKILL list (e.g. stopped successfully or restarted). */
+  const removePendingKill = useCallback((nodes: RosNode[]): void => {
+    const ids = new Set(nodes.map((n) => n.id));
+    pendingKillNodesRef.current = pendingKillNodesRef.current.filter((n) => !ids.has(n.id));
+  }, []);
+
+  /** Cancel all pending SIGKILL timers. */
+  const cancelKillTimers = useCallback((): void => {
+    for (const timerId of killTimersRef.current) {
+      window.clearTimeout(timerId);
+    }
+    killTimersRef.current = [];
+    pendingKillNodesRef.current = [];
+  }, []);
 
   /**
    * Get list of nodes from a list of node.idGlobal
@@ -213,12 +253,30 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
   // Event listeners -----------------------------------------------------------------------------------
 
-  const onProviderRestartNodes = useCallback(
-    (data: EventProviderRestartNodes): void => {
-      restartNodes(data.nodes, true);
-    },
-    [] // restartNodes is defined later but does not depend on props/state captured here
-  );
+  // keep latest implementations for event handlers registered once
+  const latestHandlersRef = useRef({ restartNodes, createSingleTerminalPanel });
+  useEffect(() => {
+    latestHandlersRef.current = { restartNodes, createSingleTerminalPanel };
+  });
+
+  const onProviderRestartNodes = useCallback((data: EventProviderRestartNodes): void => {
+    latestHandlersRef.current.restartNodes(data.nodes, true);
+  }, []);
+
+  const onShowScreens = useCallback((data: TEventShowScreens): void => {
+    for (const node of data.nodes) {
+      for (const screen of node.screens || []) {
+        latestHandlersRef.current.createSingleTerminalPanel(
+          CmdTypes.SCREEN,
+          node.providerId,
+          node.name,
+          screen,
+          false,
+          false
+        );
+      }
+    }
+  }, []);
 
   const onFilterNodes = useCallback((data: TEventId): void => {
     setFilterText(data.id);
@@ -226,24 +284,14 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
   const onKillNodes = useCallback(
     (data: TEventKillNodes): void => {
-      queue.update(
+      enqueue(
         data.nodes.map((node) => {
           return { node, action: "KILL" };
-        })
+        }),
+        "event:KILL"
       );
     },
-    [queue]
-  );
-
-  const onShowScreens = useCallback(
-    (data: TEventShowScreens): void => {
-      for (const node of data.nodes) {
-        for (const screen of node.screens || []) {
-          createSingleTerminalPanel(CmdTypes.SCREEN, node.providerId, node.name, screen, false, false);
-        }
-      }
-    },
-    [] // uses createSingleTerminalPanel which is defined later but does not capture mutable state
+    [enqueue]
   );
 
   useCustomEventListener(EVENT_PROVIDER_RESTART_NODES, onProviderRestartNodes);
@@ -452,8 +500,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         nodeNm &&
         (nodeNm.status !== RosNodeStatus.RUNNING ||
           (ignoreRunState && nodes2start.filter((item) => item.id === nodeNm.id).length > 0)) &&
-        queue.queue &&
-        queue.queue.find((elem) => elem.action === "START" && elem.node?.name === nodeNm.name) === undefined
+        !isQueued("START", nodeNm.name)
       ) {
         return nodeNm;
       }
@@ -498,11 +545,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         continue;
       }
 
-      if (
-        queue.queue?.find((elem) => {
-          return elem.action === "START" && elem.node?.name === node.name;
-        })
-      ) {
+      if (isQueued("START", node.name)) {
         skippedNodes.set(node.name, "already in the start queue");
         continue;
       }
@@ -543,7 +586,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
   function removePendingNodes(nodes: RosNode[]): void {
     const idsToRemove = new Set(nodes.map((n) => n.id));
-    pendingKillNodesRef.current = pendingKillNodesRef.current.filter((n) => !idsToRemove.has(n.id));
+    removePendingKill(nodes);
 
     setPendingRestart((prev) => {
       if (!prev) return null;
@@ -593,31 +636,10 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     if (node.status === RosNodeStatus.RUNNING) {
       const resultStopNode = await provider.stopNode(node.id);
       if (!resultStopNode.result) {
-        // If this is the last item in the queue, offer killing the process
-        // if (queue.queue.length <= 1) {
-        //   const getProcessResult = await provider.findNodeProcess(node.name);
-        //   if (getProcessResult.processes.length > 0) {
-        //     const questions: {
-        //       node: string;
-        //       pid: number;
-        //       cmdLine: string;
-        //       callback?: () => Promise<void>;
-        //     }[] = [];
-        //     for (const p of getProcessResult.processes) {
-        //       questions.push({
-        //         node: node.name,
-        //         pid: p.pid,
-        //         cmdLine: p.cmdLine,
-        //         callback: async (): Promise<void> => {
-        //           await provider.killProcess(p.pid);
-        //         },
-        //       });
-        //     }
-        //     setKillProcessQuestion(questions);
-        //   }
-        // }
         queue.addStatus("STOP", node.name, false, resultStopNode.message);
       } else {
+        // node terminated regularly -> no SIGKILL needed
+        removePendingKill([node]);
         queue.addStatus("STOP", node.name, true, "stopped");
       }
     } else if ((node.screens || []).length > 0) {
@@ -628,6 +650,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         queue.addStatus("STOP", node.name, true, "sent SIGTERM to executable");
       }
     } else {
+      removePendingKill([node]);
       queue.addStatus("STOP", node.name, false, "no screen to stop");
     }
   }
@@ -639,11 +662,6 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
   function stopNodes(nodes: RosNode[], onlyWithLaunch?: boolean): number {
     const skipped: Record<string, string> = {};
     const nodeList = updateWithAssociations(nodes);
-
-    const stopQueuedNames = new Set(
-      (queue.queue ?? []).filter((q) => q.action === "STOP" && q.node?.name).map((q) => q.node?.name as string)
-    );
-
     const nodesToStop: RosNode[] = [];
 
     for (const node of nodeList) {
@@ -651,23 +669,20 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         skipped[node.name] = "system node";
         continue;
       }
-
       if (onlyWithLaunch && node.launchInfo.size === 0) {
         skipped[node.name] = "stop only with launch files";
         continue;
       }
-
-      if (stopQueuedNames.has(node.name)) {
+      // synchronous check, state based check would miss enqueues from the same tick
+      if (isQueued("STOP", node.name)) {
         skipped[node.name] = "already in queue";
         continue;
       }
-
       const isRunning = node.status === RosNodeStatus.RUNNING || (node.screens?.length ?? 0) > 0;
       if (!isRunning) {
         skipped[node.name] = "not running";
         continue;
       }
-
       nodesToStop.push(node);
     }
 
@@ -676,13 +691,10 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     }
 
     let maxKillTime = 0;
-
     if (nodesToStop.length > 0) {
-      queue.update(
-        nodesToStop.map((node) => ({
-          node,
-          action: "STOP",
-        }))
+      enqueue(
+        nodesToStop.map((node) => ({ node, action: "STOP" as QueueActionType })),
+        "stopNodes"
       );
 
       const nodesKillTimeout: RosNode[] = [];
@@ -698,16 +710,20 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
       if (maxKillTime > 0) {
         pendingKillNodesRef.current = [...pendingKillNodesRef.current, ...nodesKillTimeout];
-        window.setTimeout(() => {
+        const timerId = window.setTimeout(() => {
+          killTimersRef.current = killTimersRef.current.filter((id) => id !== timerId);
           const toKill = pendingKillNodesRef.current.filter((n) => nodesKillTimeout.some((nk) => nk.id === n.id));
-          // update the ref
           pendingKillNodesRef.current = pendingKillNodesRef.current.filter(
             (n) => !nodesKillTimeout.some((nk) => nk.id === n.id)
           );
           if (toKill.length > 0) {
-            queue.update(toKill.map((node) => ({ node, action: "KILL" })));
+            enqueue(
+              toKill.map((node) => ({ node, action: "KILL" as QueueActionType })),
+              "sigkill-timer"
+            );
           }
         }, maxKillTime);
+        killTimersRef.current.push(timerId);
       }
     }
 
@@ -783,19 +799,16 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     const nodes2kill: RosNode[] = [];
     for (const node of getSelectedNodes()) {
       if (node.system_node && navCtx.selection.selectedNodes.length > 1) continue;
-      if (
-        queue.queue?.find((elem) => {
-          return elem.action === "KILL" && elem.node?.name === node.name;
-        })
-      ) {
+      if (isQueued("KILL", node.name)) {
         continue;
       }
       nodes2kill.push(node);
     }
-    queue.update(
+    enqueue(
       nodes2kill.map((node) => {
         return { node, action: "KILL" };
-      })
+      }),
+      "killSelectedNodes"
     );
   }
 
@@ -830,19 +843,16 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     for (const node of getSelectedNodes()) {
       if (node.system_node && navCtx.selection.selectedNodes.length > 1) continue;
       if (!node.masteruri) continue;
-      if (
-        queue.queue?.find((elem) => {
-          return elem.action === "UNREGISTER" && elem.node?.name === node.name;
-        })
-      ) {
+      if (isQueued("UNREGISTER", node.name)) {
         continue;
       }
       nodes2unregister.push(node);
     }
-    queue.update(
+    enqueue(
       nodes2unregister.map((node) => {
         return { node, action: "UNREGISTER" };
-      })
+      }),
+      "unregisterSelectedNodes"
     );
   }
 
@@ -874,13 +884,13 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
    */
   function startDynamicReconfigure(service: string, masteruri: string): void {
     if (
-      queue.queue?.find((elem) => {
-        return elem.action === "DYNAMIC_RECONFIGURE" && elem.service === service && elem.masteruri === masteruri;
-      })
+      queue.has(
+        (elem) => elem.action === "DYNAMIC_RECONFIGURE" && elem.service === service && elem.masteruri === masteruri
+      )
     ) {
       return;
     }
-    queue.update([{ action: "DYNAMIC_RECONFIGURE", service: service, masteruri: masteruri }]);
+    enqueue([{ action: "DYNAMIC_RECONFIGURE", service: service, masteruri: masteruri }], "dynamicReconfigure");
   }
 
   /** start dynamic reconfigure in the queue and trigger the next one. */
@@ -942,19 +952,16 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     const nodes2clear: RosNode[] = [];
     for (const node of nodes) {
       if (node.system_node && nodes.length > 1) continue;
-      if (
-        queue.queue?.find((elem) => {
-          return elem.action === "CLEAR_LOG" && elem.node?.name === node.name;
-        })
-      ) {
+      if (isQueued("CLEAR_LOG", node.name)) {
         continue;
       }
       nodes2clear.push(node);
     }
-    queue.update(
+    enqueue(
       nodes2clear.map((node) => {
         return { node, action: "CLEAR_LOG" };
-      })
+      }),
+      "clearLogs"
     );
   }
 
@@ -1035,15 +1042,22 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
   useEffect(() => {
     if (!nodesToStart) return;
-
-    // Enqueue all selected nodes with START action
-    queue.update(nodesToStart.map((node) => ({ node, action: "START" })));
-
+    // an effect re-run (unstable deps, StrictMode) must not enqueue the same batch twice
+    if (handledStartBatchRef.current === nodesToStart) return;
+    handledStartBatchRef.current = nodesToStart;
+    console.log(`Enqueueing ${nodesToStart.length} nodes to start: ${nodesToStart.map((n) => n.name).join(", ")}`);
+    enqueue(
+      nodesToStart.map((node) => ({ node, action: "START" as QueueActionType })),
+      "nodesToStart-effect"
+    );
     setNodesToStart(undefined);
-  }, [nodesToStart, queue]);
+  }, [nodesToStart]);
 
   useEffect(() => {
     if (!pendingRestart) return undefined;
+
+    // already handled this exact restart request
+    if (handledRestartRef.current === pendingRestart) return undefined;
 
     // queue still processing (STOP/KILL/UNREGISTER/... in progress)
     if (queue.currentIndex >= 0) return undefined;
@@ -1051,21 +1065,21 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     // wait until all kill process questions have been handled by the user
     if (killProcessQuestion.length > 0) return undefined;
 
-    // if (Date.now() < pendingRestart.notBefore) return;
-
     // ensure that at least maxKillTime has passed since the last stop
     const remaining = pendingRestart.notBefore - Date.now();
-
     if (remaining > 0) {
-      // set timer to evaluate the effect
       const timer = setTimeout(() => {
-        // force Re-Evaluation
+        // force re-evaluation of this effect
         setPendingRestart((prev) => (prev ? { ...prev } : null));
       }, remaining + 50);
       return () => clearTimeout(timer);
     }
 
-    // Now everything is done, we can safely restart the nodes.
+    handledRestartRef.current = pendingRestart;
+
+    // nodes are restarted now, so cancel a still pending SIGKILL for them
+    removePendingKill(pendingRestart.nodes);
+
     startNodesWithLaunchCheck(
       pendingRestart.nodes,
       true, // ignoreRunState: we really want to restart
@@ -1076,6 +1090,13 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     setPendingRestart(null);
     return undefined;
   }, [pendingRestart, queue.currentIndex, killProcessQuestion]);
+
+  // cleanup on unmount
+  useEffect(() => {
+    return () => {
+      cancelKillTimers();
+    };
+  }, [cancelKillTimers]);
 
   /**
    * Queue action handlers for all supported queue actions.
@@ -1098,24 +1119,25 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
    */
   const performQueueMain = useCallback(
     async (index: number): Promise<void> => {
-      console.log("[performQueueMain] index", index, "last", lastProcessedIndexRef.current);
       if (index < 0) return;
 
-      const queueItem = queue.get();
+      // read from the synchronous mirror, state in the closure may be one render behind
+      const queueItem = queue.getAt(index);
 
       if (queueItem) {
         const handler = queueActionHandlers[queueItem.action];
         if (handler) {
+          console.log(`Performing queue action: ${queueItem.action} for node: ${queueItem.node?.name}`);
           await handler(queueItem);
+          console.log(`Completed queue action: ${queueItem.action} for node: ${queueItem.node?.name}`);
         } else {
-          // This should not happen; log for debugging.
           console.warn(`Unknown queue action: ${JSON.stringify(queueItem)}`);
         }
         return;
       }
 
       // ---- Queue finished ----
-      for (const action of Object.keys(queueActionMeta)) {
+      for (const action of Object.keys(queueActionMeta) as QueueActionType[]) {
         const failed = queue.failed(action);
         if (failed.length > 0) {
           const infoDict = Object.fromEntries(failed.map((item) => [item.itemName, item.message]));
@@ -1492,6 +1514,9 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
               </FormLabel>
               <IconButton
                 onClick={() => {
+                  // cancel pending SIGKILL timers, otherwise nodes are killed after the user aborted
+                  cancelKillTimers();
+                  setPendingRestart(null);
                   queue.clear();
                 }}
                 size="small"

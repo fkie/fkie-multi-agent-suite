@@ -154,7 +154,6 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
     requestingLifecycle?: boolean
   ) => JSX.Element = useCallback(
     (node, diagnosticColor, isDarkMode = false, lifecycle = undefined, requestingLifecycle = false) => {
-      console.log(`requestingLifecycle: ${requestingLifecycle} - ${node.name}`);
       switch (node.status) {
         case RosNodeStatus.RUNNING: {
           const IconType = node.isLocal ? CircleIcon : ReportIcon;
@@ -264,7 +263,6 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
                     }
                     const provider = rosCtx.getProviderById(node.providerId as string, true);
                     if (provider) setRequestingLifecycle(true);
-                    console.log(`requestingLifecycle set to TRUE`);
                     const result = await provider?.updateLifecycle(node.id);
                     if (!result?.result) {
                       const err = `Lifecycle update for ${node.name} failed`;
