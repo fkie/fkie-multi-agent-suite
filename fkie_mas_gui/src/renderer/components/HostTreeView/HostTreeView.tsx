@@ -673,7 +673,9 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       return newSelection;
     });
     // IMPORTANT: update NavigationContext
-    notifyNavCtxSelection(selectedItems);
+    if (navCtx.selection.triggerId === triggerId) {
+      notifyNavCtxSelection(selectedItems);
+    }
   }, [keyNodeList, getParentAndChildrenIds, notifyNavCtxSelection]);
 
   /**
@@ -696,7 +698,6 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    * - deselect own selection if no items are found in own tree.
    */
   useEffect(() => {
-    if (navCtx.selection.triggerId === triggerId) return;
     const selectedProviders = navCtx.selection.selectedProviders;
 
     // Filter providers that actually exist in this tree
