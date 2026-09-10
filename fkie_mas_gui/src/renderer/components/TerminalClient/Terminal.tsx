@@ -377,8 +377,9 @@ export class Terminal extends React.Component<Props, XtermState> {
     // 5) dispose the terminal; it disposes its own addons - never dispose them manually
     try {
       this.terminal?.dispose();
-    } catch (error) {
-      console.warn("[ttyd] terminal dispose failed:", error);
+    } catch {
+      // } catch (error) {
+      //   console.warn("[ttyd] terminal dispose failed:", error);
     }
     this.terminal = null;
   }
