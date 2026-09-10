@@ -43,6 +43,13 @@ export const contentToId: (contentId?: TContentId) => string | undefined = (cont
   return contentId?.domainId ? String(contentId?.domainId) : contentId?.providerId;
 };
 
+/** Compare two content ids (domain tabs use domainId, host tabs use providerId) */
+export function matchesContentId(a?: TContentId, b?: TContentId): boolean {
+  if (!a || !b) return false;
+  if (a.providerId || b.providerId) return a.providerId === b.providerId;
+  return a.domainId === b.domainId;
+}
+
 export type TLayoutTabConfig = {
   /**
    * @deprecated Instead, create a '...Config' and extend the factory() function in NodeManager.tsx
@@ -50,6 +57,9 @@ export type TLayoutTabConfig = {
   reactNode?: React.ReactNode;
 
   contentId?: TContentId;
+
+  /** if true, the tab must be opened inside the domain sub-layout instead of the main layout */
+  insideDomainLayout?: boolean;
 
   openExternal?: boolean;
 

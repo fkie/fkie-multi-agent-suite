@@ -226,7 +226,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         component: LAYOUT_TABS.EDITOR,
         toNodeId: LAYOUT_TAB_SETS[editorOpenLocation],
         config: {
-          contentId: { domainId: provider.connection.domainId },
+          contentId: { domainId: provider.connection.domainId},
+          insideDomainLayout: true,
           openExternal: true,
           editorConfig: editorProps,
         },

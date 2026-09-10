@@ -12,13 +12,14 @@ import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import {
+  EVENT_OPEN_COMPONENT,
   EVENT_SELECT_TAB,
   EVENT_TOGGLE_COMPONENT,
   TEventOpenComponent,
   TEventSelectTab,
 } from "@/renderer/pages/NodeManager/layout/events";
 import { pAddTabStickyButton } from "@/renderer/pages/NodeManager/layout/helpers";
-import { contentToId, TContentId } from "@/renderer/pages/NodeManager/layout/LayoutTabConfig";
+import { contentToId, matchesContentId, TContentId } from "@/renderer/pages/NodeManager/layout/LayoutTabConfig";
 
 /**
  * Minimal JSON node shape used for manipulating the FlexLayout JSON model.
@@ -229,6 +230,7 @@ type DomainFlexLayoutProps = DomainFlexLayoutOptions & {
    * The hook ensures that `domainId` matches the value stored.
    */
   factory: (tabNode: FlexLayout.TabNode, contentId: TContentId) => JSX.Element;
+  onRenderTab: (node: FlexLayout.TabNode, renderValues: FlexLayout.ITabRenderValues) => void;
   onCloseTab: (id: string) => void;
 };
 
@@ -238,7 +240,7 @@ type DomainFlexLayoutProps = DomainFlexLayoutOptions & {
  * - Exposes a typed `factory` for rendering tab content
  */
 export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | null {
-  const { contentId, storageKey, insideTabId, factory, onCloseTab } = props;
+  const { contentId, storageKey, insideTabId, factory, onRenderTab, onCloseTab } = props;
 
   const rosCtx = useRosContext();
   const [forceUpdate, setForceUpdate] = useReducer((x) => x + 1, 0);
@@ -297,7 +299,7 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
           component: LAYOUT_TABS.TOPICS,
           setId: node.getId(),
           icon: <TopicIcon sx={{ fontSize: "inherit" }} />,
-          config: { contentId: contentId },
+          config: { contentId: contentId, insideDomainLayout: true },
         });
         pAddTabStickyButton({
           model: model,
@@ -307,7 +309,7 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
           component: LAYOUT_TABS.SERVICES,
           setId: node.getId(),
           icon: <FeaturedPlayListIcon sx={{ fontSize: "inherit" }} />,
-          config: { contentId: contentId },
+          config: { contentId: contentId, insideDomainLayout: true },
         });
         pAddTabStickyButton({
           model: model,
@@ -317,7 +319,7 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
           component: LAYOUT_TABS.ACTIONS,
           setId: node.getId(),
           icon: <AccountTreeIcon sx={{ fontSize: "inherit" }} />,
-          config: { contentId: contentId },
+          config: { contentId: contentId, insideDomainLayout: true },
         });
         pAddTabStickyButton({
           model: model,
@@ -327,27 +329,9 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
           component: LAYOUT_TABS.APPS,
           setId: node.getId(),
           icon: <AppsIcon sx={{ fontSize: "inherit" }} />,
-          config: { contentId: contentId },
+          config: { contentId: contentId, insideDomainLayout: true },
         });
       }
-    }
-  }
-
-  function onRenderTab(node: FlexLayout.TabNode, renderValues: FlexLayout.ITabRenderValues): void {
-    const renderNameValues = renderValues as FlexLayout.ITabRenderValues & { name: string };
-    switch (node.getComponent()) {
-      case LAYOUT_TABS.TOPICS:
-        renderNameValues.leading = <TopicIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
-        break;
-      case LAYOUT_TABS.SERVICES:
-        renderNameValues.leading = <FeaturedPlayListIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
-        break;
-      case LAYOUT_TABS.ACTIONS:
-        renderNameValues.leading = <AccountTreeIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
-        break;
-      case LAYOUT_TABS.APPS:
-        renderNameValues.leading = <AppsIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
-        break;
     }
   }
 
@@ -365,6 +349,7 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
     (data: TEventOpenComponent) => {
       if (
         !model ||
+        !data.config?.insideDomainLayout ||
         data.config?.contentId === undefined ||
         data.config?.contentId.domainId !== contentId.domainId ||
         data.config?.contentId.providerId !== contentId.providerId
@@ -395,6 +380,58 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
       }
     },
     [model, contentId]
+  );
+
+  /** Resolve a tabset inside this sub-layout for a requested target node id */
+  const resolveTargetTabsetId = useCallback(
+    (toNodeId?: string): string | undefined => {
+      if (!model) return undefined;
+      // 1) requested tabset, if it exists inside this sub-layout
+      if (toNodeId) {
+        const target = model.getNodeById(toNodeId);
+        if (target?.getType() === "tabset") return target.getId();
+      }
+      // 2) tabset containing the "Nodes" tab
+      const nodesTab = model.getNodeById(`${LAYOUT_TABS.NODES}-${contentToId(contentId)}`);
+      const parent = nodesTab?.getParent();
+      if (parent?.getType() === "tabset") return parent.getId();
+      // 3) active tabset
+      return model.getActiveTabset()?.getId();
+    },
+    [model, contentId]
+  );
+
+  useCustomEventListener(
+    EVENT_OPEN_COMPONENT,
+    (data: TEventOpenComponent) => {
+      if (!model || !data.config?.insideDomainLayout) return;
+      if (!matchesContentId(data.config.contentId, contentId)) return;
+
+      const node = model.getNodeById(data.id);
+      if (node) {
+        // tab already exists -> just select it
+        model.doAction(FlexLayout.Actions.selectTab(data.id));
+        return;
+      }
+
+      const toNodeId = resolveTargetTabsetId(data.toNodeId);
+      if (!toNodeId) {
+        console.warn(`DomainFlexLayout: no tabset found to add tab ${data.id}`);
+        return;
+      }
+
+      const tab: FlexLayout.ITabAttributes = {
+        id: data.id,
+        type: "tab",
+        name: data.title,
+        component: data.component,
+        enableClose: data.closable,
+        enablePopout: false,
+        config: data.config,
+      };
+      model.doAction(FlexLayout.Actions.addTab(tab, toNodeId, FlexLayout.DockLocation.CENTER, -1));
+    },
+    [model, contentId, resolveTargetTabsetId]
   );
 
   useEffect(() => {

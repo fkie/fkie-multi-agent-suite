@@ -1,3 +1,5 @@
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import AppsIcon from "@mui/icons-material/Apps";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import CloseIcon from "@mui/icons-material/Close";
@@ -5,6 +7,7 @@ import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
 import DesktopWindowsOutlinedIcon from "@mui/icons-material/DesktopWindowsOutlined";
 import DomainIcon from "@mui/icons-material/Domain";
 import DvrIcon from "@mui/icons-material/Dvr";
+import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import LaunchIcon from "@mui/icons-material/Launch";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
@@ -13,6 +16,7 @@ import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInpu
 import StartIcon from "@mui/icons-material/Start";
 import SyncAltOutlinedIcon from "@mui/icons-material/SyncAltOutlined";
 import TerminalIcon from "@mui/icons-material/Terminal";
+import TopicIcon from "@mui/icons-material/Topic";
 import TroubleshootIcon from "@mui/icons-material/Troubleshoot";
 import TuneIcon from "@mui/icons-material/Tune";
 import WysiwygIcon from "@mui/icons-material/Wysiwyg";
@@ -350,6 +354,8 @@ export default function NodeManager(): JSX.Element {
     EVENT_OPEN_COMPONENT,
     (data: TEventOpenComponent) => {
       console.log(`open component: ${data.id}`);
+      // tabs with insideDomainLayout are handled by DomainFlexLayout
+      if (data.config?.insideDomainLayout) return;
       const node = modelRef.current.getNodeById(data.id);
       if (node) {
         if (node.getParent()?.getType() === "border") {
@@ -419,7 +425,7 @@ export default function NodeManager(): JSX.Element {
   useCustomEventListener(
     EVENT_TOGGLE_COMPONENT,
     (data: TEventOpenComponent) => {
-      if (data.config?.contentId !== undefined) {
+      if (data.config?.insideDomainLayout) {
         return;
       }
       console.log(`toggle component: ${data.component} with id: ${data.id}`);
@@ -778,6 +784,9 @@ export default function NodeManager(): JSX.Element {
             factory={(node, contentId) => {
               return factory(node, contentId);
             }}
+            onRenderTab={(node, renderValues) => {
+              onRenderTab(node, renderValues);
+            }}
             onCloseTab={(id: string) => deleteTab(id)}
           />
         );
@@ -921,6 +930,18 @@ export default function NodeManager(): JSX.Element {
                 sx={{ fontSize: (theme) => theme.typography.fontSize, rotate: "90deg" }}
               />
             );
+            break;
+          case LAYOUT_TABS.TOPICS:
+            renderNameValues.leading = <TopicIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            break;
+          case LAYOUT_TABS.SERVICES:
+            renderNameValues.leading = <FeaturedPlayListIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            break;
+          case LAYOUT_TABS.ACTIONS:
+            renderNameValues.leading = <AccountTreeIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
+            break;
+          case LAYOUT_TABS.APPS:
+            renderNameValues.leading = <AppsIcon sx={{ fontSize: (theme) => theme.typography.fontSize }} />;
             break;
           default:
             break;
