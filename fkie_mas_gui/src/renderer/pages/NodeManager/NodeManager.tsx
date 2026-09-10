@@ -286,7 +286,7 @@ export default function NodeManager(): JSX.Element {
 
   /** Hide bottom panel when last terminal is closed and handle editor tabs with unsaved changes */
   const deleteTab = useCallback(
-    (tabId: string): void => {
+    (tabId: string, fromEvent: boolean = false): void => {
       // handle editor tabs with modified files
       if (isEditorEditorId(tabId)) {
         const modified = monacoCtx.getModifiedFilesByEditor(tabId);
@@ -302,8 +302,10 @@ export default function NodeManager(): JSX.Element {
 
       const nodeBId = model.getNodeById(tabId);
       if (!nodeBId) {
-        // does the tab exists in domain flex layout? If yes, let it handle the close event
-        emitCloseComponent({ id: tabId });
+        if (!fromEvent) {
+          // does the tab exists in domain flex layout? If yes, let it handle the close event
+          emitCloseComponent({ id: tabId });
+        }
         return;
       }
       const parentNode = nodeBId.getParent();
@@ -422,7 +424,7 @@ export default function NodeManager(): JSX.Element {
   useCustomEventListener(
     EVENT_CLOSE_COMPONENT,
     (data: TEventId) => {
-      deleteTab(data.id);
+      deleteTab(data.id, true);
     },
     [deleteTab]
   );
