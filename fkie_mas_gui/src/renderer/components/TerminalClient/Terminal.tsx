@@ -15,7 +15,7 @@ import { ISearchOptions, SearchAddon } from "@xterm/addon-search";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
-import { ITerminalOptions, Terminal as XTerminal } from "@xterm/xterm";
+import { IDisposable, ITerminalOptions, Terminal as XTerminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import React from "react";
 
@@ -138,6 +138,11 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private timeSyncIterations: number = 0;
 
+  private highlightPending = false;
+
+  /** xterm listeners, disposed BEFORE terminal.dispose() */
+  private disposables: IDisposable[] = [];
+
   constructor(props: Props) {
     super(props);
 
@@ -202,8 +207,16 @@ export class Terminal extends React.Component<Props, XtermState> {
     });
     terminal.loadAddon(webglAddon);
 
-    terminal.onData(this.onTerminalData);
-    terminal.onResize(this.onTerminalResize);
+    this.disposables.push(terminal.onData(this.onTerminalData));
+    this.disposables.push(terminal.onResize(this.onTerminalResize));
+
+    // re-scan when the user scrolls back: reflow or in-place overwrites may have
+    // invalidated decorations of rows that are outside the tail window
+    this.disposables.push(
+      terminal.onScroll(() => {
+        this.scheduleLineNumberHighlight();
+      })
+    );
 
     this.connect();
 
@@ -319,6 +332,7 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   componentWillUnmount(): void {
     this.isUnmounting = true;
+    this.highlightPending = false;
 
     // 1) stop pending highlight work
     if (this.highlightTimer !== undefined) {
@@ -347,6 +361,15 @@ export class Terminal extends React.Component<Props, XtermState> {
     }
 
     // 4) drop own decorations and search decorations while terminal is still alive
+    for (const disposable of this.disposables) {
+      try {
+        disposable.dispose();
+      } catch (error) {
+        console.warn("[ttyd] listener dispose failed:", error);
+      }
+    }
+    this.disposables = [];
+
     this.lineNumberHighlighter?.dispose();
     this.lineNumberHighlighter = null;
     this.clearSearchDecorations();
@@ -398,7 +421,11 @@ export class Terminal extends React.Component<Props, XtermState> {
   /** Scans new buffer lines for line numbers, debounced */
   private scheduleLineNumberHighlight(): void {
     if (this.isUnmounting || !this.terminal || !this.lineNumberHighlighter) return;
-    if (this.highlightTimer !== undefined) return;
+    if (this.highlightTimer !== undefined) {
+      // remember that more data arrived while the timer was pending
+      this.highlightPending = true;
+      return;
+    }
 
     this.highlightTimer = window.setTimeout(() => {
       this.highlightTimer = undefined;
@@ -407,6 +434,11 @@ export class Terminal extends React.Component<Props, XtermState> {
         this.lineNumberHighlighter.scan();
       } catch (error) {
         console.warn("[ttyd] line number highlight failed:", error);
+      }
+      // trailing run for data that arrived during the throttle window
+      if (this.highlightPending) {
+        this.highlightPending = false;
+        this.scheduleLineNumberHighlight();
       }
     }, HIGHLIGHT_DEBOUNCE_MS);
   }
@@ -634,9 +666,8 @@ export class Terminal extends React.Component<Props, XtermState> {
         )}
 
         <Box
-          ref={(c: HTMLElement) => {
+          ref={(c: HTMLElement | null) => {
             this.container = c;
-            return this.container;
           }}
           width="100%"
           height={state.opened ? "100%" : 0}
@@ -663,6 +694,12 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private onTerminalResize(size: { cols: number; rows: number }): void {
     if (this.isUnmounting) return;
+
+    // reflow moves text between lines, markers keep their old index:
+    // all decorations must be rebuilt
+    this.lineNumberHighlighter?.clear();
+    this.scheduleLineNumberHighlight();
+
     const { socket, textEncoder } = this;
     if (socket && socket.readyState === WebSocket.OPEN) {
       const msg = JSON.stringify({ columns: size.cols, rows: size.rows });
