@@ -1,7 +1,6 @@
 import { ButtonGroup, Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import React from "react";
 
-import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import AddToQueueIcon from "@mui/icons-material/AddToQueue";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
@@ -20,6 +19,7 @@ import WysiwygIcon from "@mui/icons-material/Wysiwyg";
 import LongPressIconButton from "../UI/LongPressIconButton";
 
 export interface HostTreeViewActionsProps {
+  selectedProviderCount: number;
   selectedNodesCount: number;
   hasDynamicReconfigure: boolean;
   canUnregisterSelectedNodes: boolean;
@@ -47,6 +47,7 @@ export interface HostTreeViewActionsProps {
  */
 const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
   const {
+    selectedProviderCount,
     selectedNodesCount,
     hasDynamicReconfigure,
     canUnregisterSelectedNodes,
@@ -69,8 +70,7 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
 
   const hasNodeSelection = selectedNodesCount > 0;
 
-  const navCtx = useNavigationContext();
-  const hasSelectedProviders = navCtx.selection.selectedProviders.length > 0;
+  const hasSelectedProviders = selectedProviderCount > 0;
   const hasNodesOrProvidersSelection = hasNodeSelection || hasSelectedProviders;
 
   const handleStart = (event: React.MouseEvent<HTMLButtonElement>): void => {
@@ -459,7 +459,7 @@ const HostTreeViewActions: React.FC<HostTreeViewActionsProps> = (props) => {
           </span>
         </Tooltip>
       )}
-      {navCtx.selection.selectedProviders.length === 1 && (
+      {selectedProviderCount === 1 && (
         <Tooltip
           title={
             <div>

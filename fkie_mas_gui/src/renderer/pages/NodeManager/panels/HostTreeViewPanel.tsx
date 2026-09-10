@@ -124,6 +124,8 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
   const [filterText, setFilterText] = useState<string>("");
   const [providerNodes, setProviderNodes] = useState<TProviderNodes[]>([]);
+  const [selectedProviderItems, setSelectedProviderItems] = useState<string[]>([]);
+  const [selectedNodeItems, setSelectedNodeItems] = useState<string[]>([]);
   const [nodesToStart, setNodesToStart] = useState<RosNode[]>();
   const [progressQueueMain, setProgressQueueMain] = useState<number>(0);
   const queue = useQueue<TQueueAction>(setProgressQueueMain);
@@ -166,8 +168,8 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
   );
 
   const getSelectedNodes = useCallback((): RosNode[] => {
-    return getNodesFromIds(navCtx.selection.selectedNodes);
-  }, [navCtx.selection.selectedNodes, getNodesFromIds]);
+    return getNodesFromIds(selectedNodeItems);
+  }, [selectedNodeItems, getNodesFromIds]);
 
   /**
    * Compute visibleNodes and countFilteredNodes based on providerNodes and filterText.
@@ -781,8 +783,9 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
    */
   function killSelectedNodes(): void {
     const nodes2kill: RosNode[] = [];
-    for (const node of getSelectedNodes()) {
-      if (node.system_node && navCtx.selection.selectedNodes.length > 1) continue;
+    const nodes = getSelectedNodes();
+    for (const node of nodes) {
+      if (node.system_node && nodes.length > 1) continue;
       if (
         queue.queue?.find((elem) => {
           return elem.action === "KILL" && elem.node?.name === node.name;
@@ -827,8 +830,9 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
    */
   function unregisterSelectedNodes(): void {
     const nodes2unregister: RosNode[] = [];
-    for (const node of getSelectedNodes()) {
-      if (node.system_node && navCtx.selection.selectedNodes.length > 1) continue;
+    const nodes = getSelectedNodes();
+    for (const node of nodes) {
+      if (node.system_node && nodes.length > 1) continue;
       if (!node.masteruri) continue;
       if (
         queue.queue?.find((elem) => {
@@ -1158,7 +1162,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
   // --- Derived selection information for the action bar ---
   const selectedNodes = getSelectedNodes();
   const hasDynamicReconfigure = selectedNodes.some((node) => (node.dynamicReconfigureServices?.length ?? 0) > 0);
-  const hasSelectedProviders = navCtx.selection.selectedProviders.length > 0;
+  const hasSelectedProviders = selectedProviderItems.length > 0;
   const canUnregisterSelectedNodes = selectedNodes.some((node) => (node.masteruri ?? "").length > 0);
 
   // --- Action handlers passed to HostTreeViewActions ---
@@ -1200,7 +1204,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
   const handleParametersClick = (): void => {
     if (hasSelectedProviders) {
-      createParameterPanel([], navCtx.selection.selectedProviders);
+      createParameterPanel([], selectedProviderItems);
     } else {
       createParameterPanel(getSelectedNodes(), []);
     }
@@ -1231,7 +1235,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     if (hasSelectedProviders) {
       const screens: TMenuOptionsScreen[] = [];
 
-      for (const providerId of navCtx.selection.selectedProviders) {
+      for (const providerId of selectedProviderItems) {
         const provider = rosCtx.getProviderById(providerId);
         if (!provider) {
           continue;
@@ -1394,13 +1398,13 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
   };
 
   const handleOpenTerminalOnHostsClick = (options: { external: boolean; openInTerminal: boolean }): void => {
-    for (const providerId of navCtx.selection.selectedProviders) {
+    for (const providerId of selectedProviderItems) {
       createSingleTerminalPanel(CmdTypes.TERMINAL, providerId, "", "", options.external, options.openInTerminal, true);
     }
   };
 
   const handleShutdownRosClick = (options: { killRos2: boolean }): void => {
-    if (navCtx.selection.selectedProviders.length === 1) {
+    if (selectedProviderItems.length === 1) {
       setShutdownRos(options.killRos2 ? "kill ros2" : "only nodes");
     }
   };
@@ -1421,6 +1425,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
       <Box height="100%">
         <HostTreeViewActions
           selectedNodesCount={selectedNodes.length}
+          selectedProviderCount={selectedProviderItems.length}
           hasDynamicReconfigure={hasDynamicReconfigure}
           canUnregisterSelectedNodes={canUnregisterSelectedNodes}
           showButtonsForKeyModifiers={showButtonsForKeyModifiers}
@@ -1515,6 +1520,8 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
             showLoggers={createLoggerPanelFromId}
             startNodes={startNodesFromId}
             stopNodes={stopNodesFromId}
+            setSelectedProviderItems={setSelectedProviderItems}
+            setSelectedNodeItems={setSelectedNodeItems}
           />
 
           {buttonLocation === BUTTON_LOCATIONS.RIGHT && <Box height="100%">{createActions()}</Box>}
@@ -1527,7 +1534,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
           message="Confirm to remove all ros log files."
           onConfirmCallback={() => {
             setRosCleanPurge(false);
-            clearProviderLogs(navCtx.selection.selectedProviders);
+            clearProviderLogs(selectedProviderItems);
           }}
           onCancelCallback={() => {
             setRosCleanPurge(false);
@@ -1761,7 +1768,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
           <DialogContent aria-label="list">
             <DialogContentText id="alert-dialog-description">
-              {`Terminate ROS on "${navCtx.selection.selectedProviders.map((p) => p.split(":")[0])}"`}
+              {`Terminate ROS on "${selectedProviderItems.map((p) => p.split(":")[0])}"`}
             </DialogContentText>
           </DialogContent>
 
@@ -1778,7 +1785,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
               autoFocus
               color="primary"
               onClick={() => {
-                for (const providerId of navCtx.selection.selectedProviders) {
+                for (const providerId of selectedProviderItems) {
                   shutdownProvider(providerId, shutdownRos === "kill ros2");
                 }
                 setShutdownRos("");
