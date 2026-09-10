@@ -1,10 +1,12 @@
+const MAX_LENGTH = 200;
+
 export async function resolveValue(defaultValue: string) {
   try {
     const clip = await navigator.clipboard.readText();
-    const sanitized = sanitizeSnippetValue(clip);
+    const sanitized = sanitizeSnippetValue(clip.slice(0, MAX_LENGTH));
     if (sanitized) return sanitized;
   } catch {
-    /* empty */
+    // clipboard unavailable or permission denied
   }
 
   return defaultValue;
@@ -13,5 +15,9 @@ export async function resolveValue(defaultValue: string) {
 function sanitizeSnippetValue(text: string): string {
   if (!text) return "";
 
-  return text.trim().replace(/\r?\n/g, " ").replace(/"/g, "&quot;").replace(/\$/g, "\\$").replace(/}/g, "\\}");
+  return text
+    .trim()
+    .replace(/\r?\n/g, " ")
+    // Monaco snippet syntax: escape backslash first, then metacharacters
+    .replace(/[\\$}]/g, (ch) => `\\${ch}`);
 }
