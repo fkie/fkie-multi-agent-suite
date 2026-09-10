@@ -16,6 +16,7 @@ import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FileIcon } from "react-file-icon";
 
+import { emitFilterNodes, emitKillNodes, emitShowScreens } from "@/renderer/components/layout/events";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
@@ -29,7 +30,6 @@ import {
   RosNode,
   RosNodeStatus,
 } from "@/renderer/models";
-import { emitFilterNodes, emitKillNodes, emitShowScreens } from "@/renderer/pages/NodeManager/layout/events";
 import { EventNodeDiagnostic, TEventNodeLifecycle } from "@/renderer/providers/events";
 import { EVENT_NODE_DIAGNOSTIC, EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";

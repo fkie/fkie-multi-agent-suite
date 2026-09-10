@@ -18,6 +18,7 @@ import { HTMLAttributes, useCallback, useEffect, useMemo, useState } from "react
 import { useCustomEventListener } from "react-custom-events";
 
 import LaunchFileModal from "@/renderer/components/LaunchFileModal/LaunchFileModal";
+import { LAYOUT_TABS } from "@/renderer/components/layout";
 import TreeDirectory from "@/renderer/components/PackageExplorer/TreeDirectory";
 import { TPackageItemsTree, TPackageTree, TPackageTreeItem } from "@/renderer/components/PackageExplorer/types";
 import { Tag } from "@/renderer/components/UI";
@@ -33,8 +34,7 @@ import { ConnectionState } from "@/renderer/providers";
 import { EventProviderState } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 import { grey } from "@mui/material/colors";
-import { LAYOUT_TABS } from "../layout";
-import { emitSelectTab } from "../layout/events";
+import { emitSelectTab } from "../../../components/layout/events";
 import InfoNoRunningDaemons from "./InfoNoRunningDaemons";
 
 /**

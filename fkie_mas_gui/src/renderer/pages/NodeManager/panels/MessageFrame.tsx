@@ -9,7 +9,7 @@ import { RosQos, TSubscriberEventExt } from "@/renderer/models";
 import { qosFromJson } from "@/renderer/models/RosQos";
 import { findIn } from "@/renderer/utils";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
-import { TEventCollapsedState } from "../layout/events";
+import { TEventCollapsedState } from "../../../components/layout/events";
 
 interface MessageFrameProps {
   event: TSubscriberEventExt;

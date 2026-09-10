@@ -34,16 +34,12 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useDebounceCallback } from "@react-hook/debounce";
 import {
   Action,
   Actions,
   BorderNode,
   DockLocation,
-  // IJsonBorderNode,
   IJsonModel,
-  IJsonRowNode,
-  // IJsonTabSetNode,
   ITabAttributes,
   ITabRenderValues,
   ITabSetRenderValues,
@@ -56,29 +52,8 @@ import React, { useCallback, useContext, useEffect, useRef, useState } from "rea
 import { useCustomEventListener } from "react-custom-events";
 
 // import ExternalAppsModal from "@/renderer/components/ExternalAppsModal/ExternalAppsModal";
+import { LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/components/layout";
 import { DomainFlexLayout } from "@/renderer/components/layout/DomainFlexLayout";
-import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
-import ProviderSelectionModal from "@/renderer/components/SelectionModal/ProviderSelectionModal";
-import { getInfoStateColor } from "@/renderer/components/UI/Colors";
-import DraggablePaper from "@/renderer/components/UI/DraggablePaper";
-import { useAutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
-import { ElectronContext } from "@/renderer/context/ElectronContext";
-import { useAppState } from "@/renderer/hooks/useAppState";
-import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
-import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
-import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
-import { useRosContext } from "@/renderer/hooks/useRosContext";
-import { useSetting } from "@/renderer/hooks/useSetting";
-import { getBaseName, getFileName } from "@/renderer/models";
-import { SaveResult } from "@/renderer/monaco/types";
-import { isEditorEditorId } from "@/renderer/monaco/utils";
-import { Provider } from "@/renderer/providers";
-import { EventProviderAuthRequest } from "@/renderer/providers/events";
-import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
-import { basename } from "@/renderer/utils";
-import { isElectron, openBrowserSite } from "@/renderer/utils/popout";
-import { CmdTypes, InfoStateLevel, TInfoState } from "@/types";
-import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
 import {
   emitCloseComponent,
   emitSelectTab,
@@ -92,10 +67,47 @@ import {
   TEventInfoState,
   TEventOpenComponent,
   TEventSelectTab,
-} from "./layout/events";
-import { pAddTabStickyButton } from "./layout/helpers";
-import { LAYOUT_DOMAIN_TAB_SET, LAYOUT_NO_RUNNING_DAEMONS } from "./layout/LayoutJson";
-import { contentToId, TContentId, TExtTerminalConfig, TLayoutTabConfig } from "./layout/LayoutTabConfig";
+} from "@/renderer/components/layout/events";
+import { pAddTabStickyButton } from "@/renderer/components/layout/helpers";
+import {
+  DEFAULT_LAYOUT,
+  LAYOUT_DOMAIN_TAB_SET,
+  LAYOUT_NO_RUNNING_DAEMONS,
+} from "@/renderer/components/layout/LayoutJson";
+import { findJsonNodeById, hasJsonNode, TJsonNode } from "@/renderer/components/layout/LayoutPersistance";
+import {
+  contentToId,
+  TContentId,
+  TExtTerminalConfig,
+  TLayoutTabConfig,
+} from "@/renderer/components/layout/LayoutTabConfig";
+import {
+  collapseBorderOnLastTab,
+  ensureBorderTabVisible,
+  resolveDockTarget,
+} from "@/renderer/components/layout/LayoutTargets";
+import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
+import ProviderSelectionModal from "@/renderer/components/SelectionModal/ProviderSelectionModal";
+import { getInfoStateColor } from "@/renderer/components/UI/Colors";
+import DraggablePaper from "@/renderer/components/UI/DraggablePaper";
+import { useAutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
+import { ElectronContext } from "@/renderer/context/ElectronContext";
+import { useAppStateNamespace } from "@/renderer/hooks/useAppState";
+import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
+import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
+import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
+import { usePersistentLayout } from "@/renderer/hooks/usePersistentLayout";
+import { useRosContext } from "@/renderer/hooks/useRosContext";
+import { useSetting } from "@/renderer/hooks/useSetting";
+import { getBaseName, getFileName } from "@/renderer/models";
+import { SaveResult } from "@/renderer/monaco/types";
+import { isEditorEditorId } from "@/renderer/monaco/utils";
+import { Provider } from "@/renderer/providers";
+import { EventProviderAuthRequest } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
+import { basename } from "@/renderer/utils";
+import { isElectron, openBrowserSite } from "@/renderer/utils/popout";
+import { CmdTypes, InfoStateLevel, TInfoState } from "@/types";
 import "./NodeManager.css";
 import AboutPanel from "./panels/AboutPanel";
 import ActionIntrospectionPanel from "./panels/ActionIntrospectionPanel";
@@ -121,12 +133,6 @@ import TopicEchoPanel from "./panels/TopicEchoPanel";
 import TopicPublishPanel from "./panels/TopicPublishPanel";
 import TopicsPanel from "./panels/TopicsPanel";
 
-type TPanelId = {
-  id: string;
-  isBorder: boolean;
-  location: DockLocation;
-};
-
 interface ITabAttributesExt extends ITabAttributes {
   toNodeId: string;
 }
@@ -147,16 +153,8 @@ export default function NodeManager(): JSX.Element {
   const [fontSize, setFontSize] = useSetting<number>("fontSize");
   const [ignoreProcessesOnShutdown] = useSetting<string>("ignoreProcessesOnShutdown");
 
-  const { value: layoutJson, set: setLayoutJson } = useAppState<IJsonModel>("layouts", "main", DEFAULT_LAYOUT, {
-    version: 2,
-    migrateFrom: {
-      localStorageKey: "layout",
-    },
-  });
-  const [model, setModel] = useState<Model>(() => Model.fromJson(sanitizeLayout(layoutJson)));
+  const { removeAll: clearLayoutState } = useAppStateNamespace("layouts");
   const layoutRef = useRef<React.ComponentRef<typeof Layout> | null>(null);
-
-  // const [layoutComponents] = useState<Record<string, React.ReactNode>>({});
   const [addToLayout, setAddToLayout] = useState<ITabAttributesExt[]>([]);
   const [dirtyTabs, setDirtyTabs] = useState<string[]>([]);
   const [passwordRequests, setPasswordRequests] = useState<React.ReactNode[]>([]);
@@ -166,6 +164,33 @@ export default function NodeManager(): JSX.Element {
   const [currentInfoState, setCurrentInfoState] = useState<TInfoState | undefined>();
 
   // const [enablePopout, setEnablePopout] = useState<boolean>(!window.commandExecutor);
+
+  // --- keep only well known main-layout tabs ---
+  const keepMainTab = useCallback((tab: TJsonNode): boolean => {
+    const id = tab.id ?? "";
+    if ([LAYOUT_TABS.ABOUT, LAYOUT_TABS.SETTINGS, LAYOUT_TABS.PARAMETER, LAYOUT_TABS.NODES].includes(id)) return false;
+    return LAYOUT_TAB_LIST.includes(id);
+  }, []);
+
+  // --- make sure the center tabset exists and is never empty ---
+  const repairMainLayout = useCallback((json: IJsonModel): IJsonModel => {
+    const center = findJsonNodeById(json.layout as TJsonNode, LAYOUT_TAB_SETS.CENTER);
+    if (!center) {
+      json.layout.children?.push(structuredClone(LAYOUT_DOMAIN_TAB_SET));
+    } else if ((center.children?.length ?? 0) === 0) {
+      center.children = [structuredClone(LAYOUT_NO_RUNNING_DAEMONS) as TJsonNode];
+    }
+    return json;
+  }, []);
+
+  const { model, layoutJson, saveLayout, replaceLayout } = usePersistentLayout({
+    stateKey: "main",
+    defaultLayout: DEFAULT_LAYOUT,
+    version: 2,
+    migrateFromLocalStorageKey: "layout",
+    keepTab: keepMainTab,
+    repairLayout: repairMainLayout,
+  });
 
   const modelRef = useRef<Model>(model);
   useEffect(() => {
@@ -209,84 +234,25 @@ export default function NodeManager(): JSX.Element {
     []
   );
 
-  const hasTab = useCallback((layout: IJsonRowNode, editorId: string): boolean => {
-    if (!layout.children) return false;
-    const found = layout.children.filter((item: IJsonRowNode) => {
-      if (item.type === "tab" && item.id === editorId) {
-        return true;
-      }
-      if (item.children) {
-        return hasTab(item, editorId);
-      }
-      return false;
-    });
-    return found.length > 0;
-  }, []);
-
-  // /** Disable float button if the GUI is not running in a browser */
-  // const updateFloatButton = useCallback(
-  //   (layout: IJsonRowNode | IJsonBorderNode | IJsonTabSetNode): boolean => {
-  //     if (!layout.children) return false;
-  //     let result = false;
-
-  //     // biome-ignore lint/complexity/noForEach: <explanation>
-  //     layout.children.forEach((item) => {
-  //       if (item.type === "tab") {
-  //         if (item.enablePopout !== enablePopout) {
-  //           item.enablePopout = enablePopout;
-  //           result = true;
-  //         }
-  //         if (item.children) {
-  //           if (updateFloatButton(item)) {
-  //             result = true;
-  //           }
-  //         }
-  //       }
-  //     });
-  //     return result;
-  //   },
-  //   [enablePopout]
-  // );
-
   useEffect(() => {
     navCtx.setLayoutModel(model);
   }, [model, navCtx]);
 
-  // useEffect(() => {
-  //   // update float button for all tabs on load or when layoutJson changes
-  //   let changed = updateFloatButton(layoutJson.layout);
-
-  //   for (const border of layoutJson.borders || []) {
-  //     if (updateFloatButton(border)) {
-  //       changed = true;
-  //     }
-  //   }
-  //   for (const layout of layoutJson.layout.children || []) {
-  //     if (updateFloatButton(layout)) {
-  //       changed = true;
-  //     }
-  //   }
-
-  //   if (changed) {
-  //     setLayoutJson(layoutJson);
-  //     setModel(Model.fromJson(layoutJson));
-  //   }
-  // }, [layoutJson]);
-
+  // layout reset
   useEffect(() => {
-    const needsReset = resetLayout || !hasTab(layoutJson.layout, LAYOUT_TABS.DETAILS);
-
+    const needsReset = resetLayout || !hasJsonNode(layoutJson.layout as TJsonNode, LAYOUT_TABS.DETAILS, "tab");
     if (needsReset) {
-      setLayoutJson(structuredClone(DEFAULT_LAYOUT));
-      setModel(Model.fromJson(DEFAULT_LAYOUT));
+      clearLayoutState();
+      replaceLayout(structuredClone(DEFAULT_LAYOUT));
       setResetLayout(false);
       logCtx.success("Layout reset!", "", "layout reset");
     }
-  }, [resetLayout, layoutJson, hasTab, logCtx, setLayoutJson]);
+  }, [resetLayout, layoutJson, replaceLayout, setResetLayout, logCtx, rosCtx]);
 
   /** Hide bottom panel when last terminal is closed and handle editor tabs with unsaved changes */
   const deleteTab = useCallback(
     (tabId: string, fromEvent: boolean = false): void => {
+      if (!model) return;
       // handle editor tabs with modified files
       if (isEditorEditorId(tabId)) {
         const modified = monacoCtx.getModifiedFilesByEditor(tabId);
@@ -318,16 +284,7 @@ export default function NodeManager(): JSX.Element {
       }
 
       // handle tabs in bottom border
-      if (parentNode.getType() === "border") {
-        const borderNode = parentNode as BorderNode;
-        if (borderNode.getLocation().getName() === DockLocation.BOTTOM.getName()) {
-          // if closing last visible bottom tab, select it first to hide border
-          const shouldSelectNewTab = parentNode.getChildren().length === 2 && borderNode.getSelectedNode()?.isVisible();
-          if (shouldSelectNewTab) {
-            model.doAction(Actions.selectTab(tabId));
-          }
-        }
-      }
+      collapseBorderOnLastTab(model, tabId);
 
       // if closing last domain/hosts tab, add info tab first to hide border
       if (
@@ -360,7 +317,6 @@ export default function NodeManager(): JSX.Element {
   useCustomEventListener(
     EVENT_OPEN_COMPONENT,
     (data: TEventOpenComponent) => {
-      console.log(`open component: ${data.id}`);
       // tabs with insideDomainLayout are handled by DomainFlexLayout
       if (data.config?.insideDomainLayout) return;
       const node = modelRef.current.getNodeById(data.id);
@@ -484,107 +440,47 @@ export default function NodeManager(): JSX.Element {
     []
   );
 
-  /** Resolves the BorderNode at the given dock location via its conventional id. */
-  function findBorderByLocation(model: Model, location: DockLocation): BorderNode | undefined {
-    // Border nodes use fixed ids of the form "border_<location>"
-    const node = model.getNodeById(`border_${location.getName()}`);
-    return node instanceof BorderNode ? node : undefined;
-  }
-
-  function getPanelId(id: string, toNodeId: string): TPanelId {
-    const result: TPanelId = {
-      id: toNodeId,
-      isBorder: false,
-      location: DockLocation.CENTER,
-    };
-
-    switch (toNodeId) {
-      case LAYOUT_TAB_SETS.CENTER:
-        result.isBorder = false;
-        break;
-      case LAYOUT_TAB_SETS.BORDER_TOP:
-        result.isBorder = true;
-        result.location = DockLocation.TOP;
-        break;
-      case LAYOUT_TAB_SETS.BORDER_BOTTOM:
-        result.isBorder = true;
-        result.location = DockLocation.BOTTOM;
-        break;
-      case LAYOUT_TAB_SETS.BORDER_RIGHT:
-        result.isBorder = true;
-        result.location = DockLocation.RIGHT;
-        break;
-      default:
-        result.isBorder = false;
-        break;
-    }
-
-    if (result.isBorder) {
-      result.id = findBorderByLocation(modelRef.current, result.location)?.getId() || id;
-    } else {
-      const nodeBId = modelRef.current.getNodeById(toNodeId);
-      if (toNodeId === LAYOUT_TAB_SETS.CENTER && !nodeBId) {
-        // no center panel group found, reset layout
-        setLayoutJson(structuredClone(DEFAULT_LAYOUT));
-      }
-      if (nodeBId && LAYOUT_TAB_LIST.includes(nodeBId.getId())) {
-        result.id = nodeBId.getParent()?.getId() || id;
-      }
-    }
-
-    return result;
-  }
-
   // Add tabs to layout after EVENT_OPEN_COMPONENT was received
   useEffect(() => {
-    if (addToLayout.length > 0) {
-      const newAddToLayout = [...addToLayout];
-      const tab = newAddToLayout.pop();
-      if (tab?.id) {
-        const node = modelRef.current.getNodeById(tab.id);
-        if (node) {
-          return;
-        }
-        const panelId = getPanelId(tab.id || "", tab.toNodeId);
+    if (addToLayout.length === 0) return;
+    const newAddToLayout = [...addToLayout];
+    const tab = newAddToLayout.pop();
+    if (tab?.id) {
+      const node = modelRef.current.getNodeById(tab.id);
+      if (node) {
+        return;
+      }
+      const target = resolveDockTarget(modelRef.current, tab.toNodeId);
+      if (!target) return;
 
-        // store current selected tab in CENTER
-        const isDomainCenterTab = tab.component === LAYOUT_TABS.DOMAIN && panelId.id === LAYOUT_TAB_SETS.CENTER;
-        let previouslySelectedTabId: string | undefined;
-        if (isDomainCenterTab) {
-          const ts = modelRef.current.getNodeById(LAYOUT_TAB_SETS.CENTER) as TabSetNode | undefined;
-          if (ts) {
-            // const children = ts.getChildren();
-            previouslySelectedTabId = ts.getSelectedNode()?.getId();
-            if (previouslySelectedTabId === LAYOUT_TABS.NO_RUNNING_DAEMONS) previouslySelectedTabId = undefined;
-          }
-        }
-
-        console.log(`add tab: ${tab.id}, to panel: ${panelId.id}`);
-        const action = Actions.addTab(tab, panelId.id, DockLocation.CENTER, -1);
-        modelRef.current.doAction(action);
-
-        if (panelId.isBorder) {
-          // If any tab in same border is visible, selecting the new tab can hide it
-          const border = findBorderByLocation(modelRef.current, panelId.location);
-
-          const hasVisible = border?.getChildren().some((c) => (c as TabNode).isVisible());
-
-          if (!hasVisible && border?.getChildren().length) {
-            const editorId = border.getChildren().slice(-1)[0].getId();
-            modelRef.current.doAction(Actions.selectTab(editorId));
-          }
-        }
-        // select previously selected
-        if (isDomainCenterTab && previouslySelectedTabId) {
-          modelRef.current.doAction(Actions.selectTab(previouslySelectedTabId));
-        }
-        if (tab.toNodeId === LAYOUT_TAB_SETS.CENTER) {
-          // hide info tab if domain tab was added
-          deleteTab(LAYOUT_TABS.NO_RUNNING_DAEMONS);
+      // store current selected tab in CENTER
+      const isDomainCenterTab = tab.component === LAYOUT_TABS.DOMAIN && target.id === LAYOUT_TAB_SETS.CENTER;
+      let previouslySelectedTabId: string | undefined;
+      if (isDomainCenterTab) {
+        const ts = modelRef.current.getNodeById(LAYOUT_TAB_SETS.CENTER) as TabSetNode | undefined;
+        if (ts) {
+          // const children = ts.getChildren();
+          previouslySelectedTabId = ts.getSelectedNode()?.getId();
+          if (previouslySelectedTabId === LAYOUT_TABS.NO_RUNNING_DAEMONS) previouslySelectedTabId = undefined;
         }
       }
-      setAddToLayout((prev) => prev.filter((t) => t.id !== tab?.id));
+
+      console.log(`add tab: ${tab.id}, to panel: ${target}`);
+      modelRef.current.doAction(Actions.addTab(tab, target.id, DockLocation.CENTER, -1));
+
+      if (target.isBorder) {
+        ensureBorderTabVisible(modelRef.current, target.location);
+      }
+      // select previously selected
+      if (isDomainCenterTab && previouslySelectedTabId) {
+        modelRef.current.doAction(Actions.selectTab(previouslySelectedTabId));
+      }
+      if (tab.toNodeId === LAYOUT_TAB_SETS.CENTER) {
+        // hide info tab if domain tab was added
+        deleteTab(LAYOUT_TABS.NO_RUNNING_DAEMONS);
+      }
     }
+    setAddToLayout((prev) => prev.filter((t) => t.id !== tab?.id));
   }, [addToLayout]);
 
   function factory(node: TabNode, contentId?: TContentId): JSX.Element {
@@ -1137,29 +1033,31 @@ export default function NodeManager(): JSX.Element {
         );
       }
 
-      // add settings tab button in bottom border
-      pAddTabStickyButton({
-        model: model,
-        container: renderValues.buttons,
-        id: LAYOUT_TABS.SETTINGS,
-        title: "Settings",
-        component: LAYOUT_TABS.SETTINGS,
-        setId: LAYOUT_TAB_SETS.CENTER,
-        icon: <SettingsIcon sx={{ fontSize: "inherit" }} />,
-        force: true,
-      });
+      if (model) {
+        // add settings tab button in bottom border
+        pAddTabStickyButton({
+          model: model,
+          container: renderValues.buttons,
+          id: LAYOUT_TABS.SETTINGS,
+          title: "Settings",
+          component: LAYOUT_TABS.SETTINGS,
+          setId: LAYOUT_TAB_SETS.CENTER,
+          icon: <SettingsIcon sx={{ fontSize: "inherit" }} />,
+          force: true,
+        });
 
-      // add about tab button in bottom border
-      pAddTabStickyButton({
-        model: model,
-        container: renderValues.buttons,
-        id: LAYOUT_TABS.ABOUT,
-        title: "About",
-        component: LAYOUT_TABS.ABOUT,
-        setId: LAYOUT_TAB_SETS.CENTER,
-        icon: <InfoOutlinedIcon sx={{ fontSize: "inherit" }} />,
-        force: true,
-      });
+        // add about tab button in bottom border
+        pAddTabStickyButton({
+          model: model,
+          container: renderValues.buttons,
+          id: LAYOUT_TABS.ABOUT,
+          title: "About",
+          component: LAYOUT_TABS.ABOUT,
+          setId: LAYOUT_TAB_SETS.CENTER,
+          icon: <InfoOutlinedIcon sx={{ fontSize: "inherit" }} />,
+          force: true,
+        });
+      }
 
       // add update button in bottom border
       if (auCtx.updateAvailable) {
@@ -1192,100 +1090,6 @@ export default function NodeManager(): JSX.Element {
         );
       }
     }
-  }
-
-  function removeGenericTabs(parent: { children?: IJsonRowNode[]; selected?: number }): IJsonRowNode {
-    if (!parent.children) return parent;
-
-    // if tabs are removed, selection index may become invalid
-    if (parent.selected !== undefined) {
-      parent.selected = undefined;
-    }
-
-    parent.children = parent.children.filter(
-      (item: { children?: IJsonRowNode[]; selected?: number; type?: string; id?: string }) => {
-        // do not store Settings, About and Parameter tabs
-        if (
-          item.type === "tab" &&
-          item.id !== LAYOUT_TABS.ABOUT &&
-          item.id !== LAYOUT_TABS.SETTINGS &&
-          item.id !== LAYOUT_TABS.PARAMETER &&
-          item.id !== LAYOUT_TABS.NODES &&
-          LAYOUT_TAB_LIST.includes(item.id)
-          // (LAYOUT_TAB_LIST.includes(item.id) || item.id?.startsWith(LAYOUT_TABS.DOMAIN))
-        ) {
-          return true;
-        }
-        if (item.children) {
-          removeGenericTabs(item);
-          if (item.id === LAYOUT_TAB_SETS.CENTER && (item.children?.length || 0) === 0) {
-            item.children?.push(structuredClone(LAYOUT_NO_RUNNING_DAEMONS));
-          }
-          return true;
-        }
-        return false;
-      }
-    );
-
-    return parent;
-  }
-
-  /** Recursively checks whether a tabset with the given id exists anywhere in the tree */
-  function hasTabSetWithId(node: { id?: string; type?: string; children?: IJsonRowNode[] }, id: string): boolean {
-    if (node.type === "tabset" && node.id === id) return true;
-    if (!node.children) return false;
-    return node.children.some((child) => hasTabSetWithId(child, id));
-  }
-
-  /** Remove generic tabs */
-  const cleanAndSaveLayout = useDebounceCallback(() => {
-    const modelJson = modelRef.current.toJson();
-
-    for (const item of modelJson.borders || []) {
-      item.selected = -1;
-      removeGenericTabs(item);
-    }
-
-    modelJson.layout = removeGenericTabs(modelJson.layout);
-
-    // search recursively instead of only flat
-    const foundDomainSet = hasTabSetWithId(modelJson.layout, LAYOUT_TAB_SETS.CENTER);
-
-    if (!foundDomainSet) {
-      modelJson.layout.children?.push(structuredClone(LAYOUT_DOMAIN_TAB_SET));
-    }
-
-    setLayoutJson(modelJson);
-  }, 500);
-
-  /** Removes/repairs duplicate ids in the layout JSON, keeping the first "main" */
-  function sanitizeLayout(json: IJsonModel): IJsonModel {
-    // deep clone first, so shared object references can no longer collide
-    const cloned: IJsonModel = structuredClone(json);
-    const seen = new Set<string>();
-
-    const walk = (node: { id?: string; type?: string; children?: IJsonRowNode[] }): void => {
-      if (node.id) {
-        if (seen.has(node.id)) {
-          // duplicate: assign a new unique id
-          node.id = `#dup-${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
-          seen.add(node.id); // register the new id as well, to be safe
-        } else {
-          seen.add(node.id);
-        }
-      }
-      if (node.children) {
-        for (const child of node.children) {
-          walk(child);
-        }
-      }
-    };
-
-    for (const border of cloned.borders || []) {
-      walk(border);
-    }
-    walk(cloned.layout);
-    return cloned;
   }
 
   const isInstallUpdateRequested = useCallback(() => {
@@ -1327,7 +1131,7 @@ export default function NodeManager(): JSX.Element {
       console.log("Quit app");
       electronCtx.shutdownManager?.quitGui();
     },
-    [electronCtx]
+    [electronCtx, ignoreProcessesOnShutdown]
   );
 
   function onKeyDown(event: React.KeyboardEvent): void {
@@ -1363,7 +1167,7 @@ export default function NodeManager(): JSX.Element {
 
     // close tabs that were successfully saved
     for (const editorId of allTabs) {
-      if (!failedTabs.has(editorId)) {
+      if (modelRef.current && !failedTabs.has(editorId)) {
         modelRef.current.doAction(Actions.deleteTab(editorId));
       }
     }
@@ -1407,9 +1211,9 @@ export default function NodeManager(): JSX.Element {
         }}
         onRenderTab={onRenderTab}
         onRenderTabSet={onRenderTabSet}
-        onModelChange={(_model, _action) => {
+        onModelChange={(model, _action) => {
           if (![Actions.SELECT_TAB, Actions.SET_ACTIVE_TABSET].includes(_action.type)) {
-            cleanAndSaveLayout();
+            saveLayout(model);
           }
         }}
         onContextMenu={(node) => {

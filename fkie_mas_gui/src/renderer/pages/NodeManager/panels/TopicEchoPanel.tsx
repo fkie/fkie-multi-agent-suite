@@ -9,18 +9,18 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import {
-  Alert,
-  Button,
-  Divider,
-  IconButton,
-  Menu,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  ToggleButton,
-  Tooltip,
-  Typography,
+    Alert,
+    Button,
+    Divider,
+    IconButton,
+    Menu,
+    MenuItem,
+    Paper,
+    Select,
+    Stack,
+    ToggleButton,
+    Tooltip,
+    Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
@@ -36,7 +36,7 @@ import { RosNode, RosQos, SubscriberFilter, TSubscriberEventExt } from "@/render
 import { Provider } from "@/renderer/providers";
 import { EventProviderSubscriberEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_SUBSCRIBER_EVENT_PREFIX } from "@/renderer/providers/eventTypes";
-import { TEventCollapsedState } from "../layout/events";
+import { TEventCollapsedState } from "../../../components/layout/events";
 import MessageFrame from "./MessageFrame";
 
 interface TopicEchoPanelProps {

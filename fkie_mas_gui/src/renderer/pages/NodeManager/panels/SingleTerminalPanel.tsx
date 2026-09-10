@@ -9,7 +9,7 @@ import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 import { ConnectionState, EventProviderState } from "@/renderer/providers/events";
 import { CmdType, CmdTypes, TEnvEntry } from "@/types";
 import { useCustomEventListener } from "react-custom-events";
-import { emitCloseComponent } from "../layout/events";
+import { emitCloseComponent } from "../../../components/layout/events";
 
 interface SingleTerminalPanelProps {
   id: string;

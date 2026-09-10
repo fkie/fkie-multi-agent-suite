@@ -1,4 +1,4 @@
-import { emitCloseComponent, emitEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
+import { emitCloseComponent, emitEditorSelectRange } from "@/renderer/components/layout/events";
 
 export function setupEditorWindowBridge() {
   window.editorManager?.onFileRange((editorId, filePath, fileRange, launchArgs, selectParameter) => {

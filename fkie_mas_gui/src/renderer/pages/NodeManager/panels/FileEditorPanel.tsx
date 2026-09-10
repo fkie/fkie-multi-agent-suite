@@ -10,6 +10,11 @@ import "split-pane-react/esm/themes/default.css";
 
 import { AlertsBar, EditorSidebar, EditorToolbar, THistoryModel } from "@/renderer/components/FileEditorPanel";
 import { PendingEditStyles } from "@/renderer/components/FileEditorPanel/PendingEditStyles";
+import {
+  emitCloseComponent,
+  EVENT_EDITOR_SELECT_RANGE,
+  TEventEditorSelectRange,
+} from "@/renderer/components/layout/events";
 import { useEditorKeyboard } from "@/renderer/hooks/editor/useEditorKeyboard";
 import { useEditorLayout } from "@/renderer/hooks/editor/useEditorLayout";
 import { usePendingParameterEdit } from "@/renderer/hooks/editor/usePendingParameterEdit";
@@ -22,11 +27,6 @@ import { locateNodeParameter } from "@/renderer/monaco/ParameterEditing";
 import { cleanUpXmlComment } from "@/renderer/monaco/setup";
 import { TModelResult } from "@/renderer/monaco/types";
 import { createEditorId, createUriPath, fileFromUriPath } from "@/renderer/monaco/utils";
-import {
-  emitCloseComponent,
-  EVENT_EDITOR_SELECT_RANGE,
-  TEventEditorSelectRange,
-} from "@/renderer/pages/NodeManager/layout/events";
 import { Provider } from "@/renderer/providers";
 import { EventProviderLaunchLoaded, EventProviderPathEvent } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_LAUNCH_LOADED, EVENT_PROVIDER_PATH_EVENT } from "@/renderer/providers/eventTypes";

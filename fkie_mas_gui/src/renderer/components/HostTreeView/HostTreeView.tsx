@@ -4,13 +4,13 @@ import { SimpleTreeView } from "@mui/x-tree-view";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
+import { LAYOUT_TABS } from "@/renderer/components/layout";
+import { emitOpenComponent } from "@/renderer/components/layout/events";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { getFileName, LaunchContent, LaunchFile, RosNode, RosNodeStatus } from "@/renderer/models";
-import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
-import { emitOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import InfoNoRunningDaemons from "@/renderer/pages/NodeManager/panels/InfoNoRunningDaemons";
 import { Provider } from "@/renderer/providers";
 import { EVENT_PROVIDER_LAUNCH_LOADED } from "@/renderer/providers/eventTypes";

@@ -22,8 +22,8 @@ import { useSetting } from "@/renderer/hooks/useSetting";
 import { TopicExtendedInfo } from "@/renderer/models";
 import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import { findIn } from "@/renderer/utils/index";
-import { EVENT_FILTER_TOPICS, TFilterText } from "../layout/events";
-import { TContentId } from "../layout/LayoutTabConfig";
+import { TContentId } from "../../../components/layout/LayoutTabConfig";
+import { EVENT_FILTER_TOPICS, TFilterText } from "../../../components/layout/events";
 
 type TTreeItem = {
   groupKey: string;

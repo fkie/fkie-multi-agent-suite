@@ -1,7 +1,7 @@
+import { TLayoutTabConfig } from "@/renderer/components/layout/LayoutTabConfig";
 import { RosNode } from "@/renderer/models";
 import { InfoStateLevel, TFileRange, TInfoState, TLaunchArg, TParameterRequest } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
-import { TLayoutTabConfig } from "./LayoutTabConfig";
 
 export const EVENT_CLOSE_COMPONENT = "EVENT_CLOSE_COMPONENT" as const;
 export const EVENT_OPEN_COMPONENT = "EVENT_OPEN_COMPONENT" as const;

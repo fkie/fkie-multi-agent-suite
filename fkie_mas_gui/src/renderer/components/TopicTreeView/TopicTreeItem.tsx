@@ -4,6 +4,8 @@ import { grey } from "@mui/material/colors";
 import { alpha } from "@mui/material/styles";
 import { useCallback, useEffect, useState } from "react";
 
+import { LAYOUT_TABS } from "@/renderer/components/layout";
+import { emitOpenComponent } from "@/renderer/components/layout/events";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
@@ -11,8 +13,6 @@ import { useSetting } from "@/renderer/hooks/useSetting";
 import { IncompatibleQos, TopicExtendedInfo } from "@/renderer/models";
 import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
-import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
-import { emitOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { removeDDSuid } from "@/renderer/utils/index";
 
 interface TopicTreeItemProps {

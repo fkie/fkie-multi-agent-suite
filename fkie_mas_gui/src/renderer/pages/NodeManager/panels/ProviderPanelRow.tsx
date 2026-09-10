@@ -29,6 +29,7 @@ import { useCallback, useMemo, useReducer, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import semver from "semver";
 
+import { LAYOUT_TABS } from "@/renderer/components/layout";
 import { useAutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
@@ -43,8 +44,7 @@ import {
   EVENT_PROVIDER_WARNINGS,
 } from "@/renderer/providers/eventTypes";
 import { CmdTypes } from "@/types";
-import { LAYOUT_TABS } from "../layout";
-import { emitSelectTab } from "../layout/events";
+import { emitSelectTab } from "../../../components/layout/events";
 import { EMenuProvider } from "./OverflowMenuProvider";
 
 interface ProviderPanelRowProps {

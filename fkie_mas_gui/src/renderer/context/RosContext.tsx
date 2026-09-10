@@ -9,6 +9,7 @@ import {
   RestartNodesAlertComponent,
   colorFromHostname,
 } from "@/renderer/components/UI";
+import { LAYOUT_TABS, LAYOUT_TAB_SETS } from "@/renderer/components/layout";
 import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
@@ -50,10 +51,9 @@ import {
   EventProviderWarnings,
 } from "@/renderer/providers/events";
 import { TResult, TRosInfo, TSystemInfo } from "@/types";
+import { emitCloseComponent, emitOpenComponent } from "../components/layout/events";
 import { useSetting } from "../hooks/useSetting";
 import { TProviderLaunchParams } from "../models/ProviderLaunchConfiguration";
-import { LAYOUT_TABS, LAYOUT_TAB_SETS } from "../pages/NodeManager/layout";
-import { emitCloseComponent, emitOpenComponent } from "../pages/NodeManager/layout/events";
 import { LAUNCH_FILE_EXTENSIONS, getDefaultPortFromRos } from "./SettingsContext";
 
 // ─────────────────────────────────────────────

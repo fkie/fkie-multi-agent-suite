@@ -1,10 +1,11 @@
 import { Model } from "flexlayout-react";
 import React, { createContext, useCallback, useMemo, useState } from "react";
 
+import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/components/layout";
+import { emitEditorSelectRange, emitOpenComponent } from "@/renderer/components/layout/events";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { getBaseName, LaunchNodeInfo } from "@/renderer/models";
-import { emitEditorSelectRange, emitOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { xor } from "@/renderer/utils/index";
 import {
   CmdType,
@@ -20,7 +21,6 @@ import { TServiceConfig } from "@/types/ServiceManager";
 import { TTerminalConfig } from "@/types/TerminalManager";
 import { useSetting } from "../hooks/useSetting";
 import { createEditorId } from "../monaco/utils";
-import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "../pages/NodeManager/layout";
 import { isElectron, openBrowserSite } from "../utils/popout";
 
 export type TNavSelection = {
@@ -226,7 +226,7 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         component: LAYOUT_TABS.EDITOR,
         toNodeId: LAYOUT_TAB_SETS[editorOpenLocation],
         config: {
-          contentId: { domainId: provider.connection.domainId},
+          contentId: { domainId: provider.connection.domainId },
           insideDomainLayout: true,
           openExternal: true,
           editorConfig: editorProps,
@@ -349,6 +349,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         component: LAYOUT_TABS.TOPIC_PUBLISHER,
         toNodeId: LAYOUT_TAB_SETS[publisherOpenLocation],
         config: {
+          insideDomainLayout: true,
+          contentId: { domainId: provider.connection.domainId },
           openExternal: true,
           publisherConfig: publisherProps,
         },
@@ -417,6 +419,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         component: LAYOUT_TABS.TOPIC_ECHO,
         toNodeId: LAYOUT_TAB_SETS[subscriberOpenLocation],
         config: {
+          insideDomainLayout: true,
+          contentId: { domainId: provider.connection.domainId },
           openExternal: true,
           subscriberConfig: subscriberProps,
         },
@@ -480,6 +484,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         component: LAYOUT_TABS.SERVICE_CALLER,
         toNodeId: LAYOUT_TAB_SETS.BORDER_RIGHT,
         config: {
+          insideDomainLayout: true,
+          contentId: { domainId: provider.connection.domainId },
           openExternal: true,
           serviceCallerConfig: serviceProps,
         },
@@ -524,6 +530,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         component: LAYOUT_TABS.SERVICE_INTROSPECTION,
         toNodeId: LAYOUT_TAB_SETS.BORDER_RIGHT,
         config: {
+          insideDomainLayout: true,
+          contentId: { domainId: provider.connection.domainId },
           openExternal: true,
           serviceIntrospectionConfig: serviceProps,
         },
@@ -568,6 +576,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         component: LAYOUT_TABS.ACTION_SEND_GOAL,
         toNodeId: LAYOUT_TAB_SETS.BORDER_RIGHT,
         config: {
+          insideDomainLayout: true,
+          contentId: { domainId: provider.connection.domainId },
           openExternal: true,
           actionConfig: serviceProps,
         },
@@ -612,6 +622,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         component: LAYOUT_TABS.ACTION_INTROSPECTION,
         toNodeId: LAYOUT_TAB_SETS.BORDER_RIGHT,
         config: {
+          insideDomainLayout: true,
+          contentId: { domainId: provider.connection.domainId },
           openExternal: true,
           actionIntrospectionConfig: serviceProps,
         },
@@ -691,6 +703,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         component: LAYOUT_TABS.TERMINAL,
         toNodeId: LAYOUT_TAB_SETS.BORDER_BOTTOM,
         config: {
+          insideDomainLayout: true,
+          contentId: { domainId: provider.connection.domainId },
           openExternal: !noPopout,
           terminalType: type,
           terminalConfig: terminalProps,

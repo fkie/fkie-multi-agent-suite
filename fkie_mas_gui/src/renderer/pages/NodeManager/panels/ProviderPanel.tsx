@@ -24,6 +24,7 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
+import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/components/layout";
 import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
 import { DraggablePaper } from "@/renderer/components/UI";
 import SearchBar from "@/renderer/components/UI/SearchBar";
@@ -37,8 +38,7 @@ import { RmwSelection, TProviderLaunchParams, ZenohEnvSelection } from "@/render
 import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 import Provider, { generateProviderId } from "@/renderer/providers/Provider";
 import { isElectron } from "@/renderer/utils/popout";
-import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "../layout";
-import { emitOpenComponent } from "../layout/events";
+import { emitOpenComponent } from "../../../components/layout/events";
 import ProviderPanelRow from "./ProviderPanelRow";
 import ProviderPanelRowCfg from "./ProviderPanelRowCfg";
 
@@ -206,7 +206,7 @@ export default function ProviderPanel(): JSX.Element {
 
     for (const ws of doJoinWs) {
       const [host, portStr] = ws.split(":");
-      const port = Number.parseInt(portStr)
+      const port = Number.parseInt(portStr);
       if (host && port) {
         const config = new ProviderLaunchConfiguration();
         config.params.host = host;
@@ -259,7 +259,7 @@ export default function ProviderPanel(): JSX.Element {
                     undefined
                   );
                   newProvider.triggeredByAutoConnect = true;
-                  newProvider.additionInfo = "Discovered from process"
+                  newProvider.additionInfo = "Discovered from process";
                   rosCtx.connectToProvider(newProvider);
                 }
               }
@@ -342,7 +342,7 @@ export default function ProviderPanel(): JSX.Element {
 
   useEffect(() => {
     // hide hint dialog if join or start argument was provided
-    if (cliCtx.getArgument("join") || cliCtx.getArgument("start") ||  cliCtx.getArgument("join-ws")) {
+    if (cliCtx.getArgument("join") || cliCtx.getArgument("start") || cliCtx.getArgument("join-ws")) {
       setOpenHintDialog(false);
     }
   }, [cliCtx.updatedArgs]);

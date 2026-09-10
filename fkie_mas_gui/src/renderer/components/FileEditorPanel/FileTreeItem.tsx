@@ -3,18 +3,18 @@ import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
 import { alpha, styled } from "@mui/material/styles";
 import {
-  TreeItem,
-  treeItemClasses,
-  TreeItemSlotProps,
-  UseTreeItemContentSlotOwnProps,
-  UseTreeItemIconContainerSlotOwnProps,
+    TreeItem,
+    treeItemClasses,
+    TreeItemSlotProps,
+    UseTreeItemContentSlotOwnProps,
+    UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React from "react";
 import { FileIcon } from "react-file-icon";
 
+import { emitEditorSelectRange } from "@/renderer/components/layout/events";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { getFileExtension, getFileName } from "@/renderer/models";
-import { emitEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
 import { TLaunchArg } from "@/types";
 import fileIconStyles from "../../monaco/setup/FileIconStyles";
 import { TLaunchIncludeItem } from "./types";

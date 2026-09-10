@@ -2,7 +2,7 @@ import { IJsonBorderNode, IJsonModel } from "flexlayout-react";
 
 import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "./LayoutDefines";
 
-interface IJsonBorderNodeExt extends IJsonBorderNode {
+export interface IJsonBorderNodeExt extends IJsonBorderNode {
   id: string;
 }
 

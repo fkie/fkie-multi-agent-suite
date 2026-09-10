@@ -1,7 +1,7 @@
 import * as MonacoReact from "@monaco-editor/react";
 import { editor, IDisposable, Uri } from "monaco-editor";
 
-import { emitEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
+import { emitEditorSelectRange } from "@/renderer/components/layout/events";
 import { fileFromUriPath } from "../utils";
 
 export function configureContextMenu(

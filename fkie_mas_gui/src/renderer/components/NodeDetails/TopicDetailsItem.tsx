@@ -7,6 +7,8 @@ import { alpha } from "@mui/material/styles";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
+import { LAYOUT_TABS } from "@/renderer/components/layout";
+import { emitOpenComponent } from "@/renderer/components/layout/events";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
@@ -14,8 +16,6 @@ import { useSetting } from "@/renderer/hooks/useSetting";
 import { RosTopic, RosTopicId, TopicExtendedInfo } from "@/renderer/models";
 import { durabilityToString, livelinessToString, reliabilityToString } from "@/renderer/models/RosQos";
 import { EndpointExtendedInfo } from "@/renderer/models/TopicExtendedInfo";
-import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
-import { emitOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import { EVENT_PROVIDER_ROS_TOPICS } from "@/renderer/providers/eventTypes";
 import { removeDDSuid } from "@/renderer/utils";
 import { CopyButton } from "../UI";

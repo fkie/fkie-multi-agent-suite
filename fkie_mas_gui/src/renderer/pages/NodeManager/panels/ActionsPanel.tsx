@@ -17,7 +17,7 @@ import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { EVENT_PROVIDER_ROS_SERVICES } from "@/renderer/providers/eventTypes";
 import { findIn } from "@/renderer/utils/index";
-import { TContentId } from "../layout/LayoutTabConfig";
+import { TContentId } from "../../../components/layout/LayoutTabConfig";
 
 type TTreeItem = {
   groupKey: string;

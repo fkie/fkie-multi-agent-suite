@@ -4,34 +4,34 @@ import LinkIcon from "@mui/icons-material/Link";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import WatchLaterIcon from "@mui/icons-material/WatchLater";
 import {
-  Box,
-  ClickAwayListener,
-  Grow,
-  IconButton,
-  MenuItem,
-  MenuList,
-  Paper,
-  Popper,
-  Stack,
-  Tooltip,
-  Typography,
+    Box,
+    ClickAwayListener,
+    Grow,
+    IconButton,
+    MenuItem,
+    MenuList,
+    Paper,
+    Popper,
+    Stack,
+    Tooltip,
+    Typography,
 } from "@mui/material";
 import { green, grey, orange, red } from "@mui/material/colors";
 import {
-  treeItemClasses,
-  TreeItemSlotProps,
-  UseTreeItemContentSlotOwnProps,
-  UseTreeItemIconContainerSlotOwnProps,
+    treeItemClasses,
+    TreeItemSlotProps,
+    UseTreeItemContentSlotOwnProps,
+    UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { useCallback, useState } from "react";
 
+import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/components/layout";
+import { emitOpenComponent } from "@/renderer/components/layout/events";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { RosNode, RosNodeStatus } from "@/renderer/models";
-import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
-import { emitOpenComponent } from "@/renderer/pages/NodeManager/layout/events";
 import Provider from "@/renderer/providers/Provider";
 import { generateUniqueId } from "@/renderer/utils";
 import { CmdTypes, TTag } from "@/types";

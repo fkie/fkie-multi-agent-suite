@@ -1,12 +1,12 @@
 import {
-  Alert,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Stack,
+    Alert,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Stack,
 } from "@mui/material";
 import * as monaco from "monaco-editor";
 import { useCallback, useEffect, useState } from "react";
@@ -19,9 +19,9 @@ import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { SaveResult } from "@/renderer/monaco/types";
 import { TFileRange, TLaunchArg, TParameterRequest } from "@/types";
+import { EVENT_CLOSE_COMPONENT } from "../../components/layout/events";
 import DraggablePaper from "../../components/UI/DraggablePaper";
 import { getBaseName, getFileName } from "../../models";
-import { EVENT_CLOSE_COMPONENT } from "../../pages/NodeManager/layout/events";
 import FileEditorPanel from "../../pages/NodeManager/panels/FileEditorPanel";
 import EditorProvider from "../../providers/EditorProvider";
 

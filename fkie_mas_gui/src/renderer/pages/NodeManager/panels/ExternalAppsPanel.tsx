@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { Provider } from "@/renderer/providers";
-import { contentToId, TContentId } from "../layout/LayoutTabConfig";
+import { contentToId, TContentId } from "../../../components/layout/LayoutTabConfig";
 
 type RowType = {
   id: string;

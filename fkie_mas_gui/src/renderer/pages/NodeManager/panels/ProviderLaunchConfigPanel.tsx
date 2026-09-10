@@ -6,20 +6,20 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import {
-  Autocomplete,
-  Box,
-  Button,
-  Checkbox,
-  Divider,
-  FormControlLabel,
-  FormGroup,
-  Link,
-  Radio,
-  RadioGroup,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography,
+    Autocomplete,
+    Box,
+    Button,
+    Checkbox,
+    Divider,
+    FormControlLabel,
+    FormGroup,
+    Link,
+    Radio,
+    RadioGroup,
+    Stack,
+    TextField,
+    Tooltip,
+    Typography,
 } from "@mui/material";
 import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
@@ -34,19 +34,19 @@ import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 import {
-  CYCLONE_ALLOW_MULTICAST,
-  CYCLONE_MAX_PARTICIPANTS,
-  CYCLONE_SELECTIONS,
-  CycloneAllowMulticast,
-  CycloneEnvSelection,
-  CycloneMaxParticipants,
-  RMW_SELECTIONS,
-  RmwSelection,
-  TProviderLaunchParams,
-  ZENOH_SELECTIONS,
-  ZenohEnvSelection,
+    CYCLONE_ALLOW_MULTICAST,
+    CYCLONE_MAX_PARTICIPANTS,
+    CYCLONE_SELECTIONS,
+    CycloneAllowMulticast,
+    CycloneEnvSelection,
+    CycloneMaxParticipants,
+    RMW_SELECTIONS,
+    RmwSelection,
+    TProviderLaunchParams,
+    ZENOH_SELECTIONS,
+    ZenohEnvSelection,
 } from "@/renderer/models/ProviderLaunchConfiguration";
-import { emitCloseComponent } from "../layout/events";
+import { emitCloseComponent } from "../../../components/layout/events";
 
 const AccordionAdv = styled((props: AccordionProps) => <MuiAccordion disableGutters elevation={0} square {...props} />)(
   ({ theme }) => ({

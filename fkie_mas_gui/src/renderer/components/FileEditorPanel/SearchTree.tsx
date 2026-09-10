@@ -7,10 +7,10 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import { editor } from "monaco-editor";
 import { useEffect, useMemo, useState } from "react";
 
+import { emitEditorSelectRange } from "@/renderer/components/layout/events";
 import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
 import { getFileName, LaunchIncludedFile } from "@/renderer/models";
 import { createUriPath } from "@/renderer/monaco/utils";
-import { emitEditorSelectRange } from "@/renderer/pages/NodeManager/layout/events";
 import { Provider } from "@/renderer/providers";
 import { SearchFileTreeItem, SearchResultTreeItem } from "./SearchTreeItem";
 import { TSearchResult } from "./types";

@@ -21,6 +21,16 @@ import { useCustomEventListener } from "react-custom-events";
 
 import HostTreeView from "@/renderer/components/HostTreeView/HostTreeView";
 import HostTreeViewActions from "@/renderer/components/HostTreeView/HostTreeViewActions";
+import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/components/layout";
+import {
+  emitOpenComponent,
+  EVENT_FILTER_NODES,
+  EVENT_KILL_NODES,
+  EVENT_SHOW_SCREENS,
+  TEventId,
+  TEventKillNodes,
+  TEventShowScreens,
+} from "@/renderer/components/layout/events";
 import ConfirmModal from "@/renderer/components/SelectionModal/ConfirmModal";
 import ListSelectionModal from "@/renderer/components/SelectionModal/ListSelectionModal";
 import MapSelectionModal, { MapSelectionItem } from "@/renderer/components/SelectionModal/MapSelectionModal";
@@ -33,22 +43,12 @@ import useQueue from "@/renderer/hooks/useQueue";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
-import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
-import {
-  emitOpenComponent,
-  EVENT_FILTER_NODES,
-  EVENT_KILL_NODES,
-  EVENT_SHOW_SCREENS,
-  TEventId,
-  TEventKillNodes,
-  TEventShowScreens,
-} from "@/renderer/pages/NodeManager/layout/events";
 import { ConnectionState, EventProviderRestartNodes } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_RESTART_NODES } from "@/renderer/providers/eventTypes";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
 import { findIn } from "@/renderer/utils/index";
 import { CmdType, CmdTypes, TFileRange } from "@/types";
-import { contentToId, TContentId } from "../layout/LayoutTabConfig";
+import { contentToId, TContentId } from "../../../components/layout/LayoutTabConfig";
 
 type TProviderNodes = {
   providerId: string;
