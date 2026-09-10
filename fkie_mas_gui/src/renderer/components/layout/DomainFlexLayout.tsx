@@ -12,9 +12,11 @@ import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { LAYOUT_TABS } from "@/renderer/pages/NodeManager/layout";
 import {
+  EVENT_CLOSE_COMPONENT,
   EVENT_OPEN_COMPONENT,
   EVENT_SELECT_TAB,
   EVENT_TOGGLE_COMPONENT,
+  TEventId,
   TEventOpenComponent,
   TEventSelectTab,
 } from "@/renderer/pages/NodeManager/layout/events";
@@ -432,6 +434,15 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
       model.doAction(FlexLayout.Actions.addTab(tab, toNodeId, FlexLayout.DockLocation.CENTER, -1));
     },
     [model, contentId, resolveTargetTabsetId]
+  );
+
+  /** Close tabs on signals from the tab itself (e.g. ctrl+d) */
+  useCustomEventListener(
+    EVENT_CLOSE_COMPONENT,
+    (data: TEventId) => {
+      model?.doAction(FlexLayout.Actions.deleteTab(data.id));
+    },
+    [model]
   );
 
   useEffect(() => {
