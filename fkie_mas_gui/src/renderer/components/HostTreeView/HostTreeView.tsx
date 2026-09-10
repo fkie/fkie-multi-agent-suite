@@ -65,6 +65,8 @@ type HostTreeViewProps = {
   startNodes: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
   stopNodes: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
   showLoggers: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
+  setSelectedProviderItems?: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
+  setSelectedNodeItems?: (itemIds: string[]) => void; // id of the items in rosCtx.nodeMap
 };
 
 export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
@@ -75,6 +77,8 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     startNodes = (): void => {},
     stopNodes = (): void => {},
     showLoggers = (): void => {},
+    setSelectedProviderItems = (): void => {},
+    setSelectedNodeItems = (): void => {},
   } = props;
   // const apiRef = useTreeViewApiRef();
   const navCtx = useNavigationContext();
@@ -678,11 +682,19 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     }
   }, [keyNodeList, getParentAndChildrenIds, notifyNavCtxSelection]);
 
+  /** Inform host panel with actions about new selection */
+  useEffect(() => {
+    // Filter nodes that actually exist in this tree
+    const providerIds = getProvidersFromIds(selectedItems);
+    const nodeIds = getNodeIdsFromTreeIds(selectedItems);
+    setSelectedProviderItems(providerIds);
+    setSelectedNodeItems(nodeIds);
+  }, [selectedItems, setSelectedNodeItems]);
+
   /**
    * synchronize selected items and available nodes (important in ROS2)
    * since the running node has an DDS id at the end of the node name separated by '-'
    */
-
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     updateSelectedNodeIds();
