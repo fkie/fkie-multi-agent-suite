@@ -134,7 +134,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
 
   const ownUriPaths: Set<string> = useMemo(() => {
     const result = new Set([
-      rootFilePath,
+      createUriPath(provider.id, rootFilePath),
       ...(includeResolver.includedFiles?.map((f) => createUriPath(provider.id, f.inc_path)) || []),
     ]);
     return result;
@@ -307,48 +307,52 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   );
 
   /** Handle events caused by changed files. */
-  useCustomEventListener(EVENT_PROVIDER_PATH_EVENT, async (data: EventProviderPathEvent) => {
-    if (data.provider.id !== provider.id) {
-      // ignore event from other provider
-      return;
-    }
-    const changedUri: string = createUriPath(provider.id, data.path.srcPath);
-    if (ownUriPaths.has(changedUri)) {
-      // ignore if we saved the file
-      if (savedFiles.includes(changedUri)) {
-        setSavedFiles(savedFiles.filter((uri) => uri !== changedUri));
-        // TODO: reload file content
-      }
-      if (!editorRef.current) return;
-      const currentModelUri = editorRef.current.getModel()?.uri.path;
-      const result = await provider.getFileContent(data.path.srcPath);
-      if (result.error) {
-        console.error(`Could not open file: [${result.file.fileName}]: ${result.error}`);
-        setNotificationDescription({
-          message: `Could not open file: [${result.file.fileName}]: ${result.error}`,
-          messageSeverity: "warning",
-        });
-      }
-      const model = monacoCtx.createModel(editorId, result.file);
-      if (!model) {
-        console.error(`Could not create model for: [${result.file.fileName}]`);
-        setNotificationDescription({
-          message: `Could not create model for: [${result.file.fileName}]`,
-          messageSeverity: "warning",
-        });
+  useCustomEventListener(
+    EVENT_PROVIDER_PATH_EVENT,
+    async (data: EventProviderPathEvent) => {
+      if (data.provider.id !== provider.id) {
+        // ignore event from other provider
         return;
       }
-      if (monacoCtx.dirtyManager()?.isDirty(model)) {
-        setNotificationDescription({
-          message: `${result.file.fileName} was changed on remote host! Save your file or reload manually!`,
-          messageSeverity: "warning",
-        });
+      const changedUri: string = createUriPath(provider.id, data.path.srcPath);
+      if (ownUriPaths.has(changedUri)) {
+        // ignore if we saved the file
+        if (savedFiles.includes(changedUri)) {
+          setSavedFiles(savedFiles.filter((uri) => uri !== changedUri));
+          // TODO: reload file content
+        }
+        if (!editorRef.current) return;
+        const currentModelUri = editorRef.current.getModel()?.uri.path;
+        const result = await provider.getFileContent(data.path.srcPath);
+        if (result.error) {
+          console.error(`Could not open file: [${result.file.fileName}]: ${result.error}`);
+          setNotificationDescription({
+            message: `Could not open file: [${result.file.fileName}]: ${result.error}`,
+            messageSeverity: "warning",
+          });
+        }
+        const model = monacoCtx.createModel(editorId, result.file);
+        if (!model) {
+          console.error(`Could not create model for: [${result.file.fileName}]`);
+          setNotificationDescription({
+            message: `Could not create model for: [${result.file.fileName}]`,
+            messageSeverity: "warning",
+          });
+          return;
+        }
+        if (monacoCtx.dirtyManager()?.isDirty(model)) {
+          setNotificationDescription({
+            message: `${result.file.fileName} was changed on remote host! Save your file or reload manually!`,
+            messageSeverity: "warning",
+          });
+        }
+        if (currentModelUri === model.uri.path) {
+          mEditor.setCurrentModel(model);
+        }
       }
-      if (currentModelUri === model.uri.path) {
-        mEditor.setCurrentModel(model);
-      }
-    }
-  });
+    },
+    [provider.id, ownUriPaths, editorId, monacoCtx, mEditor]
+  );
 
   const saveModel = useCallback(
     async (editorModel: editor.ITextModel): Promise<void> => {
