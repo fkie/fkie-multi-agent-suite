@@ -109,26 +109,85 @@ function xmlValue(value: string | undefined): string {
   return (value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 }
 
+const PY_ESCAPES: Record<string, string> = {
+  "\\": "\\\\",
+  '"': '\\"',
+  "\n": "\\n",
+  "\r": "\\r",
+  "\t": "\\t",
+};
+
+/** Renders an arbitrary string as a safe Python double-quoted literal. */
+function pythonString(value: string): string {
+  let escaped = "";
+
+  // for...of iterates code points, so surrogate pairs stay intact
+  for (const ch of value) {
+    const mapped = PY_ESCAPES[ch];
+    if (mapped !== undefined) {
+      escaped += mapped;
+      continue;
+    }
+
+    // charCodeAt returns number (not number | undefined) -> no assertion needed
+    const code = ch.charCodeAt(0);
+    // remaining C0 controls and DEL have no printable representation
+    if (code < 0x20 || code === 0x7f) {
+      escaped += `\\x${code.toString(16).padStart(2, "0")}`;
+      continue;
+    }
+
+    escaped += ch;
+  }
+
+  return `"${escaped}"`;
+}
+const INT_RE = /^[+-]?\d+$/;
+const FLOAT_RE = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+
+/** Converts a JSON value into Python literal syntax. */
+function pythonLiteral(value: unknown): string {
+  if (value === null) return "None";
+  if (typeof value === "boolean") return value ? "True" : "False";
+  if (typeof value === "number") return Number.isFinite(value) ? `${value}` : "None";
+  if (typeof value === "string") return pythonString(value);
+  if (Array.isArray(value)) return `[${value.map(pythonLiteral).join(", ")}]`;
+
+  return `{${Object.entries(value as object)
+    .map(([k, v]) => `${pythonString(k)}: ${pythonLiteral(v)}`)
+    .join(", ")}}`;
+}
+
 function pythonValue(value: string | undefined, type: string | undefined): string {
   if (value === undefined) return '""';
+  const raw = `${value}`;
+
   switch (type) {
     case "bool":
-      return `${value}`.toLowerCase() === "true" ? "True" : "False";
+      return raw.trim().toLowerCase() === "true" ? "True" : "False";
+
     case "int":
+      // validate instead of interpolating unchecked input as code
+      return INT_RE.test(raw.trim()) ? raw.trim() : "0";
+
     case "float":
-      return `${value}`;
+      return FLOAT_RE.test(raw.trim()) ? raw.trim() : "0.0";
+
     case "list":
     case "str[]":
     case "int[]":
     case "float[]":
     case "bool[]":
       try {
-        return JSON.stringify(JSON.parse(`[${value.replace(/^\[|\]$/g, "")}]`));
+        const parsed = JSON.parse(`[${raw.replace(/^\[|\]$/g, "")}]`);
+        return pythonLiteral(parsed);
       } catch {
-        return `[${value}]`;
+        // not parseable -> treat the whole input as a single string element
+        return `[${pythonString(raw)}]`;
       }
+
     default:
-      return `"${`${value}`.replace(/"/g, '\\"')}"`;
+      return pythonString(raw);
   }
 }
 
