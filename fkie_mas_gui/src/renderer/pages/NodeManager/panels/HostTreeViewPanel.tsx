@@ -317,7 +317,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         closable: true,
         component: LAYOUT_TABS.NODE_LOGGER,
         toNodeId: LAYOUT_TAB_SETS[nodeLoggerOpenLocation],
-        config: { nodeLoggerConfig: { id, node } },
+        config: { insideDomainLayout: !!contentId?.domainId, contentId: contentId, nodeLoggerConfig: { id, node } },
       });
     },
     [nodeLoggerOpenLocation]
@@ -411,7 +411,11 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
               closable: true,
               component: LAYOUT_TABS.PARAMETER,
               toNodeId: openLocation,
-              config: { parameterConfig: { id, nodes: [node], providers: [] } },
+              config: {
+                insideDomainLayout: !!contentId?.domainId,
+                contentId: contentId,
+                parameterConfig: { id, nodes: [node], providers: [] },
+              },
             });
           },
         });
@@ -430,7 +434,11 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
                 closable: true,
                 component: LAYOUT_TABS.PARAMETER,
                 toNodeId: openLocation,
-                config: { parameterConfig: { id, nodes: [], providers: [providerId] } },
+                config: {
+                  insideDomainLayout: true,
+                  contentId: { domainId: provider.connection.domainId },
+                  parameterConfig: { id, nodes: [], providers: [providerId] },
+                },
               });
             },
           });
