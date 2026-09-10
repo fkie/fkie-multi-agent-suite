@@ -295,7 +295,7 @@ export const AutoUpdateProvider = ({
         const result = await window.commandExecutor?.execTerminal(
           null,
           "'update mas'",
-          `'${getUpdateCli(gui, ros)} -w'`
+          `${getUpdateCli(gui, ros)} -w`
         );
         if (result) {
           if (!result.result) setUpdateError(result.message);
