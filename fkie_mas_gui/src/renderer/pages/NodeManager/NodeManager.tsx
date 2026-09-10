@@ -80,6 +80,7 @@ import { isElectron, openBrowserSite } from "@/renderer/utils/popout";
 import { CmdTypes, InfoStateLevel, TInfoState } from "@/types";
 import { DEFAULT_LAYOUT, LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "./layout";
 import {
+  emitCloseComponent,
   emitSelectTab,
   emitToggleComponent,
   EVENT_CLOSE_COMPONENT,
@@ -300,7 +301,11 @@ export default function NodeManager(): JSX.Element {
       }
 
       const nodeBId = model.getNodeById(tabId);
-      if (!nodeBId) return;
+      if (!nodeBId) {
+        // does the tab exists in domain flex layout? If yes, let it handle the close event
+        emitCloseComponent({ id: tabId });
+        return;
+      }
       const parentNode = nodeBId.getParent();
       if (!parentNode) {
         // delete tab
