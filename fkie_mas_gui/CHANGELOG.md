@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.10.2 - 10.09.2026
+
+- fix: install update when no ttyd process is running
+- fix: ensure correct node selection across multiple domains
+- fix: prevent node deselection when updating another domain tab
+- fix: prevent nodes from restarting twice
+
 ## 5.10.1 - 07.09.2026
 
 - fix crash after close terminal tab
