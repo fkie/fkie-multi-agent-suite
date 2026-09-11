@@ -25,6 +25,9 @@ def get_node_name(name):
     result = os.path.basename(name).strip(SEP)
     return result
 
+class DelayRosUpdateState:
+    def __init__(self, sec: float = 0) -> None:
+        self.sec = sec
 
 class RosDuration:
     def __init__(self, sec: int = 0, nanosec: int = 0) -> None:
