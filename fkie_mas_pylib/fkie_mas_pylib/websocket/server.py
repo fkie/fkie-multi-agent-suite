@@ -55,7 +55,7 @@ class WebSocketServer:
     def __init__(self):
         self._lock = threading.RLock()
         self._shutdown_event = threading.Event()
-        self._subscriptions: Dict[str, Callable[[Any], None]] = {}
+        self._subscriptions: Dict[str, List[Callable[[Any], None]]] = {}
         self._handler: Set[WebSocketHandler] = set()
         self._registrations: Dict[str, Callable[..., Any]] = {}
         self._remote_registrations: Dict[str, WebSocketHandler] = {}
@@ -220,10 +220,10 @@ class WebSocketServer:
 
     def subscribe(self, uri: str, callback: Callable[[Any], None]) -> None:
         with self._lock:
-            if uri in self._subscriptions:
-                Log.warn(f"replace existing local subscription for {uri}")
             Log.info(f"subscribe {uri}")
-            self._subscriptions[uri] = callback
+            if uri not in self._subscriptions:
+                self._subscriptions[uri] = []
+            self._subscriptions[uri].append(callback)
 
     def register(self, uri: str, callback: Callable[..., Any]) -> None:
         with self._lock:
@@ -287,7 +287,7 @@ class WebSocketServer:
         # do not hold the lock while doing network io
         with self._lock:
             handlers = list(self._handler)
-            local_callback = self._subscriptions.get(uri)
+            local_callbacks = self._subscriptions.get(uri)
         result = True
         for con in handlers:
             try:
@@ -295,12 +295,13 @@ class WebSocketServer:
             except Exception as err:
                 result = False
                 Log.debug(f"publish {uri} to {con.address} failed: {err}")
-        if local_callback is not None:
+        if local_callbacks is not None:
             try:
                 # forward to local subscription; avoid a second serialization round
                 payload = message if not isinstance(message, str) else json.loads(
                     msg, object_hook=lambda d: SimpleNamespace(**d))
-                local_callback(payload)
+                for clb in local_callbacks:
+                    clb(payload)
             except Exception as err:
                 result = False
                 Log.warn(f"local subscription for {uri} failed: {err}")
