@@ -128,16 +128,22 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const getHostStyle = useCallback(
     function getHostStyle(): object {
+      const base = {
+        flexGrow: 1,
+        minHeight: 0,
+        // border must not add to height: 100%
+        boxSizing: "border-box",
+        backgroundColor: backgroundColor,
+      };
       if (providerId && colorizeHosts) {
         return {
-          flexGrow: 1,
+          ...base,
           borderTopStyle: "solid",
           borderTopColor: rosCtx.providerColor(providerId),
           borderTopWidth: "0.3em",
-          backgroundColor: backgroundColor,
         };
       }
-      return { flexGrow: 1, backgroundColor: backgroundColor };
+      return base;
     },
     [providerId, backgroundColor, colorizeHosts]
   );
@@ -145,7 +151,17 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const createTerminalView = useMemo(() => {
     return (
-      <Box key={id} width="100%" height="100%" overflow="auto" alignItems={"center"} sx={getHostStyle()}>
+      <Box
+        key={id}
+        width="100%"
+        height="100%"
+        display="flex"
+        flexDirection="column"
+        // scrolling is owned by xterm's viewport, an outer scrollbar would not match the buffer
+        overflow="hidden"
+        minHeight={0}
+        sx={getHostStyle()}
+      >
         {!nodeName && type !== CmdTypes.CMD && type !== CmdTypes.TERMINAL && (
           <Alert severity="info">
             <AlertTitle>Please select a node</AlertTitle>

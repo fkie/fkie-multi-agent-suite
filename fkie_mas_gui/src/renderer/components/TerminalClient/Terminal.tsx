@@ -8,8 +8,10 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 import CloseIcon from "@mui/icons-material/Close";
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import LastPageIcon from "@mui/icons-material/LastPage";
+import MoneyIcon from "@mui/icons-material/Money";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
-import { Alert, AlertTitle, Box, IconButton, Link, Stack, Typography } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import { Alert, AlertTitle, Box, IconButton, Link, Stack, ToggleButton, Tooltip, Typography } from "@mui/material";
 import { FitAddon } from "@xterm/addon-fit";
 import { ISearchOptions, SearchAddon } from "@xterm/addon-search";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
@@ -19,7 +21,7 @@ import { IDisposable, ITerminalOptions, Terminal as XTerminal } from "@xterm/xte
 import "@xterm/xterm/css/xterm.css";
 import React from "react";
 
-import { ISettingsContext } from "@/renderer/context/SettingsContext";
+import { BUTTON_LOCATIONS, ISettingsContext } from "@/renderer/context/SettingsContext";
 import Provider from "@/renderer/providers/Provider";
 import { CmdType, CmdTypes } from "@/types";
 import SearchBar from "../UI/SearchBar";
@@ -46,6 +48,23 @@ const HIGHLIGHT_DEBOUNCE_MS = 150;
 /** Background color used to highlight line numbers */
 const LINE_NUMBER_COLOR = "#004C99";
 
+/** Flow control: pause the server once this many unprocessed bytes are buffered */
+const FLOW_CONTROL_HIGH_WATER = 100_000;
+
+/** Flow control: resume once the backlog drops below this value */
+const FLOW_CONTROL_LOW_WATER = 10_000;
+
+/** Reconnect backoff */
+const RECONNECT_BASE_DELAY_MS = 1_000;
+const RECONNECT_MAX_DELAY_MS = 15_000;
+const RECONNECT_MAX_ATTEMPTS = 10;
+
+/** Duration the resize overlay stays visible */
+const RESIZE_OVERLAY_MS = 800;
+
+/** Maximum number of time sync iterations */
+const TIME_SYNC_MAX_ITERATIONS = 5;
+
 export interface ClientOptions {
   rendererType: "dom" | "canvas" | "webgl";
   disableLeaveAlert: boolean;
@@ -62,22 +81,31 @@ interface Props {
   initialCommands: string[];
   name: string;
   type: CmdType;
-  onIncomingData?: (data: string) => undefined;
-  onCtrlD?: (wsUrl: string, tokenUrl: string) => undefined;
+  onIncomingData?: (data: string) => void;
+  onCtrlD?: (wsUrl: string, tokenUrl: string) => void;
+  onTitleChange?: (title: string) => void;
   settingsCtx: ISettingsContext;
   provider?: Provider;
   remoteProvider?: Provider;
+  buttonLocation: string;
 }
 
 type XtermState = {
   opened: boolean;
   showSearchBar: boolean;
+  highlightLineNumbers: boolean;
+  /** null hides the overlay */
+  resizeOverlay: string | null;
 };
 
 export class Terminal extends React.Component<Props, XtermState> {
   private textEncoder: TextEncoder;
 
+  /** Streaming decoder for OUTPUT payloads, keeps state across chunks */
   private textDecoder: TextDecoder;
+
+  /** Separate decoder for control payloads, must not disturb the streaming state */
+  private controlDecoder: TextDecoder;
 
   private container: HTMLElement | null = null;
 
@@ -97,7 +125,8 @@ export class Terminal extends React.Component<Props, XtermState> {
   /** Line numbers are highlighted with own markers, independent from SearchAddon */
   private lineNumberHighlighter: LineNumberHighlighter | null = null;
 
-  private webglAddon: WebglAddon = new WebglAddon();
+  /** Created lazily, only when clientOptions.rendererType requests webgl */
+  private webglAddon: WebglAddon | null = null;
 
   private webglDisposed = false;
 
@@ -107,7 +136,7 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private token: string | null = null;
 
-  // private title: string = "Terminal";
+  private title: string;
 
   private settingsCtx: ISettingsContext | null = null;
 
@@ -140,6 +169,19 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private highlightPending = false;
 
+  /** Unprocessed bytes handed to terminal.write() */
+  private pendingBytes = 0;
+
+  private flowPaused = false;
+
+  private reconnectAttempts = 0;
+
+  private reconnectTimer: number | undefined = undefined;
+
+  private resizeOverlayTimer: number | undefined = undefined;
+
+  private leaveAlertHandler: ((event: BeforeUnloadEvent) => void) | null = null;
+
   /** xterm listeners, disposed BEFORE terminal.dispose() */
   private disposables: IDisposable[] = [];
 
@@ -149,9 +191,12 @@ export class Terminal extends React.Component<Props, XtermState> {
     this.state = {
       opened: false,
       showSearchBar: false,
+      highlightLineNumbers: true,
+      resizeOverlay: null,
     };
     this.textEncoder = new TextEncoder();
     this.textDecoder = new TextDecoder();
+    this.controlDecoder = new TextDecoder();
     this.fitAddon = new FitAddon();
 
     this.searchAddonOptions = {
@@ -173,9 +218,12 @@ export class Terminal extends React.Component<Props, XtermState> {
     this.remoteProvider = props.remoteProvider;
     this.settingsCtx = props.settingsCtx;
     this.fontSize = this.settingsCtx?.get("fontSizeTerminal") as number;
+    this.title = props.clientOptions?.titleFixed || props.name;
+
     this.onSocketOpen = this.onSocketOpen.bind(this);
     this.onSocketError = this.onSocketError.bind(this);
     this.onSocketData = this.onSocketData.bind(this);
+    this.onSocketClose = this.onSocketClose.bind(this);
     this.connect = this.connect.bind(this);
     this.pause = this.pause.bind(this);
     this.onTerminalResize = this.onTerminalResize.bind(this);
@@ -183,32 +231,50 @@ export class Terminal extends React.Component<Props, XtermState> {
     this.resume = this.resume.bind(this);
   }
 
-  async componentDidMount(): Promise<void> {
-    const { termOptions } = this.props;
-    termOptions.allowProposedApi = true;
-    this.terminal = new XTerminal(termOptions);
+  private toggleHighlightLineNumbers(): void {
+    this.setState((prev) => ({ ...prev, highlightLineNumbers: !prev.highlightLineNumbers }));
+    if (!this.state.highlightLineNumbers) {
+      try {
+        this.lineNumberHighlighter?.scan();
+      } catch (error) {
+        console.warn("[ttyd] line number highlight failed:", error);
+      }
+    } else {
+      this.clearSearchDecorations();
+      this.lineNumberHighlighter?.clear();
+    }
+  }
 
-    const { terminal, fitAddon, searchAddon, webglAddon, unicode11Addon } = this;
+  async componentDidMount(): Promise<void> {
+    const { termOptions, clientOptions } = this.props;
+
+    // never mutate props: xterm keeps a reference to the options object
+    this.terminal = new XTerminal({
+      ...termOptions,
+      allowProposedApi: true,
+      fontSize: this.fontSize || termOptions.fontSize,
+    });
+
+    const { terminal, fitAddon, searchAddon, unicode11Addon } = this;
 
     terminal.loadAddon(fitAddon);
     terminal.loadAddon(searchAddon);
     terminal.loadAddon(new WebLinksAddon());
     terminal.loadAddon(unicode11Addon);
-
-    webglAddon.onContextLoss(() => {
-      // guard against double dispose of the webgl addon
-      if (this.webglDisposed) return;
-      this.webglDisposed = true;
-      try {
-        webglAddon.dispose();
-      } catch (error) {
-        console.warn("[ttyd] webgl addon dispose failed:", error);
-      }
-    });
-    terminal.loadAddon(webglAddon);
+    // the addon stays inert until its version is activated
+    terminal.unicode.activeVersion = "11";
 
     this.disposables.push(terminal.onData(this.onTerminalData));
     this.disposables.push(terminal.onResize(this.onTerminalResize));
+
+    // a fixed title always wins over the escape sequence
+    this.disposables.push(
+      terminal.onTitleChange((title) => {
+        if (this.isUnmounting) return;
+        this.title = this.props.clientOptions?.titleFixed || title;
+        this.props.onTitleChange?.(this.title);
+      })
+    );
 
     // re-scan when the user scrolls back: reflow or in-place overwrites may have
     // invalidated decorations of rows that are outside the tail window
@@ -218,18 +284,29 @@ export class Terminal extends React.Component<Props, XtermState> {
       })
     );
 
-    this.connect();
+    this.disposables.push(
+      terminal.buffer.onBufferChange((buffer) => {
+        this.lineNumberHighlighter?.clear();
+        if (buffer.type !== "normal") return;
+        this.scheduleLineNumberHighlight();
+      })
+    );
 
     if (this.container) {
       terminal.open(this.container);
     }
 
+    // WebGL must be loaded AFTER open() and only when requested
+    if (clientOptions?.rendererType === "webgl") {
+      this.loadWebglAddon(terminal);
+    }
+
     // own line number highlighting, independent from SearchAddon
     this.lineNumberHighlighter = new LineNumberHighlighter(terminal, LINE_NUMBER_COLOR);
 
-    this.safeFit();
-
     if (this.container) {
+      const rect = this.container.getBoundingClientRect();
+      this.lastContainerSize = { width: rect.width, height: rect.height };
       this.resizeObserver = new ResizeObserver(() => {
         if (this.isUnmounting || !this.terminal) return;
         const rect = this.container?.getBoundingClientRect();
@@ -283,14 +360,12 @@ export class Terminal extends React.Component<Props, XtermState> {
         },
       },
       {
-        key: "Backspace",
+        key: "l",
         shiftKey: false,
         ctrlKey: true,
         altKey: false,
         callback: (): void => {
-          this.clearSearchDecorations();
-          this.lineNumberHighlighter?.clear();
-          this.terminal?.clear();
+          this.toggleHighlightLineNumbers();
         },
       },
       {
@@ -322,17 +397,50 @@ export class Terminal extends React.Component<Props, XtermState> {
       }
       return true;
     });
+
+    if (!clientOptions?.disableLeaveAlert) {
+      this.leaveAlertHandler = (event: BeforeUnloadEvent): void => {
+        event.preventDefault();
+        event.returnValue = "Close terminal? this will also terminate the command.";
+      };
+      window.addEventListener("beforeunload", this.leaveAlertHandler);
+    }
+
+    // size the pty correctly BEFORE the shell starts
+    this.safeFit();
+    await this.connect();
   }
 
-  componentDidUpdate(): void {
-    // fit() must never be called from render(): it is a side effect and may run
-    // on an already disposed terminal
+  componentDidUpdate(prevProps: Props): void {
+    const { termOptions, clientOptions } = this.props;
+    if (this.terminal && prevProps.termOptions.theme !== termOptions.theme) {
+      // reassigning the theme forces the renderer to refresh its color cache
+      this.terminal.options.theme = termOptions.theme;
+    }
+    if (clientOptions?.titleFixed && prevProps.clientOptions?.titleFixed !== clientOptions.titleFixed) {
+      this.title = clientOptions.titleFixed;
+      this.props.onTitleChange?.(this.title);
+    }
     this.safeFit();
   }
 
   componentWillUnmount(): void {
     this.isUnmounting = true;
     this.highlightPending = false;
+
+    // 0) cancel reconnect/overlay timers and the leave alert
+    if (this.reconnectTimer !== undefined) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+    if (this.resizeOverlayTimer !== undefined) {
+      window.clearTimeout(this.resizeOverlayTimer);
+      this.resizeOverlayTimer = undefined;
+    }
+    if (this.leaveAlertHandler) {
+      window.removeEventListener("beforeunload", this.leaveAlertHandler);
+      this.leaveAlertHandler = null;
+    }
 
     // 1) stop pending highlight work
     if (this.highlightTimer !== undefined) {
@@ -353,6 +461,8 @@ export class Terminal extends React.Component<Props, XtermState> {
       }
       this.socket = null;
     }
+    this.flowPaused = false;
+    this.pendingBytes = 0;
 
     // 3) stop resize observer before touching any addon
     if (this.resizeObserver) {
@@ -382,15 +492,97 @@ export class Terminal extends React.Component<Props, XtermState> {
       //   console.warn("[ttyd] terminal dispose failed:", error);
     }
     this.terminal = null;
+    try {
+      this.webglAddon?.dispose();
+    } catch {
+      //
+    }
+    this.webglAddon = null;
   }
 
-  private connect(): void {
+  /** Creates and loads the WebGL renderer, falls back to the DOM renderer on failure */
+  private loadWebglAddon(terminal: XTerminal): void {
+    try {
+      const addon = new WebglAddon();
+      addon.onContextLoss(() => {
+        // guard against double dispose of the webgl addon
+        if (this.webglDisposed) return;
+        this.webglDisposed = true;
+        try {
+          addon.dispose();
+        } catch (error) {
+          console.warn("[ttyd] webgl addon dispose failed:", error);
+        }
+        this.webglAddon = null;
+      });
+      terminal.loadAddon(addon);
+      this.webglAddon = addon;
+    } catch (error) {
+      console.warn("[ttyd] webgl not available, falling back to dom renderer:", error);
+      this.webglAddon = null;
+    }
+  }
+
+  private async fetchToken(): Promise<string> {
+    const { tokenUrl } = this.props;
+    if (!tokenUrl) return "";
+    try {
+      const response = await fetch(tokenUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const json = (await response.json()) as { token?: string };
+      return json.token ?? "";
+    } catch (error) {
+      console.warn("[ttyd] token request failed:", error);
+      return "";
+    }
+  }
+
+  private async connect(): Promise<void> {
+    if (this.isUnmounting) return;
+    if (this.socket !== null && this.socket.readyState !== WebSocket.CLOSED) return;
+
+    // token must be available BEFORE the auth message is sent
+    this.token = await this.fetchToken();
+    if (this.isUnmounting) return;
+
     console.log(`[ttyd] connect to ${this.props.wsUrl}`);
     this.socket = new WebSocket(this.props.wsUrl, ["tty"]);
     this.socket.binaryType = "arraybuffer";
     this.socket.onopen = this.onSocketOpen;
     this.socket.onmessage = this.onSocketData;
     this.socket.onerror = this.onSocketError;
+    this.socket.onclose = this.onSocketClose;
+  }
+
+  private onSocketClose(event: CloseEvent): void {
+    if (this.isUnmounting) return;
+    console.log(`[ttyd] socket closed: code=${event.code} reason=${event.reason}`);
+
+    this.socket = null;
+    this.flowPaused = false;
+    this.pendingBytes = 0;
+    this.setState((prev) => ({ ...prev, opened: false }));
+
+    // 1000 means the peer closed intentionally, do not fight it
+    if (event.code === 1000) return;
+    this.scheduleReconnect();
+  }
+
+  private scheduleReconnect(): void {
+    if (this.isUnmounting || this.reconnectTimer !== undefined) return;
+    if (this.reconnectAttempts >= RECONNECT_MAX_ATTEMPTS) {
+      console.warn("[ttyd] giving up reconnect after max attempts");
+      return;
+    }
+
+    const delay = Math.min(RECONNECT_BASE_DELAY_MS * 2 ** this.reconnectAttempts, RECONNECT_MAX_DELAY_MS);
+    this.reconnectAttempts += 1;
+    console.log(`[ttyd] reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
+
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = undefined;
+      void this.connect();
+    }, delay);
   }
 
   private setFontSize(size: number): void {
@@ -406,8 +598,23 @@ export class Terminal extends React.Component<Props, XtermState> {
     try {
       this.fitAddon.fit();
     } catch (error) {
+      // renderer dimensions can be undefined while the layout is in transition
       console.warn("[ttyd] fit failed:", error);
     }
+  }
+
+  /** Shows the current terminal size for a short moment */
+  private showResizeOverlay(cols: number, rows: number): void {
+    if (this.props.clientOptions?.disableResizeOverlay) return;
+    if (this.resizeOverlayTimer !== undefined) {
+      window.clearTimeout(this.resizeOverlayTimer);
+    }
+    this.setState((prev) => ({ ...prev, resizeOverlay: `${cols}x${rows}` }));
+    this.resizeOverlayTimer = window.setTimeout(() => {
+      this.resizeOverlayTimer = undefined;
+      if (this.isUnmounting) return;
+      this.setState((prev) => ({ ...prev, resizeOverlay: null }));
+    }, RESIZE_OVERLAY_MS);
   }
 
   /** Clears only the search decorations, line numbers stay visible */
@@ -421,6 +628,7 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   /** Scans new buffer lines for line numbers, debounced */
   private scheduleLineNumberHighlight(): void {
+    if (!this.state.highlightLineNumbers) return;
     if (this.isUnmounting || !this.terminal || !this.lineNumberHighlighter) return;
     if (this.highlightTimer !== undefined) {
       // remember that more data arrived while the timer was pending
@@ -467,52 +675,42 @@ export class Terminal extends React.Component<Props, XtermState> {
 
   private async onSocketOpen(): Promise<void> {
     if (this.isUnmounting) return;
+    const { socket, textEncoder, terminal } = this;
+    if (!terminal || !socket || socket.readyState !== WebSocket.OPEN) return;
 
-    const { socket, textEncoder, terminal, fitAddon } = this;
     const wasOpened = this.state.opened;
-
-    let dims: { cols: number; rows: number } | undefined;
-    try {
-      dims = fitAddon.proposeDimensions();
-    } catch (error) {
-      console.warn("[ttyd] proposeDimensions failed:", error);
+    if (wasOpened) {
+      terminal.reset();
+      this.lineNumberHighlighter?.clear();
     }
+
+    // connection is healthy again, reset the backoff and the flow control state
+    this.reconnectAttempts = 0;
+    this.flowPaused = false;
+    this.pendingBytes = 0;
 
     this.setState((prev) => ({ ...prev, opened: true }));
 
-    if (dims && socket && socket.readyState === WebSocket.OPEN) {
-      socket.send(
-        textEncoder.encode(
-          JSON.stringify({
-            AuthToken: this.token,
-            columns: dims.cols,
-            rows: dims.rows,
-          })
-        )
-      );
+    // use the real terminal size, fit() already ran before connect()
+    const cols = terminal.cols;
+    const rows = terminal.rows;
+    // never send null, ttyd expects a string token
+    socket.send(textEncoder.encode(JSON.stringify({ AuthToken: this.token ?? "", columns: cols, rows: rows })));
 
-      if (wasOpened && terminal) {
-        terminal.reset();
-        terminal.resize(dims.cols, dims.rows);
-        this.lineNumberHighlighter?.clear();
-      }
+    for (const command of this.props.initialCommands ?? []) {
+      this.socket?.send(textEncoder.encode(CommandClient.INPUT + command));
     }
-
-    // send initial commands to terminal
-    const { initialCommands } = this.props;
-    if (initialCommands) {
-      for (const command of initialCommands) {
-        this.socket?.send(textEncoder.encode(CommandClient.INPUT + command));
-      }
-    }
-    if (this.type === CmdTypes.SET_TIME && this.provider) {
-      this.sendTimeSync();
-    }
+    if (this.type === CmdTypes.SET_TIME && this.provider) this.sendTimeSync();
+    this.safeFit();
   }
 
   private async sendTimeSync(): Promise<void> {
     if (this.isUnmounting) return;
-    if (!this.provider || !this.remoteProvider || this.timeSyncIterations > 5) return;
+    if (!this.provider || !this.remoteProvider) return;
+    if (this.timeSyncIterations >= TIME_SYNC_MAX_ITERATIONS) {
+      console.warn("[ttyd] time sync aborted: max iterations reached");
+      return;
+    }
     if (await this.provider.updateTimeDiff()) {
       if (await this.remoteProvider?.updateTimeDiff()) {
         if (this.isUnmounting) return;
@@ -541,30 +739,35 @@ export class Terminal extends React.Component<Props, XtermState> {
     // might be fired when component is closed
     if (this.isUnmounting) return;
     console.error("[ttyd] websocket connection error: ", event);
+    // show the hint overlay again, onclose handles the reconnect
+    this.setState((prev) => ({ ...prev, opened: false }));
   }
 
   private onSocketData(event: MessageEvent): void {
     // guard: messages can still arrive while the component is going away
     if (this.isUnmounting || !this.terminal) return;
 
-    const { textDecoder } = this;
     const rawData = event.data as ArrayBuffer;
-    const cmd = String.fromCharCode(new Uint8Array(rawData)[0]);
-    const data = rawData.slice(1);
+    // empty frames would decode to command "\0"
+    if (!rawData || rawData.byteLength === 0) return;
 
-    const { onIncomingData } = this.props;
-    if (onIncomingData) onIncomingData(textDecoder.decode(data));
+    const cmd = String.fromCharCode(new Uint8Array(rawData, 0, 1)[0]);
+    const payload = rawData.slice(1);
 
     switch (cmd) {
-      case Command.OUTPUT:
-        // scan only after the chunk has been parsed, cursor position is valid then
-        this.terminal.write(textDecoder.decode(data), () => {
-          this.scheduleLineNumberHighlight();
-        });
+      case Command.OUTPUT: {
+        // streaming decode, multi byte sequences may be split across frames
+        const decoded = this.textDecoder.decode(payload, { stream: true });
+        this.props.onIncomingData?.(decoded);
+        this.handleOutput(decoded, payload.byteLength);
         break;
-      case Command.SET_WINDOW_TITLE:
-        // this.title = textDecoder.decode(data);
+      }
+      case Command.SET_WINDOW_TITLE: {
+        const title = this.controlDecoder.decode(payload);
+        this.title = this.props.clientOptions?.titleFixed || title;
+        this.props.onTitleChange?.(this.title);
         break;
+      }
       case Command.SET_PREFERENCES:
         break;
       default:
@@ -576,40 +779,159 @@ export class Terminal extends React.Component<Props, XtermState> {
       this.terminal.focus();
       this.gotFocus = true;
     }
+  }
 
-    if (this.type === CmdTypes.SET_TIME && this.provider) {
-      const decodedData = textDecoder.decode(data);
-      if (decodedData.startsWith("sudo ")) {
-        this.sudoRequested = true;
-      } else if (this.sudoRequested) {
-        if (decodedData.startsWith("date set ok")) {
-          this.sudoRequested = false;
-          this.sendTimeSync();
-        }
-      }
+  /** Writes output and throttles the server while the write queue grows */
+  private handleOutput(decoded: string, byteLength: number): void {
+    this.pendingBytes += byteLength;
+    if (!this.flowPaused && this.pendingBytes > FLOW_CONTROL_HIGH_WATER) {
+      this.flowPaused = true;
+      this.pause();
     }
+
+    // scan only after the chunk has been parsed, cursor position is valid then
+    this.terminal?.write(decoded, () => {
+      this.pendingBytes = Math.max(0, this.pendingBytes - byteLength);
+      if (this.flowPaused && this.pendingBytes < FLOW_CONTROL_LOW_WATER) {
+        this.flowPaused = false;
+        this.resume();
+      }
+      this.scheduleLineNumberHighlight();
+      this.handleTimeSyncEcho(decoded);
+    });
+  }
+
+  /** Time sync state machine, driven by the shell echo */
+  private handleTimeSyncEcho(decoded: string): void {
+    if (this.isUnmounting) return;
+    if (this.type !== CmdTypes.SET_TIME || !this.provider) return;
+
+    if (decoded.startsWith("sudo ")) {
+      this.sudoRequested = true;
+      return;
+    }
+    if (this.sudoRequested && decoded.startsWith("date set ok")) {
+      this.sudoRequested = false;
+      this.sendTimeSync();
+    }
+  }
+
+  private createAdvButtons(): JSX.Element {
+    return (
+      <Stack direction="row" alignItems="center" flexShrink={0}>
+        <Tooltip
+          title={
+            <Stack spacing={0.5}>
+              <Typography variant="body2" fontWeight="bold" fontSize="inherit">
+                Toggle Search Bar (Ctrl+F)
+              </Typography>
+            </Stack>
+          }
+          placement="bottom"
+          disableInteractive
+        >
+          <ToggleButton
+            size="small"
+            value="showExplorer"
+            selected={this.state.showSearchBar}
+            sx={{ height: "1em" }}
+            onChange={() => {
+              this.setState((prev) => ({ ...prev, showSearchBar: !prev.showSearchBar }));
+            }}
+          >
+            <SearchIcon sx={{ fontSize: "inherit" }} fontSize="inherit" />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip
+          title={
+            <Stack spacing={0.5}>
+              <Typography variant="body2" fontWeight="bold" fontSize="inherit">
+                Toggle line number highlighting (Ctrl+L)
+              </Typography>
+            </Stack>
+          }
+          placement="bottom"
+          disableInteractive
+        >
+          <ToggleButton
+            size="small"
+            value="showExplorer"
+            selected={this.state.highlightLineNumbers}
+            sx={{ height: "1em" }}
+            onChange={() => {
+              this.toggleHighlightLineNumbers();
+            }}
+          >
+            <MoneyIcon sx={{ fontSize: "inherit" }} fontSize="inherit" />
+          </ToggleButton>
+        </Tooltip>
+      </Stack>
+    );
   }
 
   render(): JSX.Element {
     const { state } = this;
     return (
-      <Stack width="100%" height="100%" alignItems="center">
+      <Stack width="100%" height="100%" sx={{ minHeight: 0, overflow: "hidden", position: "relative" }}>
         {!state.opened && (
-          <Alert severity="info">
-            <AlertTitle>TTYD Daemon on {this.props.wsUrl} is not available</AlertTitle>
-            <Typography>
-              If you want to check this terminal, please start the terminal manager daemon on the host using{" "}
-              <RocketLaunchIcon fontSize="inherit" /> in &apos;Hosts&apos; panel or manually:
-            </Typography>
-            <Typography sx={{ ml: "1em" }}>ttyd --writable --port 8681 bash</Typography>
-            <Typography sx={{ mt: "1em" }}>
-              Install instructions:{" "}
-              <Link mt={2} href="https://github.com/tsl0922/ttyd" target="_blank" color="inherit">
-                https://github.com/tsl0922/ttyd
-              </Link>
-            </Typography>
-          </Alert>
+          <Box sx={{ position: "absolute", inset: 0, zIndex: 2 }}>
+            <Alert severity="info">
+              <AlertTitle>TTYD Daemon on {this.props.wsUrl} is not available</AlertTitle>
+              <Typography>
+                If you want to check this terminal, please start the terminal manager daemon on the host using{" "}
+                <RocketLaunchIcon fontSize="inherit" /> in &apos;Hosts&apos; panel or manually:
+              </Typography>
+              <Typography sx={{ ml: "1em" }}>ttyd --writable --port 8681 bash</Typography>
+              <Typography sx={{ mt: "1em" }}>
+                Install instructions:{" "}
+                <Link mt={2} href="https://github.com/tsl0922/ttyd" target="_blank" color="inherit">
+                  https://github.com/tsl0922/ttyd
+                </Link>
+              </Typography>
+            </Alert>
+          </Box>
         )}
+
+        {state.resizeOverlay && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              zIndex: 3,
+              px: 1,
+              py: 0.25,
+              borderRadius: 1,
+              pointerEvents: "none",
+              backgroundColor: "rgba(0,0,0,0.6)",
+              color: "#fff",
+              fontFamily: "monospace",
+              fontSize: "0.75rem",
+            }}
+          >
+            {state.resizeOverlay}
+          </Box>
+        )}
+
+        <Stack direction="row" alignItems="center" flexShrink={0}>
+          {this.props.buttonLocation === BUTTON_LOCATIONS.LEFT && this.createAdvButtons()}
+          <Typography
+            variant="body2"
+            flexGrow={1}
+            // noWrap
+            sx={{
+              color: "text.secondary",
+              pl: 0.5,
+              fontSize: "0.7em",
+              fontFamily: "monospace",
+              borderLeftColor: "#2b2b2b",
+              borderLeftStyle: "solid",
+            }}
+          >
+            {this.props.initialCommands[this.props.initialCommands.length - 1]?.split(";").slice(-1)[0] || ""}
+          </Typography>
+          {this.props.buttonLocation === BUTTON_LOCATIONS.RIGHT && this.createAdvButtons()}
+        </Stack>
 
         {state.opened && state.showSearchBar && (
           <Stack
@@ -671,9 +993,21 @@ export class Terminal extends React.Component<Props, XtermState> {
             this.container = c;
           }}
           width="100%"
-          height={state.opened ? "100%" : 0}
-          visibility={state.opened ? "visible" : "hidden"}
-          overflow="auto"
+          flexGrow={1}
+          // minHeight:0 is required so flexbox may shrink this item below its content height
+          minHeight={0}
+          // scrolling is handled by xterm itself (.xterm-viewport)
+          overflow="hidden"
+          sx={{
+            // "& .xterm": { padding: "0 2px" },
+            // style only, never touch overflow: xterm keeps scrollTop in sync itself
+            "& .xterm-viewport": {
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(255,255,255,0.25) transparent",
+            },
+            // keep the search decorations of the overview ruler clickable
+            "& .xterm-decoration-overview-ruler": { zIndex: 10 },
+          }}
         />
       </Stack>
     );
@@ -700,6 +1034,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     // all decorations must be rebuilt
     this.lineNumberHighlighter?.clear();
     this.scheduleLineNumberHighlight();
+    this.showResizeOverlay(size.cols, size.rows);
 
     const { socket, textEncoder } = this;
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -714,8 +1049,10 @@ export class Terminal extends React.Component<Props, XtermState> {
     if (data?.charCodeAt(0) === 4) {
       const { wsUrl, tokenUrl, onCtrlD } = this.props;
       if (onCtrlD) {
-        console.log(`CTRL+D: ${data?.charCodeAt(0)}`);
+        console.log("[ttyd] CTRL+D intercepted, closing session");
         onCtrlD(wsUrl, tokenUrl);
+        // handled by the callback, do not forward the EOT byte
+        return;
       }
     }
 
