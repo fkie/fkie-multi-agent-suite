@@ -12,7 +12,7 @@ import signal
 import threading
 import time
 import traceback
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import DelayRosUpdateState
@@ -22,6 +22,8 @@ from fkie_mas_pylib.system import process
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.websocket.server import WebSocketServer
 
+from .process_helper import ProcessHelper
+
 DEFAULT_KILL_SIGNAL = getattr(signal, "SIGKILL", signal.SIGTERM)
 
 
@@ -30,6 +32,7 @@ class ScreenServicer:
     def __init__(self, websocket: WebSocketServer):
         Log.info("Create ROS2 screen servicer")
         self._is_running = True
+        self._process_helper = ProcessHelper()
         self._stop_event = threading.Event()
         self._ts_delay_until = 0.0
         self._screen_check_rate = 1.0
@@ -66,7 +69,8 @@ class ScreenServicer:
     def _send_update_notification(self):
         with self._screen_thread_lock:
             self._thread_notify = None
-        self.websocket.publish('ros.nodes.changed', {"timestamp": time.time()})
+        if time.time() >= self._ts_delay_until:
+            self.websocket.publish('ros.nodes.changed', {"timestamp": time.time()})
 
     def _check_screens(self):
         interval = 1.0 / self._screen_check_rate
@@ -147,7 +151,6 @@ class ScreenServicer:
     def kill_node(self, name: str, sig: Union[int, str, None] = None) -> str:
         sig_obj = self._resolve_signal(sig)
         Log.info(f"{self.__class__.__name__}: Kill node '{name}'; signal: {sig_obj.name}")
-        self._screen_do_check = True
         success = False
         errors: List[str] = []
 
@@ -157,24 +160,21 @@ class ScreenServicer:
                 {'result': False, 'message': 'Node does not have an active screen'}, cls=SelfEncoder)
 
         for session_name, _node_name in screens.items():
-            success_cur = False
             pid_screen, session_name = screen.split_session_name(session_name)
-            found_pid, found_name, parents2kill = process.get_child_pid(pid_screen)
+            found_pid, found_name, parents2kill = self._process_helper.get_child_pid(pid_screen)
             if found_pid > -1:
                 try:
-                    Log.info(
+                    Log.debug(
                         f"{self.__class__.__name__}: Kill process '{found_name}' with process id "
                         f"'{found_pid}' using signal {sig_obj.name}")
                     os.kill(found_pid, sig_obj)
                     # kill all parents, to handle the case if respawn script is used
                     if sig_obj == DEFAULT_KILL_SIGNAL:
-                        Log.info(
+                        Log.debug(
                             f"{self.__class__.__name__}: Kill all parents '{parents2kill}' "
                             f"using signal {sig_obj.name}")
                         # keep only parents created after the screen process (do not kill the screen itself)
-                        parent_pid_list = sorted(
-                            (p.pid if hasattr(p, "pid") else p for p in parents2kill), reverse=True)
-                        for parent_pid in parent_pid_list:
+                        for parent_pid in sorted(parents2kill, reverse=True):
                             if parent_pid < pid_screen:
                                 continue
                             try:
@@ -186,11 +186,12 @@ class ScreenServicer:
                     errors.append(traceback.format_exc())
             if not success_cur:
                 try:
-                    Log.info(
+                    Log.debug(
                         f"{self.__class__.__name__}: Kill screen '{session_name}' with process id "
                         f"'{pid_screen}' using signal {sig_obj.name}")
                     os.kill(pid_screen, sig_obj)
                     success_cur = True
+                    # print(f"kill screen time {time.time() - now}")
                 except Exception:
                     errors.append(
                         f"Error while try to kill screen with session name "
@@ -203,7 +204,7 @@ class ScreenServicer:
                     self._thread_notify = threading.Timer(3.0, self._send_update_notification)
                     self._thread_notify.daemon = True
                     self._thread_notify.start()
-
+        self._screen_do_check = True
         return json.dumps({'result': success, 'message': "\n".join(errors)}, cls=SelfEncoder)
 
     def get_screen_list(self, force: False) -> str:
