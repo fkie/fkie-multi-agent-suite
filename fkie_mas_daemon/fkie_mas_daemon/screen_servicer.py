@@ -15,6 +15,7 @@ import traceback
 from typing import Dict, List, Optional, Union
 
 from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import DelayRosUpdateState
 from fkie_mas_pylib.interface.runtime_interface import ScreensMapping
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import process
@@ -30,6 +31,7 @@ class ScreenServicer:
         Log.info("Create ROS2 screen servicer")
         self._is_running = True
         self._stop_event = threading.Event()
+        self._ts_delay_until = 0.0
         self._screen_check_rate = 1.0
         self._screen_check_force_after_default = 10
         self._screen_check_force_after = self._screen_check_force_after_default
@@ -39,9 +41,11 @@ class ScreenServicer:
         self._screens_set = set()
         self._screen_nodes_set = set()
         self._screen_json_msg: List[ScreensMapping] = []
+        self._force_refresh = False
         self.websocket = websocket
         websocket.register("ros.screen.kill_node", self.kill_node)
         websocket.register("ros.screen.get_list", self.get_screen_list)
+        websocket.subscribe("ros.daemon.delay_update_state", self.delay_update_state)
         self._thread_notify: Optional[threading.Timer] = None
 
     def start(self):
@@ -68,6 +72,9 @@ class ScreenServicer:
         interval = 1.0 / self._screen_check_rate
         last_check = 0.0
         while self._is_running:
+            if time.time() < self._ts_delay_until and not self._force_refresh:
+                self._stop_event.wait(interval)
+                continue
             if self._screen_do_check or last_check >= self._screen_check_force_after:
                 screen.wipe()
                 if self._screen_do_check:
@@ -198,8 +205,16 @@ class ScreenServicer:
 
         return json.dumps({'result': success, 'message': "\n".join(errors)}, cls=SelfEncoder)
 
-    def get_screen_list(self) -> str:
+    def get_screen_list(self, force: False) -> str:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.screen.get_list]")
         with self._screen_thread_lock:
             self._screen_do_check = True
+            self._force_refresh = force
             return json.dumps(self._screen_json_msg, cls=SelfEncoder)
+
+    def delay_update_state(self, delay_msg: DelayRosUpdateState) -> str:
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.delay_update_state]: {delay_msg.sec} sec")
+        if delay_msg.sec <= 0:
+            return
+        now = time.time()
+        self._ts_delay_until = now + delay_msg.sec

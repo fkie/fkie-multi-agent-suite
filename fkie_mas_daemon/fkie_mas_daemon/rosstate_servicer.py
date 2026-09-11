@@ -33,6 +33,7 @@ from fkie_mas_pylib.defines import ros2_action_introspection_nodename_tuple
 from fkie_mas_pylib.defines import ros2_service_introspection_nodename_tuple
 from fkie_mas_pylib.defines import NM_NAMESPACE
 from fkie_mas_pylib.defines import NM_DISCOVERY_NAME
+from fkie_mas_pylib.interface.runtime_interface import DelayRosUpdateState
 from fkie_mas_pylib.interface.runtime_interface import LifecycleTransition
 from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
 from fkie_mas_pylib.interface.runtime_interface import RosComposable
@@ -122,6 +123,7 @@ class RosStateServicer:
         self._had_clients = False
         self._ts_state_updated = 0
         self._ts_state_notified = 0
+        self._ts_delay_until = 0
         self._last_seen_participant_count = 0
         self._thread_check_discovery_node = None
         self._check_delay = 1.0 / RATE_CHECK_DISCOVERY_NODE_HZ
@@ -159,6 +161,7 @@ class RosStateServicer:
         websocket.register("ros.action.introspection.stop", self.stop_action_introspection)
         websocket.register("ros.service.introspection.stop", self.stop_service_introspection)
         websocket.register("ros.provider.get_timestamp", self.get_provider_timestamp)
+        websocket.subscribe("ros.daemon.delay_update_state", self.delay_update_state)
 
     def start(self):
         qos_state_profile = QoSProfile(depth=10,
@@ -374,6 +377,9 @@ class RosStateServicer:
     def _check_discovery_node(self):
         while not self._on_shutdown and rclpy.ok():
             try:
+                now = time.time()
+                if now < self._ts_delay_until and not self._force_refresh:
+                    continue
                 if self.topic_state_publisher_count:
                     # check if we have a discovery node
                     if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
@@ -385,7 +391,6 @@ class RosStateServicer:
                 # Therefor the self._ts_state_updated was updated.
                 # But we delay the check for changes by
                 update_ros_state = False
-                now = time.time()
                 with self._lock_check:
                     ts_state_notified = self._ts_state_notified
                     if self._ts_state_updated > ts_state_notified:
@@ -403,7 +408,9 @@ class RosStateServicer:
                     send_notification = True
 
                 if not send_notification and clients_connected:
-                    if now - ts_state_notified > self._check_delay * 2.0:
+                    if now < self._ts_delay_until:
+                        Log.warn(f"delay update state until {self._ts_delay_until - now:.2f} sec")
+                    if now > self._ts_delay_until and now - ts_state_notified > self._check_delay * 2.0:
                         # check own state
                         count_topics = len(nmd.ros_node.get_topic_names_and_types())
                         if self._count_topics != count_topics:
@@ -850,3 +857,10 @@ class RosStateServicer:
                 if node_id == node.id:
                     return node
             return None
+
+    def delay_update_state(self, delay_msg: DelayRosUpdateState) -> str:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.delay_update_state]: {delay_msg.sec} sec")
+        if delay_msg.sec <= 0:
+            return
+        now = time.time()
+        self._ts_delay_until = now + delay_msg.sec
