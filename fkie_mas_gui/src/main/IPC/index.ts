@@ -13,6 +13,7 @@ import ShutdownManager from "./ShutdownManager";
 import SubscriberManager from "./SubscriberManager";
 import { SystemInfo } from "./SystemInfo";
 import TerminalManager from "./TerminalManager";
+import { registerTtydTokenHandler } from "./ttydTokenHandler";
 
 const editorManager = new EditorManager();
 const publishManager = new PublishManager();
@@ -21,6 +22,7 @@ const subscriberManager = new SubscriberManager();
 const terminalManager = new TerminalManager();
 
 export const registerHandlers = (): void => {
+  registerTtydTokenHandler();
   editorManager.registerHandlers();
   publishManager.registerHandlers();
   serviceManager.registerHandlers();

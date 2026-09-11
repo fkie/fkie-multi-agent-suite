@@ -58,6 +58,11 @@ if (process.contextIsolated) {
 
     // Expose protected methods that allow the renderer process to use
     // the ipcRenderer without exposing the entire object
+
+    contextBridge.exposeInMainWorld("ttydApi", {
+      fetchToken: (url: string): Promise<string> => ipcRenderer.invoke("ttyd:fetchToken", url),
+    });
+
     contextBridge.exposeInMainWorld("autoUpdate", {
       checkForUpdate: () => {
         return ipcRenderer.invoke(AutoUpdateManagerEvents.checkForUpdate);

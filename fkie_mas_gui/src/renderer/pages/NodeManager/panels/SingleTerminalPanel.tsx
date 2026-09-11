@@ -30,7 +30,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
   const [currentHost, setCurrentHost] = useState<string>();
   const [ttydPort, setTtydPort] = useState<number>(8681);
   const [lastScreenUsed, setLastScreenUsed] = useState("");
-  const [tokenUrl, setTokenUrl] = useState(provider.id);
+  const [sessionId, setSessionId] = useState(provider.id);
   const [errorHighlighting, setErrorHighlighting] = useState(false);
   const [colorizeHosts] = useSetting<boolean>("colorizeHosts");
   const [backgroundColor] = useSetting<string>("backgroundColor");
@@ -45,9 +45,9 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
       setProviderId(provider.id);
       setCurrentHost(provider.host());
 
-      let tkUrl = `${nodeName.replaceAll("/", "")}`;
-      if (!tkUrl) tkUrl = provider.id;
-      setTokenUrl(tkUrl);
+      let sid = `${nodeName.replaceAll("/", "")}`;
+      if (!sid) sid = provider.id;
+      setSessionId(sid);
 
       const terminalCmd = await provider.cmdForType(type, nodeName, "", newScreen, cmd, env);
       if (!terminalCmd.success) {
@@ -177,7 +177,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         {currentHost && nodeName && initialCommands.length > 0 && type !== CmdTypes.CMD && (
           <TerminalClient
             key={`term-${id}`}
-            tokenUrl={tokenUrl}
+            sessionId={sessionId}
             wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
             type={type}
             initialCommands={initialCommands}
@@ -192,7 +192,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         {currentHost && cmd && initialCommands.length > 0 && (
           <TerminalClient
             key={`term-cmd-${id}`}
-            tokenUrl={`${cmd.replaceAll("/", " ")}`}
+            sessionId={sessionId}
             wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
             type={type}
             initialCommands={initialCommands}
@@ -207,7 +207,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         {currentHost && type === CmdTypes.TERMINAL && (
           <TerminalClient
             key={`term-terminal-${id}`}
-            tokenUrl={`${cmd.replaceAll("/", " ")}`}
+            sessionId={sessionId}
             wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
             type={type}
             initialCommands={initialCommands}
@@ -223,7 +223,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
           <TerminalClient
             key={`set-time-${id}`}
             type={type}
-            tokenUrl={tokenUrl}
+            sessionId={sessionId}
             provider={rosCtx.getProviderById(cmd)}
             remoteProvider={rosCtx.getProviderById(provider.id)}
             wsUrl={`ws://${currentHost}:${ttydPort}/ws`}
@@ -238,7 +238,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         )}
       </Box>
     );
-  }, [error, cmd, currentHost, id, initialCommands, nodeName, provider, tokenUrl, type, ttydPort, errorHighlighting]);
+  }, [error, cmd, currentHost, id, initialCommands, nodeName, provider, sessionId, type, ttydPort, errorHighlighting]);
 
   return createTerminalView;
 }

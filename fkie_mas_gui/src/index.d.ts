@@ -28,5 +28,6 @@ declare global {
     autoUpdate?: TAutoUpdateManager;
     commandExecutor?: TCommandExecutor;
     commandLine?: TCommandLine;
+    ttydApi?: { fetchToken: (url: string) => string };
   }
 }

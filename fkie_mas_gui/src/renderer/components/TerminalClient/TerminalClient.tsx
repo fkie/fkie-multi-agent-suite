@@ -78,7 +78,8 @@ function createTerminalTheme(errorHighlighting: boolean): ITheme {
 interface ITerminalClient {
   type: CmdType;
   initialCommands: string[];
-  tokenUrl: string;
+  /** Session identifier, forwarded to onCtrlD */
+  sessionId: string;
   wsUrl: string;
   name: string;
   errorHighlighting: boolean;
@@ -92,7 +93,7 @@ export default function TerminalClient(props: ITerminalClient): JSX.Element {
   const {
     type,
     initialCommands,
-    tokenUrl,
+    sessionId,
     remoteProvider,
     wsUrl,
     name,
@@ -113,11 +114,11 @@ export default function TerminalClient(props: ITerminalClient): JSX.Element {
   return (
     <Box width="100%" flexGrow={1} minHeight={0} overflow="hidden">
       <Terminal
-        key={`xterm-${wsUrl}-${tokenUrl}-${JSON.stringify(initialCommands)}`}
-        id={`xterm-${wsUrl}-${tokenUrl}-${JSON.stringify(initialCommands)}`}
+        key={`xterm-${wsUrl}-${sessionId}-${JSON.stringify(initialCommands)}`}
+        id={`xterm-${wsUrl}-${sessionId}-${JSON.stringify(initialCommands)}`}
         type={type}
         wsUrl={wsUrl}
-        tokenUrl={tokenUrl}
+        sessionId={sessionId}
         clientOptions={clientOptions}
         termOptions={termOptions}
         initialCommands={initialCommands}

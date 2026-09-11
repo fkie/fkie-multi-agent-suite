@@ -18,7 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
+import { useCustomEventListener } from "react-custom-events";
 
 import HostTreeView from "@/renderer/components/HostTreeView/HostTreeView";
 import HostTreeViewActions from "@/renderer/components/HostTreeView/HostTreeViewActions";
@@ -44,13 +44,8 @@ import useQueue from "@/renderer/hooks/useQueue";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
-import {
-  ConnectionState,
-  emitNodeCmdState,
-  EventProviderRestartNodes,
-  TEventNodeCmdState,
-} from "@/renderer/providers/events";
-import { EVENT_NODE_CMD_STATE, EVENT_PROVIDER_RESTART_NODES } from "@/renderer/providers/eventTypes";
+import { ConnectionState, emitNodeCmdState, EventProviderRestartNodes } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_RESTART_NODES } from "@/renderer/providers/eventTypes";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
 import { findIn } from "@/renderer/utils/index";
 import { CmdType, CmdTypes, TFileRange } from "@/types";

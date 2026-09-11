@@ -75,7 +75,7 @@ export interface ClientOptions {
 interface Props {
   id: string;
   wsUrl: string;
-  tokenUrl: string;
+  sessionId: string;
   clientOptions: ClientOptions;
   termOptions: ITerminalOptions;
   initialCommands: string[];
@@ -523,19 +523,29 @@ export class Terminal extends React.Component<Props, XtermState> {
     }
   }
 
-  private async fetchToken(): Promise<string> {
-    const { tokenUrl } = this.props;
-    if (!tokenUrl) return "";
+  /** ttyd serves the token endpoint next to the websocket path */
+  private resolveTokenUrl(): string | null {
+    const { wsUrl } = this.props;
+    if (!wsUrl) return null;
     try {
-      const response = await fetch(tokenUrl);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const json = (await response.json()) as { token?: string };
-      return json.token ?? "";
+      // ws://host:8681/ws -> http://host:8681/token
+      return new URL("token", wsUrl.replace(/^ws/, "http").replace(/\/ws$/, "/")).toString();
     } catch (error) {
-      console.warn("[ttyd] token request failed:", error);
-      return "";
+      console.warn("[ttyd] cannot derive token url:", error);
+      return null;
     }
   }
+
+  private async fetchToken(): Promise<string> {
+  const url = this.resolveTokenUrl();
+  if (!url) return "";
+
+  if (window.ttydApi?.fetchToken) {
+    return window.ttydApi.fetchToken(url);
+  }
+  console.warn("[ttyd] no main process bridge available, skipping token request");
+  return "";
+}
 
   private async connect(): Promise<void> {
     if (this.isUnmounting) return;
@@ -1047,10 +1057,10 @@ export class Terminal extends React.Component<Props, XtermState> {
     if (this.isUnmounting) return;
 
     if (data?.charCodeAt(0) === 4) {
-      const { wsUrl, tokenUrl, onCtrlD } = this.props;
+      const { wsUrl, sessionId, onCtrlD } = this.props;
       if (onCtrlD) {
         console.log("[ttyd] CTRL+D intercepted, closing session");
-        onCtrlD(wsUrl, tokenUrl);
+        onCtrlD(wsUrl, sessionId);
         // handled by the callback, do not forward the EOT byte
         return;
       }
