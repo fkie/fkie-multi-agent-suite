@@ -83,14 +83,27 @@ export function ensureBorderTabVisible(model: Model, location: DockLocation): vo
 }
 
 /**
- * Hides a border when its last visible tab is closed
- * (selecting the tab before deleting collapses the border).
+ * Collapses a border when its last tab is closed.
+ * If further tabs remain, a sibling is selected so the border stays open.
  */
 export function collapseBorderOnLastTab(model: Model, tabId: string): void {
   const parent = model.getNodeById(tabId)?.getParent();
   if (parent?.getType() !== "border") return;
+
   const border = parent as BorderNode;
-  if (border.getChildren().length === 2 && border.getSelectedNode()?.isVisible()) {
-    model.doAction(Actions.selectTab(tabId));
+  const children = border.getChildren();
+  const isSelected = border.getSelectedNode()?.getId() === tabId;
+
+  // last tab of this border -> toggle (collapse) it
+  if (children.length <= 1) {
+    if (isSelected) model.doAction(Actions.selectTab(tabId));
+    return;
+  }
+
+  // more tabs left -> keep border open, move selection to a sibling
+  if (isSelected) {
+    const index = children.findIndex((c) => c.getId() === tabId);
+    const sibling = children[index + 1] ?? children[index - 1];
+    if (sibling) model.doAction(Actions.selectTab(sibling.getId()));
   }
 }

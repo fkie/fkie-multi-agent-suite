@@ -161,7 +161,6 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
   const deleteTab = useCallback(
     (tabId: string): void => {
       if (!model?.getNodeById(tabId)) return;
-      collapseBorderOnLastTab(model, tabId);
       model.doAction(FlexLayout.Actions.deleteTab(tabId));
     },
     [model]
