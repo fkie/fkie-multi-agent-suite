@@ -114,6 +114,7 @@ class ScreenServicer:
                         self._screen_nodes_set = new_screen_nodes_set
                         self._screens_set = new_screens_set
                 last_check = 0.0
+                self._force_refresh = False
             else:
                 last_check += interval
             # interruptible sleep
@@ -206,7 +207,7 @@ class ScreenServicer:
         return json.dumps({'result': success, 'message': "\n".join(errors)}, cls=SelfEncoder)
 
     def get_screen_list(self, force: False) -> str:
-        Log.debug(f"{self.__class__.__name__}: Request to [ros.screen.get_list]")
+        Log.info(f"{self.__class__.__name__}: Request to [ros.screen.get_list]")
         with self._screen_thread_lock:
             self._screen_do_check = True
             self._force_refresh = force
