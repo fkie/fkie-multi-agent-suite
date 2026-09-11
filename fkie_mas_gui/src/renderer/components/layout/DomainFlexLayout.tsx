@@ -18,11 +18,17 @@ import {
 } from "@/renderer/components/layout/events";
 import { pAddTabStickyButton } from "@/renderer/components/layout/helpers";
 import { contentToId, matchesContentId, TContentId } from "@/renderer/components/layout/LayoutTabConfig";
+import { useDirtyEditorGuard } from "@/renderer/context/DirtyEditorGuard";
 import { usePersistentLayout } from "@/renderer/hooks/usePersistentLayout";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { LAYOUT_TABS } from "./LayoutDefines";
 import { hasJsonNode, TJsonNode } from "./LayoutPersistance";
-import { collapseBorderOnLastTab, ensureBorderTabVisible, resolveDockTarget } from "./LayoutTargets";
+import {
+  collapseBorderOnLastTab,
+  deleteTabAndSelectNodes,
+  ensureBorderTabVisible,
+  resolveDockTarget,
+} from "./LayoutTargets";
 
 /** components which are persisted inside a domain layout */
 const DOMAIN_LAYOUT_COMPONENTS: string[] = [
@@ -87,6 +93,7 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
 
   const nodesTabId = `${LAYOUT_TABS.NODES}-${contentToId(contentId)}`;
   const defaultLayout = useMemo(() => createDefaultDomainLayout(contentId), [contentId]);
+  const { guardTabClose } = useDirtyEditorGuard();
 
   const keepDomainTab = useCallback((tab: TJsonNode): boolean => {
     return DOMAIN_LAYOUT_COMPONENTS.includes(tab.component ?? "");
@@ -161,9 +168,10 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
   const deleteTab = useCallback(
     (tabId: string): void => {
       if (!model?.getNodeById(tabId)) return;
-      model.doAction(FlexLayout.Actions.deleteTab(tabId));
+      if (!guardTabClose(model, tabId)) return;
+      deleteTabAndSelectNodes(model, tabId, LAYOUT_TABS.NODES);
     },
-    [model]
+    [model, guardTabClose]
   );
 
   function onRenderTabSet(
@@ -280,14 +288,10 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
         factory={nodeFactory}
         onAction={(action: FlexLayout.Action) => {
           if (action.type === FlexLayout.Actions.DELETE_TAB) {
-            const node = model.getNodeById(action.data.node);
+            if (!guardTabClose(model, action.data.node)) return undefined; // cancel action
             collapseBorderOnLastTab(model, action.data.node);
-            // select the "Nodes" tab if it lives in the same tabset as the closed tab
-            for (const tab of node?.getParent()?.getChildren() ?? []) {
-              if (tab.getType() === "tab" && (tab as FlexLayout.TabNode).getComponent() === LAYOUT_TABS.NODES) {
-                model.doAction(FlexLayout.Actions.selectTab(tab.getId()));
-              }
-            }
+            deleteTabAndSelectNodes(model, action.data.node, LAYOUT_TABS.NODES);
+            return undefined; // already handled
           }
           return action;
         }}

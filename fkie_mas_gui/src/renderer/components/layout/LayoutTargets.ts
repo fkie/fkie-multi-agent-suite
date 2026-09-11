@@ -107,3 +107,25 @@ export function collapseBorderOnLastTab(model: Model, tabId: string): void {
     if (sibling) model.doAction(Actions.selectTab(sibling.getId()));
   }
 }
+
+/** Searches the tabset of the given tab for a sibling tab with the given component. */
+export function findSiblingTabByComponent(model: Model, tabId: string, component: string): string | undefined {
+  const parent = model.getNodeById(tabId)?.getParent();
+  if (!parent || parent.getType() === "border") return undefined;
+  for (const child of parent.getChildren()) {
+    if (child.getType() !== "tab" || child.getId() === tabId) continue;
+    if ((child as TabNode).getComponent() === component) return child.getId();
+  }
+  return undefined;
+}
+
+/** Deletes the tab and activates the nodes tab of the same tabset, if present. */
+export function deleteTabAndSelectNodes(model: Model, tabId: string, component: string): void {
+  if (!model.getNodeById(tabId)) return;
+  // resolve the sibling before the node is removed from the model
+  const nodesTabId = findSiblingTabByComponent(model, tabId, component);
+  model.doAction(Actions.deleteTab(tabId));
+  if (nodesTabId && model.getNodeById(nodesTabId)) {
+    model.doAction(Actions.selectTab(nodesTabId));
+  }
+}

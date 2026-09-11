@@ -24,11 +24,6 @@ import WysiwygIcon from "@mui/icons-material/Wysiwyg";
 import {
   Badge,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   IconButton,
   Stack,
   Tooltip,
@@ -89,8 +84,8 @@ import {
 import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
 import ProviderSelectionModal from "@/renderer/components/SelectionModal/ProviderSelectionModal";
 import { getInfoStateColor } from "@/renderer/components/UI/Colors";
-import DraggablePaper from "@/renderer/components/UI/DraggablePaper";
 import { useAutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
+import { useDirtyEditorGuard } from "@/renderer/context/DirtyEditorGuard";
 import { ElectronContext } from "@/renderer/context/ElectronContext";
 import { useAppStateNamespace } from "@/renderer/hooks/useAppState";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
@@ -99,9 +94,6 @@ import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { usePersistentLayout } from "@/renderer/hooks/usePersistentLayout";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
-import { getBaseName, getFileName } from "@/renderer/models";
-import { SaveResult } from "@/renderer/monaco/types";
-import { isEditorEditorId } from "@/renderer/monaco/utils";
 import { Provider } from "@/renderer/providers";
 import { EventProviderAuthRequest } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_AUTH_REQUEST } from "@/renderer/providers/eventTypes";
@@ -156,12 +148,13 @@ export default function NodeManager(): JSX.Element {
   const { removeAll: clearLayoutState } = useAppStateNamespace("layouts");
   const layoutRef = useRef<React.ComponentRef<typeof Layout> | null>(null);
   const [addToLayout, setAddToLayout] = useState<ITabAttributesExt[]>([]);
-  const [dirtyTabs, setDirtyTabs] = useState<string[]>([]);
   const [passwordRequests, setPasswordRequests] = useState<React.ReactNode[]>([]);
 
   const [infoStates, setInfoStates] = useState<TInfoState[]>([]);
   const [infoStateTimer, setInfoStateTimer] = useState<NodeJS.Timeout | undefined>();
   const [currentInfoState, setCurrentInfoState] = useState<TInfoState | undefined>();
+
+  const { guardTabClose, requestCloseEditors, hasPending } = useDirtyEditorGuard();
 
   // const [enablePopout, setEnablePopout] = useState<boolean>(!window.commandExecutor);
 
@@ -251,20 +244,10 @@ export default function NodeManager(): JSX.Element {
 
   /** Hide bottom panel when last terminal is closed and handle editor tabs with unsaved changes */
   const deleteTab = useCallback(
-    (tabId: string, fromEvent: boolean = false): void => {
+    (tabId: string, fromEvent: boolean = false, force: boolean = false): void => {
       if (!model) return;
-      // handle editor tabs with modified files
-      if (isEditorEditorId(tabId)) {
-        const modified = monacoCtx.getModifiedFilesByEditor(tabId);
-        if (modified.length > 0) {
-          const editorTab = model.getNodeById(tabId);
-          if (editorTab) {
-            model.doAction(Actions.selectTab(editorTab.getId()));
-            setDirtyTabs([tabId]);
-            return;
-          }
-        }
-      }
+      // ask user about unsaved editor changes
+      if (!force && !guardTabClose(model, tabId, (id) => deleteTabRef.current?.(id, fromEvent, true))) return;
 
       const nodeBId = model.getNodeById(tabId);
       if (!nodeBId) {
@@ -311,8 +294,14 @@ export default function NodeManager(): JSX.Element {
       // Cleanup React node reference
       delete layoutComponentsRef.current[tabId];
     },
-    [model, monacoCtx]
+    [model, guardTabClose]
   );
+
+  // stable ref so the guard callback never uses a stale closure
+  const deleteTabRef = useRef(deleteTab);
+  useEffect(() => {
+    deleteTabRef.current = deleteTab;
+  }, [deleteTab]);
 
   useCustomEventListener(
     EVENT_OPEN_COMPONENT,
@@ -481,7 +470,7 @@ export default function NodeManager(): JSX.Element {
       }
     }
     setAddToLayout((prev) => prev.filter((t) => t.id !== tab?.id));
-  }, [addToLayout]);
+  }, [addToLayout, deleteTab]);
 
   function factory(node: TabNode, contentId?: TContentId): JSX.Element {
     const component = node.getComponent();
@@ -1107,9 +1096,13 @@ export default function NodeManager(): JSX.Element {
       }
       const dirtyModels = monacoCtx.dirtyManager()?.getDirtyModels();
       if (!dirtyModels) return;
-      setDirtyTabs(monacoCtx.modelRegistry()?.getEditorsByModels(dirtyModels) || []);
+      requestCloseEditors(model, monacoCtx.modelRegistry()?.getEditorsByModels(dirtyModels) || [], (id) =>
+        deleteTabRef.current?.(id, false, true)
+      );
     }
   }, [
+    model,
+    requestCloseEditors,
     electronCtx.shutdownManager,
     electronCtx.terminateSubprocesses,
     isInstallUpdateRequested,
@@ -1145,40 +1138,6 @@ export default function NodeManager(): JSX.Element {
       setFontSize(14);
     }
   }
-
-  const saveAllDirty = useCallback(async () => {
-    // save all modified files
-    const editorModels = monacoCtx.modelRegistry()?.getByEditorIds(dirtyTabs) || [];
-    const dirtyModels = monacoCtx.dirtyManager()?.reduceToDirty(Array.from(editorModels)) || [];
-    const results: SaveResult[] = await Promise.all(dirtyModels.map((model) => monacoCtx.saveFile(model)));
-
-    const allTabs = new Set<string>();
-    const failedTabs = new Set<string>();
-
-    // collect all tabs and track which ones failed to save
-    for (const { editorIds = [], result } of results) {
-      for (const editorId of editorIds) {
-        allTabs.add(editorId);
-        if (!result) {
-          failedTabs.add(editorId);
-        }
-      }
-    }
-
-    // close tabs that were successfully saved
-    for (const editorId of allTabs) {
-      if (modelRef.current && !failedTabs.has(editorId)) {
-        modelRef.current.doAction(Actions.deleteTab(editorId));
-      }
-    }
-
-    // cancel app close if any tab failed to save
-    if (failedTabs.size > 0) {
-      electronCtx.cancelCloseApp();
-    }
-
-    setDirtyTabs([]);
-  }, [dirtyTabs, monacoCtx, electronCtx]);
 
   return (
     <Stack
@@ -1227,7 +1186,7 @@ export default function NodeManager(): JSX.Element {
         }}
       />
 
-      {electronCtx.terminateSubprocesses && dirtyTabs.length === 0 && rosCtx.providers.length > 0 && (
+      {electronCtx.terminateSubprocesses && !hasPending && rosCtx.providers.length > 0 && (
         // ask for provider shutdown before quitting GUI
         <ProviderSelectionModal
           title="Select providers to shut down"
@@ -1241,77 +1200,6 @@ export default function NodeManager(): JSX.Element {
           onForceCloseCallback={() => electronCtx.shutdownManager?.quitGui()}
           onToggle={() => electronCtx.cancelCloseTimer()}
         />
-      )}
-
-      {dirtyTabs.length > 0 && (
-        <Dialog
-          open={dirtyTabs.length > 0}
-          onClose={() => {
-            setDirtyTabs([]);
-            electronCtx.cancelCloseApp();
-          }}
-          onAbort={() => {
-            setDirtyTabs([]);
-            electronCtx.cancelCloseApp();
-          }}
-          onFocus={() => {
-            electronCtx.cancelCloseTimer();
-          }}
-          fullWidth
-          scroll="paper"
-          maxWidth="sm"
-          PaperComponent={DraggablePaper}
-          aria-labelledby="draggable-dialog-title"
-        >
-          <DialogTitle className="draggable-dialog-title" style={{ cursor: "move" }} id="draggable-dialog-title">
-            Changed Files
-          </DialogTitle>
-
-          <DialogContent aria-label="list">
-            {dirtyTabs.map((editorId) => {
-              const editorModels = monacoCtx.modelRegistry()?.getByEditorIds([editorId]) || [];
-              const dirtyModels = monacoCtx.dirtyManager()?.reduceToDirty(Array.from(editorModels)) || [];
-              const files = dirtyModels.map((m) => getFileName(m.uri.path));
-              return (
-                <DialogContentText key={editorId} id="alert-dialog-description">
-                  {`Modified files in "${getBaseName(editorId)}" tab: ${files}`}
-                </DialogContentText>
-              );
-            })}
-          </DialogContent>
-
-          <DialogActions>
-            <Button
-              color="warning"
-              onClick={() => {
-                for (const editorId of dirtyTabs) {
-                  model.doAction(Actions.deleteTab(editorId));
-                }
-                setDirtyTabs([]);
-              }}
-            >
-              Don&apos;t save
-            </Button>
-            <Button
-              color="primary"
-              onClick={() => {
-                setDirtyTabs([]);
-                electronCtx.cancelCloseApp();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              autoFocus
-              color="primary"
-              onClick={() => {
-                saveAllDirty();
-              }}
-            >
-              Save all
-            </Button>
-          </DialogActions>
-        </Dialog>
       )}
 
       {passwordRequests.map((item) => item)}
