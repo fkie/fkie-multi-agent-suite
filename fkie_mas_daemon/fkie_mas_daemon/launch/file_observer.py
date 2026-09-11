@@ -6,6 +6,8 @@
 #
 # ****************************************************************************
 
+import errno
+import resource
 import os
 import queue
 import threading
@@ -27,6 +29,60 @@ from watchdog.observers import Observer
 
 from fkie_mas_pylib.logging.logging import Log
 
+_INOTIFY_SYSFS = "/proc/sys/fs/inotify"
+
+
+def _read_inotify_limit(name: str) -> int:
+    """Read an inotify limit from procfs, -1 if not available."""
+    try:
+        with open(os.path.join(_INOTIFY_SYSFS, name)) as handle:
+            return int(handle.read().strip())
+    except Exception:
+        return -1
+
+
+def _count_inotify_instances(pid: str = "self") -> int:
+    """Count open inotify instances (file descriptors) of a process."""
+    count = 0
+    fd_dir = f"/proc/{pid}/fd"
+    try:
+        names = os.listdir(fd_dir)
+    except OSError:
+        return -1
+    for name in names:
+        try:
+            if os.readlink(os.path.join(fd_dir, name)) == "anon_inode:inotify":
+                count += 1
+        except OSError:
+            continue
+    return count
+
+
+def _count_inotify_instances_of_user() -> int:
+    """Count inotify instances of all processes owned by the current user."""
+    uid = os.getuid()
+    total = 0
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        try:
+            if os.stat(f"/proc/{entry}").st_uid != uid:
+                continue
+        except OSError:
+            continue
+        count = _count_inotify_instances(entry)
+        if count > 0:
+            total += count
+    return total
+
+
+def _open_fd_count(pid: str = "self") -> int:
+    """Count open file descriptors of a process."""
+    try:
+        return len(os.listdir(f"/proc/{pid}/fd"))
+    except OSError:
+        return -1
+
 
 class _ControlMessage:
     """Internal marker object used in the callback queue."""
@@ -44,32 +100,196 @@ _SHUTDOWN = _ControlMessage("SHUTDOWN")
 # Wakes up the callback worker thread to check for delayed events.
 _WAKEUP = _ControlMessage("WAKEUP")
 
+# ----------------------------------------------------------------------------
+# watch root detection
+# ----------------------------------------------------------------------------
+
+# Environment variables containing colon separated prefix paths.
+_PREFIX_PATH_VARS: Tuple[str, ...] = (
+    "COLCON_PREFIX_PATH",
+    "AMENT_PREFIX_PATH",
+)
+
+# Marker files identifying a colcon/ament install prefix.
+_PREFIX_MARKERS: Tuple[str, ...] = (
+    "local_setup.bash",
+    "setup.bash",
+    ".colcon_install_layout",
+)
+
+
+def _collapse_prefix(path: str) -> str:
+    """
+    Collapse a per package prefix to its workspace install prefix.
+
+    AMENT_PREFIX_PATH lists <ws>/install/<pkg> for every package. Watching the
+    common parent <ws>/install instead keeps the number of watch roots small.
+    """
+    parent = os.path.dirname(path)
+
+    if not parent or parent == path:
+        return path
+
+    for marker in _PREFIX_MARKERS:
+        if os.path.exists(os.path.join(parent, marker)):
+            return parent
+
+    return path
+
+
+def ros_distro_lib_root() -> Optional[str]:
+    """
+    Return <ros_prefix>/lib of the system installation.
+
+    Node executables of system packages live here. Adding it as a recursive
+    watch root replaces one inotify instance per package directory with a
+    single instance for the whole tree.
+    """
+    for entry in os.environ.get("AMENT_PREFIX_PATH", "").split(os.pathsep):
+        if not entry:
+            continue
+
+        prefix = FileObserverRegistry._normalize_path(entry)
+
+        if not prefix.startswith("/opt/ros" + os.sep):
+            continue
+
+        # /opt/ros/<distro>/... -> /opt/ros/<distro>
+        parts = prefix.split(os.sep)
+        distro_prefix = os.sep.join(parts[:4])
+        lib = os.path.join(distro_prefix, "lib")
+
+        if os.path.isdir(lib):
+            return lib
+
+    return None
+
+
+def default_watch_roots(
+    include_sources: bool = True,
+    include_build: bool = True,
+    include_ros: bool = True,
+    exclude_prefixes: Iterable[str] = (),
+    env_vars: Iterable[str] = _PREFIX_PATH_VARS
+) -> Tuple[str, ...]:
+    """
+    Derive recursive watch roots from the ROS/colcon environment.
+
+    Both the logical path and the resolved real path of every prefix are added,
+    because the registry tracks observed directories with both variants.
+
+    :param include_sources:
+        Also add the <ws>/src directory of a workspace, which is the symlink
+        target of share files in a --symlink-install workspace.
+    :param include_build:
+        Also add the <ws>/build directory of a workspace. Node executables in
+        install/<pkg>/lib are symlinks into build/<pkg> for a --symlink-install
+        workspace, so without this root every started node would need its own
+        inotify instance.
+    :param exclude_prefixes:
+        Paths that are skipped, for example the read only system installation.
+        Files below these paths are watched individually as before.
+    :param env_vars:
+        Environment variables holding os.pathsep separated prefix paths.
+    :return:
+        Existing directories, nested entries removed, shortest path first.
+    """
+    excluded = tuple(
+        FileObserverRegistry._normalize_path(path)
+        for path in exclude_prefixes or ())
+
+    candidates: List[str] = []
+
+    def _append(path: str) -> None:
+        """Add a path and its real path once, keeping the insertion order."""
+        for entry in (path, os.path.realpath(path)):
+            if entry and entry not in candidates:
+                candidates.append(entry)
+
+    for variable in env_vars:
+        for entry in os.environ.get(variable, "").split(os.pathsep):
+            if not entry:
+                continue
+
+            prefix = _collapse_prefix(
+                FileObserverRegistry._normalize_path(entry))
+
+            if not os.path.isdir(prefix):
+                continue
+
+            _append(prefix)
+
+            # Directories located next to the install prefix of a workspace.
+            sibling_dirs: List[str] = []
+
+            if include_sources:
+                sibling_dirs.append("src")
+
+            if include_build:
+                sibling_dirs.append("build")
+
+            workspace = os.path.dirname(prefix)
+
+            for name in sibling_dirs:
+                sibling = os.path.join(workspace, name)
+
+                if os.path.isdir(sibling):
+                    _append(sibling)
+
+    _append(ros_distro_lib_root())
+
+    roots: List[str] = []
+
+    # Shortest first, so a parent is kept and all its children are dropped.
+    for candidate in sorted(candidates, key=len):
+        if any(
+            candidate == skip or candidate.startswith(skip + os.sep)
+            for skip in excluded
+        ):
+            continue
+
+        if any(
+            candidate == root or candidate.startswith(root + os.sep)
+            for root in roots
+        ):
+            continue
+
+        roots.append(candidate)
+
+    return tuple(roots)
+
 
 class _DirectoryWatch:
     """
-    Reference counted watchdog watch for one observed directory.
+    Reference counted watchdog watch for one watch target.
+
+    A watch target is either a single observed directory (non recursive) or a
+    configured watch root covering a whole directory tree (recursive).
 
     The watch object is None while the corresponding watchdog schedule() call
     is still pending. The generation is used to detect that an entry was
     removed and recreated while a schedule() call was in progress.
     """
 
-    __slots__ = ("watch", "count", "generation")
+    __slots__ = ("watch", "count", "generation", "recursive")
 
     def __init__(
         self,
         watch: Any,
         count: int,
-        generation: int
+        generation: int,
+        recursive: bool = False
     ) -> None:
         self.watch = watch
         self.count = count
         self.generation = generation
+        self.recursive = recursive
 
     def __repr__(self) -> str:
         return (
             f"<_DirectoryWatch count={self.count} "
             f"generation={self.generation} "
+            f"recursive={self.recursive} "
             f"scheduled={self.watch is not None}>")
 
 
@@ -174,7 +394,7 @@ class FileObserverRegistry:
     Thread-safe registry for observed files.
 
     The registry owns one watchdog Observer and keeps reference counts for
-    observed files and directories. The same file can therefore be requested
+    observed files and watch targets. The same file can therefore be requested
     by several launch files or nodes without losing the watch when only one
     user releases it.
 
@@ -184,6 +404,23 @@ class FileObserverRegistry:
     * changes to the symlink target are detected in the target directory
     * replacement of the symlink itself is detected in the logical directory
     * several symlinks pointing to the same target do not overwrite each other
+
+    Watch targets and inotify instances
+    -----------------------------------
+    watchdog creates one event emitter, and on Linux one inotify instance, per
+    scheduled path. Observing many single directories therefore consumes many
+    inotify instances and can exceed
+    /proc/sys/fs/inotify/max_user_instances (errno EMFILE).
+
+    To avoid this, directories can be grouped into recursive watch roots. Every
+    observed directory below such a root is covered by one single recursive
+    watch of that root. The individual subdirectories then only count against
+    max_user_watches, which is orders of magnitude larger. Events of unrelated
+    files inside a root are discarded by the normal path resolution, so the
+    externally visible behaviour is unchanged.
+
+    Without watch_roots the registry behaves exactly like before: one non
+    recursive watch per observed directory.
 
     Supported events are:
 
@@ -221,7 +458,8 @@ class FileObserverRegistry:
     def __init__(
         self,
         on_change: Callable[[str, str, FrozenSet[str]], None],
-        min_event_interval: float = 1.0
+        min_event_interval: float = 1.0,
+        watch_roots: Optional[Iterable[str]] = None
     ) -> None:
         """
         :param on_change:
@@ -232,6 +470,13 @@ class FileObserverRegistry:
             path. The first event is forwarded immediately, subsequent events
             during the interval are collapsed and forwarded once at the end of
             the interval.
+        :param watch_roots:
+            Directory trees that are observed with one single recursive watch
+            each. Every observed directory inside such a tree shares this
+            watch, which keeps the number of used inotify instances constant.
+            For every given root its resolved real path is registered as an
+            additional root, so symlinked overlays such as
+            <ws>/install -> <ws>/src are covered as well.
         """
         if min_event_interval < 0.0:
             raise ValueError(
@@ -250,6 +495,16 @@ class FileObserverRegistry:
         self._observer_stopped = False
         self._stopping = False
 
+        # Recursive watch roots, longest path first so that the most specific
+        # root wins when roots are nested.
+        self._watch_roots: Tuple[str, ...] = self._prepare_watch_roots(
+            watch_roots)
+
+        if self._watch_roots:
+            Log.debug(
+                f"{self.__class__.__name__}: recursive watch roots: "
+                f"{', '.join(self._watch_roots)}")
+
         # Queue and worker thread decoupling the watchdog thread from user
         # callbacks.
         self._queue: "queue.Queue[Any]" = queue.Queue()
@@ -261,7 +516,7 @@ class FileObserverRegistry:
         # Logical observed path -> reference count.
         self._file_refs: Dict[str, int] = {}
 
-        # Logical observed path -> real path and watched directories.
+        # Logical observed path -> real path and observed directories.
         self._path_info: Dict[
             str,
             Tuple[str, Tuple[str, ...]]
@@ -270,7 +525,12 @@ class FileObserverRegistry:
         # Real path -> all logical paths referring to that real path.
         self._real_paths: Dict[str, Set[str]] = {}
 
-        # Watched directory -> reference counted watch.
+        # Observed directory -> reference count. Only used for diagnostics,
+        # several directories can share one watch target.
+        self._dir_refs: Dict[str, int] = {}
+
+        # Watch target (directory or recursive root) -> reference counted
+        # watch.
         self._dir_watches: Dict[str, _DirectoryWatch] = {}
 
         # Launch file -> logical observed paths belonging to it.
@@ -289,6 +549,24 @@ class FileObserverRegistry:
 
     # -- path helpers -----------------------------------------------------
 
+    def log_watch_targets(self) -> None:
+        """
+        Log every scheduled watch target. One target equals one inotify
+        instance, so this is the authoritative view on the instance usage.
+        """
+        with self._lock:
+            entries = {
+                target: (entry.recursive, entry.count, entry.watch is not None)
+                for target, entry in self._dir_watches.items()
+            }
+
+        Log.info(f"{self.__class__.__name__}: {len(entries)} watch targets, "
+                 f"process inotify instances={_count_inotify_instances()}")
+
+        for target, (recursive, count, scheduled) in sorted(entries.items()):
+            Log.info(f"  {target} recursive={recursive} refs={count} "
+                     f"scheduled={scheduled}")
+
     @staticmethod
     def _normalize_path(path: str) -> str:
         """
@@ -298,6 +576,56 @@ class FileObserverRegistry:
         to detect replacement of the symlink itself.
         """
         return os.path.abspath(os.path.normpath(os.fspath(path)))
+
+    @classmethod
+    def _prepare_watch_roots(
+        cls,
+        watch_roots: Optional[Iterable[str]]
+    ) -> Tuple[str, ...]:
+        """
+        Normalize the configured watch roots.
+
+        For every root its real path is added as an additional root, because
+        observed directories are tracked with their logical and their real
+        path. Nested roots are collapsed to their parent, since one recursive
+        watch already covers the whole subtree. Roots are returned longest
+        first, so the most specific root is selected during lookup.
+        """
+        candidates: List[str] = []
+
+        for root in watch_roots or ():
+            normalized = cls._normalize_path(root)
+
+            for candidate in (normalized, os.path.realpath(normalized)):
+                if candidate and candidate not in candidates:
+                    candidates.append(candidate)
+
+        collapsed: List[str] = []
+
+        for candidate in sorted(candidates, key=len):
+            if any(
+                candidate == root or candidate.startswith(root + os.sep)
+                for root in collapsed
+            ):
+                continue
+
+            collapsed.append(candidate)
+
+        return tuple(sorted(collapsed, key=len, reverse=True))
+
+    def _watch_target(self, directory: str) -> Tuple[str, bool]:
+        """
+        Return the path to schedule for a directory and its recursive flag.
+
+        Directories inside a configured watch root share one recursive watch of
+        that root. All other directories are watched individually and non
+        recursively.
+        """
+        for root in self._watch_roots:
+            if directory == root or directory.startswith(root + os.sep):
+                return root, True
+
+        return directory, False
 
     @classmethod
     def _path_details(
@@ -400,6 +728,7 @@ class FileObserverRegistry:
             self._file_refs.clear()
             self._path_info.clear()
             self._real_paths.clear()
+            self._dir_refs.clear()
             self._dir_watches.clear()
             self._launch_files.clear()
             self._launch_by_path.clear()
@@ -477,15 +806,21 @@ class FileObserverRegistry:
         self,
         directory: str,
         count: int,
-        pending_schedule: List[Tuple[Any, str, int]]
+        pending_schedule: List[Tuple[Any, str, int, bool]]
     ) -> None:
         """
         Add references for one directory and record a required schedule call.
 
+        The directory is mapped to its watch target first. Several directories
+        inside the same recursive watch root therefore share one single watch.
+
         The lock must be held. The watchdog schedule() call itself is executed
         later by _flush_watch_operations() without the lock.
         """
-        entry = self._dir_watches.get(directory)
+        self._dir_refs[directory] = self._dir_refs.get(directory, 0) + count
+
+        target, recursive = self._watch_target(directory)
+        entry = self._dir_watches.get(target)
 
         if entry is not None:
             entry.count += count
@@ -493,16 +828,22 @@ class FileObserverRegistry:
 
         self._watch_generation += 1
 
-        Log.debug(
-            f"{self.__class__.__name__}: observe directory: {directory}")
+        if recursive:
+            Log.debug(
+                f"{self.__class__.__name__}: observe directory {directory} "
+                f"through recursive watch root: {target}")
+        else:
+            Log.debug(
+                f"{self.__class__.__name__}: observe directory: {directory}")
 
-        self._dir_watches[directory] = _DirectoryWatch(
+        self._dir_watches[target] = _DirectoryWatch(
             None,
             count,
-            self._watch_generation)
+            self._watch_generation,
+            recursive)
 
         pending_schedule.append(
-            (self._observer, directory, self._watch_generation))
+            (self._observer, target, self._watch_generation, recursive))
 
     def _release_directory_locked(
         self,
@@ -515,7 +856,15 @@ class FileObserverRegistry:
         The lock must be held. The watchdog unschedule() call itself is
         executed later by _flush_watch_operations() without the lock.
         """
-        entry = self._dir_watches.get(directory)
+        dir_count = self._dir_refs.get(directory, 0)
+
+        if dir_count <= 1:
+            self._dir_refs.pop(directory, None)
+        else:
+            self._dir_refs[directory] = dir_count - 1
+
+        target, _recursive = self._watch_target(directory)
+        entry = self._dir_watches.get(target)
 
         if entry is None:
             return
@@ -525,46 +874,46 @@ class FileObserverRegistry:
         if entry.count > 0:
             return
 
-        del self._dir_watches[directory]
+        del self._dir_watches[target]
 
         Log.debug(
             f"{self.__class__.__name__}: remove directory from observer: "
-            f"{directory}")
+            f"{target}")
 
         if entry.watch is not None:
             pending_unschedule.append(
-                (self._observer, directory, entry.watch))
+                (self._observer, target, entry.watch))
         # If the watch is still pending, _flush_watch_operations() detects the
         # missing entry through the generation check and unschedules it there.
 
     def _flush_watch_operations(
         self,
-        pending_schedule: List[Tuple[Any, str, int]],
+        pending_schedule: List[Tuple[Any, str, int, bool]],
         pending_unschedule: List[Tuple[Any, str, Any]]
     ) -> List[Tuple[str, BaseException]]:
         """
         Execute all pending watchdog operations without holding the lock.
 
-        Unschedule operations run first so that a directory which is released
-        and immediately re-referenced ends up with a valid watch.
+        Unschedule operations run first so that a watch target which is
+        released and immediately re-referenced ends up with a valid watch.
 
         :return:
-            List of directories that could not be scheduled together with the
+            List of watch targets that could not be scheduled together with the
             raised exception.
         """
         failures: List[Tuple[str, BaseException]] = []
 
-        for observer, directory, watch in pending_unschedule:
+        for observer, target, watch in pending_unschedule:
             with self._lock:
-                # The directory may have been referenced again in the meantime.
-                entry = self._dir_watches.get(directory)
+                # The target may have been referenced again in the meantime.
+                entry = self._dir_watches.get(target)
                 still_referenced = (
                     entry is not None
                     and observer is self._observer)
 
             if still_referenced:
                 Log.debug(
-                    f"{self.__class__.__name__}: keep directory {directory}, "
+                    f"{self.__class__.__name__}: keep directory {target}, "
                     f"it was referenced again before unscheduling")
                 continue
 
@@ -572,18 +921,18 @@ class FileObserverRegistry:
                 observer.unschedule(watch)
             except Exception:
                 Log.debug(
-                    f"{self.__class__.__name__}: unschedule {directory} "
+                    f"{self.__class__.__name__}: unschedule {target} "
                     f"failed:\n{traceback.format_exc()}")
 
-        for observer, directory, generation in pending_schedule:
+        for observer, target, generation, recursive in pending_schedule:
             try:
                 watch = observer.schedule(
                     self._handler,
-                    directory,
-                    recursive=False)
+                    target,
+                    recursive=recursive)
             except Exception as error:
                 with self._lock:
-                    entry = self._dir_watches.get(directory)
+                    entry = self._dir_watches.get(target)
 
                     if (
                         entry is not None
@@ -591,19 +940,19 @@ class FileObserverRegistry:
                         and entry.watch is None
                     ):
                         # Drop the reservation, there is no usable watch.
-                        del self._dir_watches[directory]
+                        del self._dir_watches[target]
 
                 Log.debug(
-                    f"{self.__class__.__name__}: schedule {directory} "
+                    f"{self.__class__.__name__}: schedule {target} "
                     f"failed:\n{traceback.format_exc()}")
 
-                failures.append((directory, error))
+                failures.append((target, error))
                 continue
 
             obsolete_watch = None
 
             with self._lock:
-                entry = self._dir_watches.get(directory)
+                entry = self._dir_watches.get(target)
 
                 if (
                     entry is not None
@@ -622,7 +971,7 @@ class FileObserverRegistry:
                 except Exception:
                     Log.debug(
                         f"{self.__class__.__name__}: unschedule obsolete watch "
-                        f"for {directory} failed:\n{traceback.format_exc()}")
+                        f"for {target} failed:\n{traceback.format_exc()}")
 
         return failures
 
@@ -642,7 +991,7 @@ class FileObserverRegistry:
         """
         logical_path = self._normalize_path(path)
 
-        pending_schedule: List[Tuple[Any, str, int]] = []
+        pending_schedule: List[Tuple[Any, str, int, bool]] = []
         pending_unschedule: List[Tuple[Any, str, Any]] = []
 
         with self._lock:
@@ -670,6 +1019,7 @@ class FileObserverRegistry:
                     logical_path)
 
             self._file_refs[logical_path] = existing_count + 1
+            print(f"ADD OBSERVE: {logical_path}")
 
             for directory in directories:
                 self._reserve_directory_locked(
@@ -683,6 +1033,33 @@ class FileObserverRegistry:
 
         if not failures:
             return
+
+        # Collect diagnostics before the rollback releases the reservations.
+        with self._lock:
+            watched_dirs = len(self._dir_watches)
+            observed_dirs = len(self._dir_refs)
+            watch_roots = len(self._watch_roots)
+
+        diagnostics = (
+            f"registry watches={watched_dirs}, "
+            f"observed directories={observed_dirs}, "
+            f"recursive watch roots={watch_roots}, "
+            f"inotify instances: process={_count_inotify_instances()}, "
+            f"user={_count_inotify_instances_of_user()}, "
+            f"limit={_read_inotify_limit('max_user_instances')}; "
+            f"open fds={_open_fd_count()}, "
+            f"soft fd limit={resource.getrlimit(resource.RLIMIT_NOFILE)[0]}")
+
+        if watch_roots:
+            hint = (
+                "Increase the limit with: "
+                "sudo sysctl -w fs.inotify.max_user_instances=1024, "
+                "raise ulimit -n, or reduce the number of watch roots.")
+        else:
+            hint = (
+                "Increase the limit with: "
+                "sudo sysctl -w fs.inotify.max_user_instances=1024, "
+                "raise ulimit -n, or configure recursive watch roots.")
 
         # Roll back the complete registration, otherwise the file would be
         # registered without a working watch.
@@ -698,11 +1075,15 @@ class FileObserverRegistry:
 
         self._flush_watch_operations([], rollback_unschedule)
 
-        directory, error = failures[0]
+        target, error = failures[0]
+
+        if isinstance(error, OSError) and error.errno == errno.EMFILE:
+            raise OSError(
+                f"inotify instance or fd limit reached while observing "
+                f"{target} ({diagnostics}). {hint}") from error
 
         raise OSError(
-            f"cannot observe directory {directory} for {logical_path}: "
-            f"{error}")
+            f"cannot observe directory {target} for {logical_path}: {error}")
 
     def remove_file(self, path: str) -> None:
         """
@@ -898,6 +1279,14 @@ class FileObserverRegistry:
     def statistics(self) -> Dict[str, int]:
         """
         Return registry statistics.
+
+        One scheduled watch corresponds to one inotify instance, because
+        watchdog creates one emitter (and one inotify_init) per schedule().
+        Directories inside a recursive watch root share a single watch, so
+        'observed_directories' can be much larger than 'watches'.
+
+        'directories' is kept as an alias of 'watches' for compatibility with
+        older callers.
         """
         with self._lock:
             return {
@@ -906,11 +1295,39 @@ class FileObserverRegistry:
                 'aliases': sum(
                     len(paths)
                     for paths in self._real_paths.values()),
+                'observed_directories': len(self._dir_refs),
+                'watches': len(self._dir_watches),
                 'directories': len(self._dir_watches),
+                'watch_roots': len(self._watch_roots),
+                'recursive_watches': sum(
+                    1 for e in self._dir_watches.values() if e.recursive),
+                'scheduled_watches': sum(
+                    1 for e in self._dir_watches.values() if e.watch is not None),
                 'launch_files': len(self._launch_files),
                 'pending_events': len(self._pending_events),
                 'queued_events': self._queue.qsize(),
+                'inotify_max_user_instances': _read_inotify_limit('max_user_instances'),
+                'inotify_max_user_watches': _read_inotify_limit('max_user_watches'),
             }
+
+    def log_statistics(self) -> None:
+        """
+        Log a short summary of the current observation state.
+        """
+        stats = self.statistics()
+
+        Log.info(
+            f"{self.__class__.__name__}: files={stats['files']} "
+            f"({stats['file_references']} refs), "
+            f"observed directories={stats['observed_directories']}, "
+            f"watches={stats['watches']} "
+            f"(recursive={stats['recursive_watches']}), "
+            f"launch files={stats['launch_files']}, "
+            f"queued events={stats['queued_events']}, "
+            f"inotify process={_count_inotify_instances()}, "
+            f"user={_count_inotify_instances_of_user()}/"
+            f"{stats['inotify_max_user_instances']}, "
+            f"fds={_open_fd_count()}")
 
     # -- callback worker --------------------------------------------------
 
@@ -1036,11 +1453,15 @@ class FileObserverRegistry:
         """
         Dispatch a watchdog event.
 
-        The watchdog thread calls this method. Path resolution and debouncing
-        are performed while holding the internal lock. Watchdog operations and
-        user callbacks are executed afterwards without the lock.
+        The watchdog thread calls this method. Recursive watch roots deliver
+        events of unrelated files as well, those are discarded by the path
+        resolution below.
+
+        Path resolution and debouncing are performed while holding the internal
+        lock. Watchdog operations and user callbacks are executed afterwards
+        without the lock.
         """
-        pending_schedule: List[Tuple[Any, str, int]] = []
+        pending_schedule: List[Tuple[Any, str, int, bool]] = []
         pending_unschedule: List[Tuple[Any, str, Any]] = []
         callbacks: List[Tuple[str, str, FrozenSet[str]]] = []
         wake_worker = False
@@ -1105,7 +1526,7 @@ class FileObserverRegistry:
     def _refresh_path_locked(
         self,
         logical_path: str,
-        pending_schedule: List[Tuple[Any, str, int]],
+        pending_schedule: List[Tuple[Any, str, int, bool]],
         pending_unschedule: List[Tuple[Any, str, Any]]
     ) -> None:
         """
@@ -1182,15 +1603,19 @@ class FileObserverRegistry:
         self,
         event_path: str,
         is_directory: bool = False,
-        pending_schedule: Optional[List[Tuple[Any, str, int]]] = None,
+        pending_schedule: Optional[List[Tuple[Any, str, int, bool]]] = None,
         pending_unschedule: Optional[List[Tuple[Any, str, Any]]] = None
     ) -> Set[str]:
         """
         Resolve an event path to all matching logical observed paths.
 
-        The lock must be held. Directory events are resolved to all observed
-        files located directly inside that directory, which detects removal or
-        renaming of a watched directory.
+        The lock must be held. Events of files that are not observed resolve to
+        an empty set, which also filters the additional events delivered by
+        recursive watch roots.
+
+        Directory events are resolved to all observed files located directly
+        inside that directory, which detects removal or renaming of a watched
+        directory.
         """
         if pending_schedule is None:
             pending_schedule = []
@@ -1234,7 +1659,7 @@ class FileObserverRegistry:
         sorted path is returned. Internal dispatch uses _resolve_paths_locked()
         and therefore notifies all aliases.
         """
-        pending_schedule: List[Tuple[Any, str, int]] = []
+        pending_schedule: List[Tuple[Any, str, int, bool]] = []
         pending_unschedule: List[Tuple[Any, str, Any]] = []
 
         with self._lock:

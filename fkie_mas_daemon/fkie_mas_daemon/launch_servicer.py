@@ -6,7 +6,7 @@
 #
 # ****************************************************************************
 
-from .launch.file_observer import FileObserverRegistry
+from .launch.file_observer import FileObserverRegistry, default_watch_roots
 from .launch.launch_argument_cache import LAUNCH_ARGUMENT_CACHE
 from .launch.launch_config import LaunchConfig
 from .launch.launch_context import LaunchContext
@@ -179,7 +179,9 @@ class LaunchServicer:
         self.websocket = websocket
         self.xml_validator = LaunchValidator()
         self._callback_service_group = ReentrantCallbackGroup()
-        self._observer = FileObserverRegistry(self._on_file_changed)
+        roots = default_watch_roots()
+        self._observer = FileObserverRegistry(self._on_file_changed, watch_roots=roots)
+        Log.info(f"file observer watch roots: {roots}")
         # Observer registration IDs are unique for a launch path and daemon URI.
         self._observer_launch_lock = Lock()
         self._observer_launch_paths: Dict[str, str] = {}
