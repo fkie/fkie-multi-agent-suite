@@ -1,3 +1,4 @@
+import { emitCustomEvent } from "react-custom-events";
 import { ConnectConfig } from "ssh2";
 import {
   ActionEvent,
@@ -16,6 +17,7 @@ import {
 } from "../models";
 import ConnectionState from "./ConnectionState";
 import Provider from "./Provider";
+import { EVENT_NODE_CMD_STATE } from "./eventTypes";
 
 export { ConnectionState };
 
@@ -289,3 +291,14 @@ export type TEventNodeComposable = {
   provider: Provider;
   composable: Composable;
 };
+
+export type TEventNodeCmdState = {
+  provider: Provider;
+  node: RosNode;
+  state: "run" | "stop" | "kill" | "none";
+};
+
+export function emitNodeCmdState(props: TEventNodeCmdState) {
+  props.node.cmdState = props.state;
+  emitCustomEvent(EVENT_NODE_CMD_STATE, props);
+}

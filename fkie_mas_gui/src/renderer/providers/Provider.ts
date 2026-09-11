@@ -135,6 +135,7 @@ type TSettings = {
   paramNamespaceSystemNodes: string;
   paramCapabilityGroup: string;
   paramLogCommand: string;
+  paramDelayROSUpdateAfterAction: number;
   changed: number;
 };
 
@@ -274,6 +275,7 @@ export default class Provider implements IProvider {
     paramNamespaceSystemNodes: "{SYSTEM}",
     paramCapabilityGroup: "",
     paramLogCommand: "",
+    paramDelayROSUpdateAfterAction: 1,
     changed: -1,
   };
 
@@ -320,7 +322,6 @@ export default class Provider implements IProvider {
       );
     }
     this.id = generateProviderId(host, port, rosVersion, domainId);
-    console.log(`CREATED PROVIDER: ${this.id}`);
   }
 
   protected log(): ILoggingContext {
@@ -333,6 +334,7 @@ export default class Provider implements IProvider {
         paramNamespaceSystemNodes: this.settingsCtxRef.current.get("namespaceSystemNodes") as string,
         paramCapabilityGroup: this.settingsCtxRef.current.get("capabilityGroupParameter") as string,
         paramLogCommand: this.settingsCtxRef.current.get("logCommand") as string,
+        paramDelayROSUpdateAfterAction: this.settingsCtxRef.current.get("delayROSUpdateAfterAction") as number,
         changed: this.settingsCtxRef.current.changed,
       };
     }
@@ -1331,6 +1333,8 @@ export default class Provider implements IProvider {
     // update the screens
     changed = this.applyScreens() || changed;
     if (changed) {
+      // stable ordering: keeps downstream tree/selection order deterministic
+      this.rosNodes.sort((a, b) => a.id.localeCompare(b.id));
       emitCustomEvent(EVENT_PROVIDER_ROS_NODES, new EventProviderRosNodes(this, this.rosNodes));
     }
     return Promise.resolve(null);
@@ -1539,6 +1543,7 @@ export default class Provider implements IProvider {
         return n.name === screen.name;
       });
       if (idxNode >= 0) {
+        this.rosNodes[idxNode].cmdState = "none";
         let oScr = this.rosNodes[idxNode].screens;
         if (oScr === undefined) oScr = [];
         const nScr = screen.screens ? screen.screens : [];
@@ -1606,8 +1611,8 @@ export default class Provider implements IProvider {
    * Updates the screens. This is called on message received by subscribed topic and also by request.
    * On request the msgs list should be null. In this case the list is requested by this method.
    */
-  public updateScreens: () => Promise<boolean> = async () => {
-    const result = await this.getScreenList();
+  public updateScreens: (forceRefresh?: boolean) => Promise<boolean> = async (forceRefresh = false) => {
+    const result = await this.getScreenList(forceRefresh);
     if (result) {
       this.screens = result;
       emitCustomEvent(EVENT_PROVIDER_SCREENS, new EventProviderScreens(this, this.screens));
@@ -1805,7 +1810,6 @@ export default class Provider implements IProvider {
    * Returns a messages struct for given message type.
    */
   public getMessageStruct: (request: string) => Promise<LaunchMessageStruct | null> = async (request: string) => {
-    console.log(`request: ${JSON.stringify(request)}`);
     const result = await this.makeCall(URI.ROS_LAUNCH_GET_MSG_STRUCT, [request], false).then((value: TResultData) => {
       if (value.result) {
         const response = value.data as LaunchMessageStruct;
@@ -2397,8 +2401,10 @@ export default class Provider implements IProvider {
   /**
    * Get list of available screens 'ros.screen.get_list'
    */
-  private getScreenList: () => Promise<ScreensMapping[] | null> = async () => {
-    const result = await this.makeCall(URI.ROS_SCREEN_GET_LIST, [], false).then((value: TResultData) => {
+  private getScreenList: (forceRefresh?: boolean) => Promise<ScreensMapping[] | null> = async (
+    forceRefresh = false
+  ) => {
+    const result = await this.makeCall(URI.ROS_SCREEN_GET_LIST, [forceRefresh], false).then((value: TResultData) => {
       if (value.result) {
         const screenMappings = (value.data as ScreensMapping[]) || [];
         const screenList: ScreensMapping[] = [];
@@ -2526,7 +2532,7 @@ export default class Provider implements IProvider {
           const paramList = [
             ...(((value.data as TParamListResult)?.params as RosParameter[])?.map((item) => {
               item.id = `${item.node}#${item.name}`;
-              item.providerId = this.id
+              item.providerId = this.id;
               return item;
             }) || []),
           ];
@@ -2536,7 +2542,7 @@ export default class Provider implements IProvider {
         const paramList = [
           ...((value.data as RosParameter[])?.map((item) => {
             item.id = `${item.node}#${item.name}`;
-            item.providerId = this.id
+            item.providerId = this.id;
             return item;
           }) || []),
         ];
@@ -2560,7 +2566,7 @@ export default class Provider implements IProvider {
             const paramList = [
               ...(((value.data as TParamListResult)?.params as RosParameter[])?.map((item) => {
                 item.id = `${item.node}#${item.name}`;
-                item.providerId = this.id
+                item.providerId = this.id;
                 return item;
               }) || []),
             ];
@@ -2570,7 +2576,7 @@ export default class Provider implements IProvider {
           const paramList = [
             ...((value.data as RosParameter[])?.map((item) => {
               item.id = `${item.node}#${item.name}`;
-              item.providerId = this.id
+              item.providerId = this.id;
               return item;
             }) || []),
           ];
@@ -2752,6 +2758,9 @@ export default class Provider implements IProvider {
           if (oldNode.pid !== n.pid) {
             changed = true;
             emitCustomEvent(EVENT_PROVIDER_NODE_STARTED, new EventProviderNodeStarted(this, n));
+          }
+          if (oldNode.status === n.status) {
+            n.cmdState = oldNode.cmdState;
           }
         } else {
           changed = true;
@@ -3026,6 +3035,28 @@ export default class Provider implements IProvider {
     for (const ci of composable) {
       emitCustomEvent(EVENT_NODE_COMPOSABLE, { provider: this, composable: ci } as TEventNodeComposable);
     }
+  };
+
+  /**
+   * send message to delay ROS update
+   */
+  public delayRosUpdate: () => Promise<Result> = async () => {
+    const delay = this.settings().paramDelayROSUpdateAfterAction;
+    if (delay <= 0) {
+      return { result: true, message: "No delay requested" };
+    }
+    const msg = {
+      sec: this.settings().paramDelayROSUpdateAfterAction,
+    };
+    this.log().debugInterface(URI.ROS_DELAY_UPDATE_STATE, msg, "", this.id);
+    const result = await this.connection.publish(URI.ROS_DELAY_UPDATE_STATE, msg).then((value: Result) => {
+      if (value.result) {
+        return { result: true, message: "Delay requested" };
+      }
+      this.log().error(`Provider [${this.id}]: Error at delayRosUpdate()`, `${value.message}`);
+      return { result: false, message: value.message };
+    });
+    return result;
   };
 
   private registerCallback: (uri: string, callback: (msg: JSONObject) => void) => void = async (uri, callback) => {

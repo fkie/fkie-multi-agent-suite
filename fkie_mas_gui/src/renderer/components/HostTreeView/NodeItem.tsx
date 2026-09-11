@@ -1,15 +1,18 @@
 import AutoDeleteIcon from "@mui/icons-material/AutoDelete";
 import CircleIcon from "@mui/icons-material/Circle";
+import CloseIcon from "@mui/icons-material/Close";
 import DesktopAccessDisabledOutlinedIcon from "@mui/icons-material/DesktopAccessDisabledOutlined";
 import DvrIcon from "@mui/icons-material/Dvr";
 import DynamicFeedOutlinedIcon from "@mui/icons-material/DynamicFeedOutlined";
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import NewReleasesTwoToneIcon from "@mui/icons-material/NewReleasesTwoTone";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistPlayIcon from "@mui/icons-material/PlaylistPlay";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ReportIcon from "@mui/icons-material/Report";
 import ScheduleSendIcon from "@mui/icons-material/ScheduleSend";
 import SettingsInputCompositeOutlinedIcon from "@mui/icons-material/SettingsInputCompositeOutlined";
+import StopIcon from "@mui/icons-material/Stop";
 import WarningIcon from "@mui/icons-material/Warning";
 import { Badge, Box, IconButton, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
@@ -30,15 +33,15 @@ import {
   RosNode,
   RosNodeStatus,
 } from "@/renderer/models";
-import { EventNodeDiagnostic, TEventNodeLifecycle } from "@/renderer/providers/events";
-import { EVENT_NODE_DIAGNOSTIC, EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
+import { EventNodeDiagnostic, TEventNodeCmdState, TEventNodeLifecycle } from "@/renderer/providers/events";
+import { EVENT_NODE_CMD_STATE, EVENT_NODE_DIAGNOSTIC, EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
-import { TTag } from "@/types";
+import { InfoStateLevel, TTag } from "@/types";
 import { TRosMessageStruct } from "@/types/TRosMessageStruct";
 import { treeItemClasses } from "@mui/x-tree-view";
 import { useCustomEventListener } from "react-custom-events";
 import { OverflowMenu } from "../UI";
-import { colorFromHostname, getDiagnosticColor, getTagColor } from "../UI/Colors";
+import { colorFromHostname, getDiagnosticColor, getInfoStateColor, getTagColor } from "../UI/Colors";
 import Tag from "../UI/Tag";
 import StyledTreeItem from "./StyledTreeItem";
 
@@ -76,6 +79,7 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
   const [sigKillTimeout, setSigKillTimeout] = useState<number[]>([]);
   const [associations, setAssociations] = useState<string[]>([]);
   const [requestingLifecycle, setRequestingLifecycle] = useState<boolean>(false);
+  const [cmdState, setCmdState] = useState<"run" | "stop" | "kill" | "none">(node.cmdState);
 
   function getColorFromLifecycle(state: string, isDarkMode = false): string {
     switch (state) {
@@ -148,12 +152,23 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
 
   const getNodeIcon: (
     node: RosNode,
+    cmdState: "run" | "stop" | "kill" | "none",
     diagnosticColor: string,
     isDarkMode?: boolean,
     lifecycle?: LifecycleState,
     requestingLifecycle?: boolean
   ) => JSX.Element = useCallback(
-    (node, diagnosticColor, isDarkMode = false, lifecycle = undefined, requestingLifecycle = false) => {
+    (node, cmdState, diagnosticColor, isDarkMode = false, lifecycle = undefined, requestingLifecycle = false) => {
+      const infoColor = getInfoStateColor(InfoStateLevel.INFO, isDarkMode);
+      if (cmdState === "run") {
+        return <PlayArrowIcon style={{ marginRight: 0.5, width: 20, color: infoColor }} />;
+      }
+      if (cmdState === "stop") {
+        return <StopIcon style={{ marginRight: 0.5, width: 20, color: infoColor }} />;
+      }
+      if (cmdState === "kill") {
+        return <CloseIcon style={{ marginRight: 0.5, width: 20, color: infoColor }} />;
+      }
       switch (node.status) {
         case RosNodeStatus.RUNNING: {
           const IconType = node.isLocal ? CircleIcon : ReportIcon;
@@ -372,6 +387,12 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
     }
   });
 
+  useCustomEventListener(EVENT_NODE_CMD_STATE, (data: TEventNodeCmdState) => {
+    if (data.provider.id !== node.providerId) return;
+    if (data.node.name !== node.name) return;
+    setCmdState(data.state);
+  });
+
   // useCustomEventListener(EVENT_NODE_COMPOSABLE, (data: TEventNodeComposable) => {
   //   if (data.provider.id === node.providerId && data.composable.containerName) {
   //     if (data.composable.nodeId === node.id) {
@@ -471,6 +492,7 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
     // create association count
     const associatedNodeNames = getAssociatedNodeNames(node);
     setAssociations(associatedNodeNames);
+    setCmdState(node.cmdState);
   }, [node]);
 
   /** Returns all associated node names recursively (max depth 10), excluding the start node */
@@ -484,8 +506,8 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
   );
 
   const nodeIcon = useMemo(
-    () => getNodeIcon(node, diagnosticColor, isDarkMode, lifecycle, requestingLifecycle),
-    [node, isDarkMode, lifecycle, diagnosticColor, requestingLifecycle]
+    () => getNodeIcon(node, cmdState, diagnosticColor, isDarkMode, lifecycle, requestingLifecycle),
+    [node, cmdState, isDarkMode, lifecycle, diagnosticColor, requestingLifecycle]
   );
 
   const createNode = useMemo(() => {

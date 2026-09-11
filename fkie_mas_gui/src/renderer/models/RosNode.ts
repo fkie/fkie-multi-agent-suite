@@ -167,6 +167,8 @@ export default class RosNode {
 
   toRemove?: boolean = undefined;
 
+  cmdState: "run" | "stop" | "kill" | "none" = "none";
+
   constructor(
     id = "",
     name = "",

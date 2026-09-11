@@ -3,6 +3,7 @@ const URI = {
   ROS_DAEMON_READY: "ros.daemon.ready",
   ROS_DISCOVERY_READY: "ros.discovery.ready",
   ROS_DAEMON_VERSION: "ros.daemon.get_version",
+  ROS_DELAY_UPDATE_STATE: "ros.daemon.delay_update_state",
   ROS_FILE_GET: "ros.file.get",
   ROS_FILE_SAVE: "ros.file.save",
   ROS_NODES_GET_LIST: "ros.nodes.get_list",

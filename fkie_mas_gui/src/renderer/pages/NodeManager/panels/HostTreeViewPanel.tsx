@@ -15,9 +15,10 @@ import {
   Paper,
   Stack,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useCustomEventListener } from "react-custom-events";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 
 import HostTreeView from "@/renderer/components/HostTreeView/HostTreeView";
 import HostTreeViewActions from "@/renderer/components/HostTreeView/HostTreeViewActions";
@@ -43,8 +44,13 @@ import useQueue from "@/renderer/hooks/useQueue";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
-import { ConnectionState, EventProviderRestartNodes } from "@/renderer/providers/events";
-import { EVENT_PROVIDER_RESTART_NODES } from "@/renderer/providers/eventTypes";
+import {
+  ConnectionState,
+  emitNodeCmdState,
+  EventProviderRestartNodes,
+  TEventNodeCmdState,
+} from "@/renderer/providers/events";
+import { EVENT_NODE_CMD_STATE, EVENT_PROVIDER_RESTART_NODES } from "@/renderer/providers/eventTypes";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
 import { findIn } from "@/renderer/utils/index";
 import { CmdType, CmdTypes, TFileRange } from "@/types";
@@ -468,6 +474,8 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     }
 
     try {
+      emitNodeCmdState({ provider: provider, node: node, state: "run" });
+      await provider.delayRosUpdate();
       const result = await provider.startNode(node);
       const success = result.success ?? false;
       const details = result.details || (success ? "started" : "failed");
@@ -543,7 +551,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     nodeList = updateWithAssociations(nodeList);
 
     const add2start = (node: RosNode | null): void => {
-      if (node && node2Start.filter((item) => item.id === node.id).length === 0) {
+      if (node && node2Start.filter((item) => item.name === node.name).length === 0) {
         node.ignore_timer = ignoreTimer;
         node2Start.push(node);
       }
@@ -644,6 +652,8 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     }
 
     if (node.status === RosNodeStatus.RUNNING) {
+      emitNodeCmdState({ provider: provider, node: node, state: "stop" });
+      await provider.delayRosUpdate();
       const resultStopNode = await provider.stopNode(node.id);
       if (!resultStopNode.result) {
         queue.addStatus("STOP", node.name, false, resultStopNode.message);
@@ -653,6 +663,8 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         queue.addStatus("STOP", node.name, true, "stopped");
       }
     } else if ((node.screens || []).length > 0) {
+      emitNodeCmdState({ provider: provider, node: node, state: "kill" });
+      await provider.delayRosUpdate();
       const resultTermNode = await provider.screenKillNode(node.id, "SIGTERM");
       if (!resultTermNode.result) {
         queue.addStatus("STOP", node.name, false, resultTermNode.message);
@@ -663,6 +675,71 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
       removePendingKill([node]);
       queue.addStatus("STOP", node.name, false, "no screen to stop");
     }
+  }
+
+  /**
+   * Returns all container names of a node, also for plain (deserialized) objects
+   * which may not provide the RosNode methods.
+   */
+  function getContainerNames(node: RosNode): string[] {
+    if (typeof node.getAllContainers === "function") {
+      return node.getAllContainers();
+    }
+    const result: string[] = [];
+    if (node.container_name && node.container_name !== node.name) {
+      result.push(node.container_name);
+    }
+    for (const launchInfo of node.launchInfo?.values() ?? []) {
+      if (
+        launchInfo.composable_container &&
+        launchInfo.composable_container !== node.name &&
+        !result.includes(launchInfo.composable_container)
+      ) {
+        result.push(launchInfo.composable_container);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Orders the nodes by their container hierarchy.
+   * - "first": container nodes come before the nodes running inside them (e.g. for STOP)
+   * - "last":  container nodes come after the nodes running inside them (e.g. for START)
+   */
+  function sortByContainerHierarchy(nodes: RosNode[], order: "first" | "last" = "first"): RosNode[] {
+    // only nodes handled within this call are relevant
+    const containersByName = new Map<string, RosNode>();
+    for (const node of nodes) {
+      if (node.is_container) {
+        containersByName.set(node.name, node);
+      }
+    }
+    if (containersByName.size === 0) return nodes;
+
+    const depths = new Map<string, number>();
+
+    const getDepth = (node: RosNode, visited: Set<string>): number => {
+      const cached = depths.get(node.name);
+      if (cached !== undefined) return cached;
+      if (visited.has(node.name)) return 0; // cycle protection
+      visited.add(node.name);
+      let depth = 0;
+      for (const containerName of getContainerNames(node)) {
+        const container = containersByName.get(containerName);
+        if (!container || container.name === node.name) continue;
+        depth = Math.max(depth, getDepth(container, visited) + 1);
+      }
+      visited.delete(node.name);
+      depths.set(node.name, depth);
+      return depth;
+    };
+
+    // "first" -> ascending depth, "last" -> descending depth; keep stable order otherwise
+    const direction = order === "first" ? 1 : -1;
+    return nodes
+      .map((node, index) => ({ node, index, depth: getDepth(node, new Set<string>()) }))
+      .sort((a, b) => direction * (a.depth - b.depth) || a.index - b.index)
+      .map((entry) => entry.node);
   }
 
   /**
@@ -702,13 +779,16 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
     let maxKillTime = 0;
     if (nodesToStop.length > 0) {
+      // stop container nodes before the nodes running inside them
+      const orderedNodesToStop = sortByContainerHierarchy(nodesToStop, "last");
+
       enqueue(
-        nodesToStop.map((node) => ({ node, action: "STOP" as QueueActionType })),
+        orderedNodesToStop.map((node) => ({ node, action: "STOP" as QueueActionType })),
         "stopNodes"
       );
 
       const nodesKillTimeout: RosNode[] = [];
-      for (const node of nodesToStop) {
+      for (const node of orderedNodesToStop) {
         if (!node.pid) continue;
         for (const launchInfo of node.launchInfo.values()) {
           if (launchInfo.sigkill_timeout) {
@@ -835,6 +915,8 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     }
 
     try {
+      emitNodeCmdState({ provider: provider, node: node, state: "kill" });
+      await provider.delayRosUpdate();
       const result = await provider.screenKillNode(node.name);
       const success = result.result ?? false;
       const message = result.message || (success ? "killed" : "failed");
@@ -1019,6 +1101,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     for (const p of rosCtx.providers) {
       if (p.connectionState === ConnectionState.STATES.CONNECTED) {
         p.updateRosNodes({}, forceRefresh);
+        p.updateScreens(forceRefresh);
         p.updateTimeDiff();
         p.updateDiagnostics(null);
       }
@@ -1521,7 +1604,10 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         {queue.currentIndex >= 0 && (
           <Paper elevation={2}>
             <Stack alignItems="center" justifyItems="center" direction="row" spacing={0.5} sx={{ marginRight: 2 }}>
-              <LinearProgress sx={{ width: "100%" }} variant="determinate" value={progressQueueMain} />
+              <Typography noWrap pr={0.5}>
+                {`${queue.getAt(queue.currentIndex)?.action} ${queue.getAt(queue.currentIndex)?.node?.name}`}
+              </Typography>
+              <LinearProgress style={{ flexGrow: 1 }} variant="determinate" value={progressQueueMain} />
               <FormLabel>
                 {queue.currentIndex}/{queue.queue.length}
               </FormLabel>

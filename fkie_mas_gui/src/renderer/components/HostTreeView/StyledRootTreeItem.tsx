@@ -1,4 +1,5 @@
-import { styled } from "@mui/material/styles";
+import { grey } from "@mui/material/colors";
+import { alpha, styled } from "@mui/material/styles";
 import { TreeItem, treeItemClasses } from "@mui/x-tree-view";
 
 const StyledRootTreeItem = styled(TreeItem)(({ theme }) => ({
@@ -9,16 +10,25 @@ const StyledRootTreeItem = styled(TreeItem)(({ theme }) => ({
     borderRadius: theme.spacing(0.9),
     paddingRight: theme.spacing(1),
     fontWeight: theme.typography.fontWeightMedium,
-    "&.Mui-expanded": {
-      fontWeight: theme.typography.fontWeightRegular,
-    },
+    // smooth, subtle transition
+    transition: theme.transitions.create("background-color", { duration: 120 }),
+
+    "&.Mui-expanded": { fontWeight: theme.typography.fontWeightRegular },
+
+    // subtle hover for unselected items
     "&:hover": {
-      // backgroundColor: theme.palette.action.hover,
-      backgroundColor: "transparent",
+      backgroundColor: alpha(theme.palette.text.primary, 0.04),
     },
-    "&.Mui-selected": {
-      backgroundColor: `var(--tree-view-bg-color, ${theme.palette.action.selected})`,
-      color: 'var(--tree-view-color)',
+
+    // selection independent of focus
+    "&.Mui-selected, &.Mui-selected.Mui-focused": {
+      backgroundColor: alpha(theme.palette.primary.main, 0.18),
+      color: theme.palette.text.primary,
+    },
+
+    // hover on selected: only a hint stronger
+    "&.Mui-selected:hover, &.Mui-selected.Mui-focused:hover": {
+      backgroundColor: alpha(theme.palette.primary.main, 0.22),
     },
     [`& .${treeItemClasses.label}`]: {
       fontWeight: "inherit",
@@ -35,11 +45,9 @@ const StyledRootTreeItem = styled(TreeItem)(({ theme }) => ({
   [`& .${treeItemClasses.groupTransition}`]: {
     marginLeft: 15,
     paddingLeft: 5,
-    // borderLeft: `1px dashed ${alpha(theme.palette.text.primary, 0.4)}`,
+    borderLeft: `1px dashed ${alpha(grey[600], 0.4)}`,
   },
-  ...theme.applyStyles("light", {
-    color: theme.palette.grey[800],
-  }),
+  ...theme.applyStyles("light", { color: theme.palette.grey[800] }),
 }));
 
 export default StyledRootTreeItem;

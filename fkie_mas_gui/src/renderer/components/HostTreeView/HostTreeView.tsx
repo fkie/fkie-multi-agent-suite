@@ -226,13 +226,63 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       }
       return { providerNodeTree: nodeTree, keyNodeList: newKeyNodeList, expandedGroups: expandedGroups };
     },
-    [spamNodesRegExp, isFiltered, namespaceSystemNodes]
+    []
   );
 
   const { providerNodeTree, keyNodeList, expandedGroups } = useMemo(
     () => createTreeFromNodes(visibleNodes, namespaceSystemNodes, spamNodesRegExp),
-    [visibleNodes, namespaceSystemNodes, spamNodesRegExp]
+    [createTreeFromNodes, visibleNodes, namespaceSystemNodes, spamNodesRegExp]
   );
+
+  /**
+   * Visual order of all tree items (itemId -> index), built exactly like
+   * buildHostTreeViewItem renders them (provider sort, children sort, group merging).
+   */
+  const visualOrder = useMemo(() => {
+    const order = new Map<string, number>();
+    let index = 0;
+
+    const isCapabilityGroup = (groupName: string): boolean => groupName.startsWith("{") && groupName.endsWith("}");
+
+    const visit = (treeItem: NodeTreeItem): void => {
+      if (!treeItem) return;
+      let { children, treePath, node, name } = treeItem;
+
+      // merge namespace levels with only one child, but never merge capability groups
+      while (
+        avoidGroupWithOneItem &&
+        children &&
+        children.length === 1 &&
+        !isCapabilityGroup(name) &&
+        !isCapabilityGroup(children[0].name)
+      ) {
+        const child = children[0];
+        children = child.children;
+        treePath = child.treePath;
+        node = child.node;
+        name = child.name;
+      }
+
+      if (!order.has(treePath)) order.set(treePath, index++);
+
+      // node -> no children
+      if (node && children && children.length === 0) return;
+
+      for (const child of [...children].sort(compareTreeItems)) {
+        visit(child);
+      }
+    };
+
+    for (const provider of [...providerNodeTree].sort(compareTreeProvider)) {
+      if (provider.providerId && !order.has(provider.providerId)) {
+        order.set(provider.providerId, index++);
+      }
+      for (const child of [...provider.children].sort(compareTreeItems)) {
+        visit(child);
+      }
+    }
+    return order;
+  }, [providerNodeTree, avoidGroupWithOneItem]);
 
   useEffect(() => {
     setExpanded((prev) => {
@@ -333,37 +383,33 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   );
 
   /**
-   * Get nodes for selected ids
+   * Get node ids for selected tree ids, ordered like the tree is rendered.
    */
   const getNodeIdsFromTreeIds = useCallback(
     (itemIds: string[]): string[] => {
-      let nodeList: string[] = [];
+      // key -> idGlobal, avoids duplicates on tree key level
+      const matched = new Map<string, string>();
+
       for (const item of itemIds) {
-        nodeList = [
-          ...nodeList,
-          ...keyNodeList
-            .filter((entry) => {
-              // running nodes ends with id in their name, loaded from launch file not
-              // we have to remove id if we compare running with not running nodes
-              const [entryName, entryId] = entry.key.split(ID_SEP);
-              const [itemName, itemId] = item.split(ID_SEP);
-              if (entryName === itemName) {
-                if (entryId && itemId) {
-                  return entryId === itemId;
-                }
-                return !!entry.idGlobal;
-              }
-              return false;
-            })
-            .map((entry) => {
-              return entry.idGlobal as string;
-            }),
-        ];
+        const [itemName, itemId] = item.split(ID_SEP);
+        for (const entry of keyNodeList) {
+          if (!entry.idGlobal) continue;
+          // running nodes end with an id in their name, nodes loaded from launch file do not
+          const [entryName, entryId] = entry.key.split(ID_SEP);
+          if (entryName !== itemName) continue;
+          if (entryId && itemId && entryId !== itemId) continue;
+          matched.set(entry.key, entry.idGlobal);
+        }
       }
-      // filter duplicate entries
-      return [...new Set(nodeList)];
+
+      const orderedKeys = [...matched.keys()].sort(
+        (a, b) => (visualOrder.get(a) ?? Number.MAX_SAFE_INTEGER) - (visualOrder.get(b) ?? Number.MAX_SAFE_INTEGER)
+      );
+
+      // filter duplicate entries, keep visual order
+      return [...new Set(orderedKeys.map((key) => matched.get(key) as string))];
     },
-    [keyNodeList]
+    [keyNodeList, visualOrder]
   );
 
   /**
@@ -657,7 +703,9 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         if (selItemSplitted.isValidNode) {
           const newKey = keyNodeList.find((keyItem) => {
             const keyItemSplitted = keyToNodeName(keyItem.key);
-            if (!keyItemSplitted.isValidNode) return false;
+            if (!keyItemSplitted.isValidNode) {
+              return false;
+            }
 
             if (selItemSplitted.provider !== keyItemSplitted.provider) return false;
 
@@ -668,17 +716,18 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
             return entryName === itemName;
           });
 
-          if (newKey) return newKey.key;
+          if (newKey) {
+            return newKey.key;
+          }
         }
         return selItem;
       });
-
       newSelection = getParentAndChildrenIds(remapped);
       return newSelection;
     });
     // IMPORTANT: update NavigationContext
     if (navCtx.selection.triggerId === triggerId) {
-      notifyNavCtxSelection(selectedItems);
+      notifyNavCtxSelection(newSelection);
     }
   }, [keyNodeList, getParentAndChildrenIds, notifyNavCtxSelection]);
 
@@ -699,8 +748,8 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   useEffect(() => {
     updateSelectedNodeIds();
   }, [
-    // update only if providerNodeTree was changed
-    providerNodeTree,
+    // update only if keyNodeList was changed
+    keyNodeList,
   ]);
 
   /**
@@ -721,17 +770,18 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     }
 
     // Filter nodes that actually exist in this tree
-    const selectedNodes: string[] = [];
-    for (const sel of navCtx.selection.selectedNodes) {
-      selectedNodes.push(...keyNodeList.filter((keyNode) => keyNode.idGlobal === sel).map((kn) => kn.key));
-    }
-    if (selectedNodes.length > 0) {
-      setSelectedItems(selectedNodes);
-      return;
-    }
+    // const selectedNodes: string[] = [];
+    // for (const sel of navCtx.selection.selectedNodes) {
+    //   selectedNodes.push(...keyNodeList.filter((keyNode) => keyNode.idGlobal === sel).map((kn) => kn.key));
+    // }
+    // if (selectedNodes.length > 0) {
+    //   console.log(`SET SEL ${selectedNodes.length}`);
+    //   setSelectedItems(selectedNodes);
+    //   return;
+    // }
 
-    setSelectedItems([]);
-  }, [navCtx.selection, providerIdsInTree, triggerId, keyNodeList]);
+    // setSelectedItems([]);
+  }, [navCtx.selection, providerIdsInTree, triggerId]);
 
   /**
    * Callback when the event of removing a launch file is triggered
@@ -941,23 +991,13 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         onExpandedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) => handleToggle(event, itemIds)}
         onSelectedItemsChange={(event: React.SyntheticEvent | null, itemIds: string[]) => handleSelect(event, itemIds)}
         expansionTrigger={"iconContainer"}
-        // selectionPropagation={{ parents: true, descendants: true }}
         sx={(theme) => ({
-          // all selected items: light blue background
-          "& .MuiTreeItem-content.Mui-selected": {
-            backgroundColor: "action.selected",
-          },
-          // focused + selected item: stronger blue background
-          "& .MuiTreeItem-content.Mui-selected.Mui-focused": {
+          "& .MuiTreeItem-content.Mui-selected, & .MuiTreeItem-content.Mui-selected.Mui-focused": {
             backgroundColor: alpha(theme.palette.primary.main, 0.18),
-            color: "text.secondary",
+            color: theme.palette.text.primary,
           },
-          // Hover-Effect for selected items
-          "& .MuiTreeItem-content.Mui-selected:hover": {
-            backgroundColor: "action.hover",
-          },
-          "& .MuiTreeItem-content.Mui-selected.Mui-focused:hover": {
-            backgroundColor: alpha(theme.palette.primary.main, 0.09),
+          "& .MuiTreeItem-content.Mui-selected:hover, & .MuiTreeItem-content.Mui-selected.Mui-focused:hover": {
+            backgroundColor: alpha(theme.palette.primary.main, 0.28),
           },
         })}
       >

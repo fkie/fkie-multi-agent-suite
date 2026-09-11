@@ -262,6 +262,14 @@ export const SETTINGS_DEF: Record<string, ISettingsParam> = {
     type: "boolean",
     description: "",
   },
+  delayROSUpdateAfterAction: {
+    label: "Delay ROS state update",
+    type: "number",
+    default: 2,
+    min: 0,
+    max: 30,
+    description: "Delay in seconds after an action (e.g. start/stop nodes) before updating ROS state.",
+  },
   spamNodes: {
     label: "Spam Nodes",
     freeSolo: true,
