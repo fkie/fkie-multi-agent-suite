@@ -38,18 +38,17 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
 
   const initializeTerminal = useCallback(
     async (newScreen = "") => {
-      // get current provider
       if (!provider) {
         setCurrentHost(undefined);
         return;
       }
       setProviderId(provider.id);
       setCurrentHost(provider.host());
+
       let tkUrl = `${nodeName.replaceAll("/", "")}`;
-      if (!tkUrl) {
-        tkUrl = provider.id;
-      }
+      if (!tkUrl) tkUrl = provider.id;
       setTokenUrl(tkUrl);
+
       const terminalCmd = await provider.cmdForType(type, nodeName, "", newScreen, cmd, env);
       if (!terminalCmd.success) {
         setError(terminalCmd.error);
@@ -59,9 +58,11 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
       }
       if (type === CmdTypes.SCREEN) {
         setLastScreenUsed(terminalCmd.screen);
+        // no screen available -> log is shown instead: highlight errors
+        setErrorHighlighting(!terminalCmd.screen);
       }
     },
-    [cmd, nodeName, rosCtx, type]
+    [cmd, nodeName, provider, type, env]
   );
 
   useCustomEventListener(EVENT_PROVIDER_STATE, (data: EventProviderState) => {
@@ -89,12 +90,10 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
           // [lastScreenUsed] prevents unnecessary reloads
           setInitialCommands(() => []);
           initializeTerminal(screens[0]);
-          setErrorHighlighting(false);
         } else if (lastScreenUsed) {
           // Open Log if no screen is available
           setInitialCommands(() => []);
           initializeTerminal("");
-          setErrorHighlighting(true);
         }
       }
     }
