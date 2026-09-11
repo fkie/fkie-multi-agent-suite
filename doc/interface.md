@@ -475,7 +475,7 @@ Kills the node or the screen of a given node
 
 Returns a list off all screens and their name converted to ROS node name.
 
-`Request`: `empty`
+`Request`: `bool` _force update_
 
 `Reply`: [ScreensMapping](#screensmapping)
 
