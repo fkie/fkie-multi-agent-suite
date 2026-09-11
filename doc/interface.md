@@ -17,6 +17,7 @@ Each URI has one of the following types:
 | [ros.daemon.ready](#rosdaemonready-pub)                                     | PUB  |
 | [ros.discovery.ready](#rosdiscoveryready-pub)                               | PUB  |
 | [ros.daemon.get_version](#rosdaemonget_version-rpc)                         | RPC  |
+| [ros.daemon.delay_update_state](#rosdaemondelay_update_state-pub)           | PUB  |
 | [ros.file.get](#rosfileget-rpc)                                             | RPC  |
 | [ros.file.save](#rosfilesave-rpc)                                           | RPC  |
 | [ros.nodes.get_list](#rosnodesget_list-rpc)                                 | RPC  |
@@ -109,6 +110,14 @@ Sent by the daemon at an interval
 `Request`: `empty`
 
 `Reply`: [DaemonVersion](#daemonversion)
+
+### ros.daemon.delay_update_state `PUB`
+
+Sent by the GUI to delay ROS state updates after actions such as starting, stopping, or killing nodes, thereby avoiding high CPU usage when processing many actions.
+
+```json
+{"sec": float}
+```
 
 ### ros.file.get `RPC`
 
@@ -230,12 +239,11 @@ Cleans ros log folder.
 
 Kills all screens started by provider. Also MAS nodes.
 
-`Request`: 
+`Request`:
 
 ```json
 {"killRos2": bool, "exclude": str[]}
 ```
-
 
 `Reply`:
 
