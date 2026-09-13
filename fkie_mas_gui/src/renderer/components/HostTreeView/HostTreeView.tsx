@@ -442,26 +442,25 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
               (node.screens || []).length > 0
             ) {
               for (const screen of node.screens || []) {
-                navCtx.openTerminal(
-                  CmdTypes.SCREEN,
-                  node.providerId as string,
-                  node.name,
-                  screen,
-                  "",
-                  false,
-                  event.nativeEvent.ctrlKey
-                );
+                navCtx.openTerminal({
+                  type: CmdTypes.SCREEN,
+                  providerId: node.providerId as string,
+                  node: node.name,
+                  screen: screen,
+                  externalKeyModifier: false,
+                  forceOpenTerminal: event.nativeEvent.ctrlKey,
+                  insideDomainLayout: true,
+                });
               }
             } else {
-              navCtx.openTerminal(
-                CmdTypes.LOG,
-                node.providerId as string,
-                node.name,
-                "",
-                "",
-                false,
-                event.nativeEvent.ctrlKey
-              );
+              navCtx.openTerminal({
+                type: CmdTypes.LOG,
+                providerId: node.providerId as string,
+                node: node.name,
+                externalKeyModifier: false,
+                forceOpenTerminal: event.nativeEvent.ctrlKey,
+                insideDomainLayout: true,
+              });
             }
           }
         }
@@ -481,15 +480,14 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       nodeIds.map((nodeId) => {
         const node = rosCtx.nodeMap.get(nodeId);
         if (node) {
-          navCtx.openTerminal(
-            CmdTypes.SCREEN,
-            node.providerId as string,
-            node.name,
-            "",
-            "",
-            event.nativeEvent.shiftKey,
-            event.nativeEvent.ctrlKey
-          );
+          navCtx.openTerminal({
+            type: CmdTypes.SCREEN,
+            providerId: node.providerId as string,
+            node: node.name,
+            externalKeyModifier: event.nativeEvent.shiftKey,
+            forceOpenTerminal: event.nativeEvent.ctrlKey,
+            insideDomainLayout: true,
+          });
         }
       });
     },

@@ -510,15 +510,14 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                 edge="start"
                 onClick={(event) => {
                   // open terminal for update
-                  navCtx.openTerminal(
-                    CmdTypes.CMD,
-                    provider.id,
-                    "",
-                    "",
-                    auCtx.getUpdateCli(false, true),
-                    event.nativeEvent.shiftKey,
-                    event.nativeEvent.ctrlKey
-                  );
+                  navCtx.openTerminal({
+                    type: CmdTypes.CMD,
+                    providerId: provider.id,
+                    cmd: auCtx.getUpdateCli(false, true),
+                    externalKeyModifier: event.nativeEvent.shiftKey,
+                    forceOpenTerminal: event.nativeEvent.ctrlKey,
+                    insideDomainLayout: false,
+                  });
                 }}
               >
                 <UpgradeIcon sx={{ fontSize: "inherit", color: getVersionColor() }} />
@@ -535,15 +534,14 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
                 edge="start"
                 onClick={(event) => {
                   // open terminal for update
-                  navCtx.openTerminal(
-                    CmdTypes.TERMINAL,
-                    provider.id,
-                    "",
-                    "",
-                    "",
-                    event.nativeEvent.shiftKey,
-                    event.nativeEvent.ctrlKey
-                  );
+
+                  navCtx.openTerminal({
+                    type: CmdTypes.TERMINAL,
+                    providerId: provider.id,
+                    externalKeyModifier: event.nativeEvent.shiftKey,
+                    forceOpenTerminal: event.nativeEvent.ctrlKey,
+                    insideDomainLayout: false,
+                  });
                 }}
               >
                 <VerticalAlignBottomIcon sx={{ fontSize: "inherit", color: getVersionColor() }} />

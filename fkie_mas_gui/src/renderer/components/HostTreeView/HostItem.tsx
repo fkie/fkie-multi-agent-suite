@@ -4,24 +4,24 @@ import LinkIcon from "@mui/icons-material/Link";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import WatchLaterIcon from "@mui/icons-material/WatchLater";
 import {
-    Box,
-    ClickAwayListener,
-    Grow,
-    IconButton,
-    MenuItem,
-    MenuList,
-    Paper,
-    Popper,
-    Stack,
-    Tooltip,
-    Typography,
+  Box,
+  ClickAwayListener,
+  Grow,
+  IconButton,
+  MenuItem,
+  MenuList,
+  Paper,
+  Popper,
+  Stack,
+  Tooltip,
+  Typography,
 } from "@mui/material";
 import { green, grey, orange, red } from "@mui/material/colors";
 import {
-    treeItemClasses,
-    TreeItemSlotProps,
-    UseTreeItemContentSlotOwnProps,
-    UseTreeItemIconContainerSlotOwnProps,
+  treeItemClasses,
+  TreeItemSlotProps,
+  UseTreeItemContentSlotOwnProps,
+  UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { useCallback, useState } from "react";
 
@@ -77,25 +77,19 @@ export default function HostItem(props: HostItemProps): JSX.Element {
         return;
       }
       if (local) {
-        navCtx.openTerminal(
-          CmdTypes.SET_TIME,
-          localProviders[0].id,
-          `set_date_localhost-${Date.now()}`,
-          "",
-          provider.id,
-          false,
-          false
-        );
+        navCtx.openTerminal({
+          type: CmdTypes.SET_TIME,
+          providerId: localProviders[0].id,
+          node: `set-date-localhost-${Date.now()}`,
+          cmd: provider.id,
+        });
       } else {
-        navCtx.openTerminal(
-          CmdTypes.SET_TIME,
-          provider.id,
-          `set_date_remote-${Date.now()}`,
-          "",
-          localProviders[0].id,
-          false,
-          false
-        );
+        navCtx.openTerminal({
+          type: CmdTypes.SET_TIME,
+          providerId: provider.id,
+          node: `set-date-remote-${Date.now()}`,
+          cmd: localProviders[0].id,
+        });
       }
     }
   }

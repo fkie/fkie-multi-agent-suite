@@ -349,9 +349,18 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     screen: string,
     externalKeyModifier: boolean = false,
     openInTerminal: boolean = false,
-    noPouout: boolean = false
+    noPopout: boolean = false
   ): Promise<void> {
-    return navCtx.openTerminal(type, providerId, nodeName, screen, "", externalKeyModifier, openInTerminal, noPouout);
+    return navCtx.openTerminal({
+      type: type,
+      providerId: providerId,
+      node: nodeName,
+      screen: screen,
+      externalKeyModifier: externalKeyModifier,
+      forceOpenTerminal: openInTerminal,
+      insideDomainLayout: true,
+      noPopout: noPopout,
+    });
   }
 
   /**

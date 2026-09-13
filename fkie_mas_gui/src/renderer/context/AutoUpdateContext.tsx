@@ -290,13 +290,16 @@ export const AutoUpdateProvider = ({
 
       setInstalling(true);
       if (providerId) {
-        await navCtx.openTerminal(CmdTypes.CMD, providerId, "", "", getUpdateCli(gui, ros), false, false);
+        await navCtx.openTerminal({
+          type: CmdTypes.CMD,
+          providerId,
+          cmd: getUpdateCli(gui, ros),
+          externalKeyModifier: false,
+          forceOpenTerminal: false,
+          insideDomainLayout: false,
+        });
       } else {
-        const result = await window.commandExecutor?.execTerminal(
-          null,
-          "'update mas'",
-          `${getUpdateCli(gui, ros)} -w`
-        );
+        const result = await window.commandExecutor?.execTerminal(null, "'update mas'", `${getUpdateCli(gui, ros)} -w`);
         if (result) {
           if (!result.result) setUpdateError(result.message);
         } else {

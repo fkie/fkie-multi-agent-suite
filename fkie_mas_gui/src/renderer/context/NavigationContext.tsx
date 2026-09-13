@@ -88,16 +88,17 @@ export interface INavigationContext {
   openServiceIntrospection: (args: TServiceCallerProps) => void;
   openActionSendGoal: (args: TServiceCallerProps) => void;
   openActionIntrospection: (args: TServiceCallerProps) => void;
-  openTerminal: (
-    type: CmdType,
-    providerId: string,
-    node: string,
-    screen: string,
-    cmd: string,
-    externalKeyModifier: boolean,
-    forceOpenTerminal: boolean,
-    noPopout?: boolean
-  ) => Promise<void>;
+  openTerminal: (options: {
+    type: CmdType;
+    providerId: string;
+    node?: string;
+    screen?: string;
+    cmd?: string;
+    externalKeyModifier?: boolean;
+    forceOpenTerminal?: boolean;
+    insideDomainLayout?: boolean;
+    noPopout?: boolean;
+  }) => Promise<void>;
 }
 
 export const NavigationContext = createContext<INavigationContext | null>(null);
@@ -633,17 +634,29 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
   );
 
   const openTerminal = useCallback(
-    async (
-      type: CmdType,
-      providerId: string,
-      node: string,
-      screen: string,
-      cmd: string,
-      externalKeyModifier: boolean,
-      forceOpenTerminal: boolean,
-      noPopout?: boolean
-    ): Promise<void> => {
-      logCtx.debug(`Start terminal ${type}@${providerId} for ${node}`);
+    async (options: {
+      type: CmdType;
+      providerId: string;
+      node?: string;
+      screen?: string;
+      cmd?: string;
+      externalKeyModifier?: boolean;
+      forceOpenTerminal?: boolean;
+      insideDomainLayout?: boolean;
+      noPopout?: boolean;
+    }): Promise<void> => {
+      const {
+        type,
+        providerId,
+        node = "",
+        screen = "",
+        cmd = "",
+        externalKeyModifier = false,
+        forceOpenTerminal = false,
+        insideDomainLayout = true,
+        noPopout,
+      } = options;
+      logCtx.debug(`Start terminal ${type}@${providerId} for ${node || screen || cmd}`);
       const provider = rosCtx.getProviderById(providerId);
       if (!provider) return;
 
@@ -653,10 +666,12 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
           ? xor(screenOpenExternal, externalKeyModifier)
           : xor(logOpenExternal, externalKeyModifier) && !layoutModel?.getNodeById(id);
 
+      logCtx.debug(`openExternal ${openExternal}`);
       const env = provider.createRosEnv();
       if (forceOpenTerminal) {
         try {
           const terminalCmd = await provider.cmdForType(type, node, "", screen, cmd, env);
+          logCtx.debug(`terminalCmd ${terminalCmd}`);
           const result = await window.commandExecutor?.execTerminal(
             provider.isLocalHost ? null : { host: provider.host() },
             `"${type.toLocaleUpperCase()} ${node}@${provider.host()}"`,
@@ -687,15 +702,18 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         env,
       };
       if (openExternal && !isElectron()) {
+        logCtx.debug(`openBrowserSite ${openExternal}`);
         openBrowserSite("terminal", id, terminalProps, openAsPopout);
         return;
       }
 
       if (window.terminalManager && (openExternal || (await window.terminalManager?.has(id)))) {
+        logCtx.debug(`window.terminalManager ${JSON.stringify(terminalProps)}`);
         window.terminalManager.open(terminalProps);
         return;
       }
 
+      logCtx.debug(`emitOpenComponent ${JSON.stringify(terminalProps)}`);
       emitOpenComponent({
         id: id,
         title: node || `${type}_${provider.connection.host}`,
@@ -703,7 +721,7 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         component: LAYOUT_TABS.TERMINAL,
         toNodeId: LAYOUT_TAB_SETS.BORDER_BOTTOM,
         config: {
-          insideDomainLayout: true,
+          insideDomainLayout: insideDomainLayout,
           contentId: { domainId: provider.connection.domainId },
           openExternal: !noPopout,
           terminalType: type,
