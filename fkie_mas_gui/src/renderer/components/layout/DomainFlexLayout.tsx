@@ -2,9 +2,9 @@ import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import AppsIcon from "@mui/icons-material/Apps";
 import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
 import TopicIcon from "@mui/icons-material/Topic";
-import { Box } from "@mui/material";
+import { Box, Menu, MenuItem } from "@mui/material";
 import * as FlexLayout from "flexlayout-react";
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import {
@@ -21,23 +21,16 @@ import { contentToId, matchesContentId, TContentId } from "@/renderer/components
 import { useDirtyEditorGuard } from "@/renderer/context/DirtyEditorGuard";
 import { usePersistentLayout } from "@/renderer/hooks/usePersistentLayout";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
-import { LAYOUT_TABS } from "./LayoutDefines";
+import { DOMAIN_LAYOUT_COMPONENTS, LAYOUT_TABS } from "./LayoutDefines";
 import { hasJsonNode, TJsonNode } from "./LayoutPersistance";
+import { isMovableTab, takeOutTab, TMovableTab } from "./LayoutTabMove";
 import {
   collapseBorderOnLastTab,
   deleteTabAndSelectNodes,
   ensureBorderTabVisible,
   resolveDockTarget,
 } from "./LayoutTargets";
-
-/** components which are persisted inside a domain layout */
-const DOMAIN_LAYOUT_COMPONENTS: string[] = [
-  LAYOUT_TABS.NODES,
-  LAYOUT_TABS.TOPICS,
-  LAYOUT_TABS.SERVICES,
-  LAYOUT_TABS.ACTIONS,
-  LAYOUT_TABS.APPS,
-];
+import { persistentPanelStore } from "./PersistentPanels";
 
 /** Default layout of a domain sub-layout: one tabset plus bottom/right borders. */
 function createDefaultDomainLayout(contentId: TContentId): FlexLayout.IJsonModel {
@@ -83,10 +76,12 @@ type DomainFlexLayoutProps = {
   factory: (tabNode: FlexLayout.TabNode, contentId: TContentId) => JSX.Element;
   onRenderTab: (node: FlexLayout.TabNode, renderValues: FlexLayout.ITabRenderValues) => void;
   onCloseTab: (id: string) => void;
+  onMoveTabOut: (tab: TMovableTab) => void;
 };
 
 export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | null {
-  const { contentId, storageKey, insideTabId, factory, onRenderTab, onCloseTab } = props;
+  const { contentId, storageKey, insideTabId, factory, onRenderTab, onCloseTab, onMoveTabOut } = props;
+  const [tabMenu, setTabMenu] = useState<{ tabId: string; left: number; top: number } | null>(null);
 
   const rosCtx = useRosContext();
   const [forceUpdate, setForceUpdate] = useReducer((x) => x + 1, 0);
@@ -170,6 +165,7 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
       if (!model?.getNodeById(tabId)) return;
       if (!guardTabClose(model, tabId)) return;
       deleteTabAndSelectNodes(model, tabId, LAYOUT_TABS.NODES);
+      persistentPanelStore.destroy(tabId);
     },
     [model, guardTabClose]
   );
@@ -288,10 +284,11 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
         factory={nodeFactory}
         onAction={(action: FlexLayout.Action) => {
           if (action.type === FlexLayout.Actions.DELETE_TAB) {
-            if (!guardTabClose(model, action.data.node)) return undefined; // cancel action
+            if (!guardTabClose(model, action.data.node)) return undefined;
             collapseBorderOnLastTab(model, action.data.node);
             deleteTabAndSelectNodes(model, action.data.node, LAYOUT_TABS.NODES);
-            return undefined; // already handled
+            persistentPanelStore.destroy(action.data.node);
+            return undefined;
           }
           return action;
         }}
@@ -302,7 +299,29 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
         }}
         onRenderTab={onRenderTab}
         onRenderTabSet={onRenderTabSet}
+        onContextMenu={(node, event) => {
+          if (node.getType() !== "tab" || !isMovableTab(node as FlexLayout.TabNode)) return;
+          event.preventDefault();
+          setTabMenu({ tabId: node.getId(), left: event.clientX, top: event.clientY });
+        }}
       />
+      <Menu
+        open={!!tabMenu}
+        onClose={() => setTabMenu(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={tabMenu ? { top: tabMenu.top, left: tabMenu.left } : undefined}
+      >
+        <MenuItem
+          onClick={() => {
+            const tab = tabMenu ? takeOutTab(model, tabMenu.tabId) : undefined;
+            setTabMenu(null);
+            // keep contentId in the config so the tab can only return to this domain
+            if (tab) onMoveTabOut({ ...tab, config: { ...tab.config, contentId: contentId } });
+          }}
+        >
+          Move to main layout
+        </MenuItem>
+      </Menu>
     </Box>
   );
 }

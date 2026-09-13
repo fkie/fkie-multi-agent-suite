@@ -41,3 +41,24 @@ const LAYOUT_TAB_LIST = Object.keys(LAYOUT_TABS).map((key) => {
 });
 
 export { LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS };
+
+/** Components which live inside a domain sub-layout and must never leave it. */
+export const DOMAIN_LAYOUT_COMPONENTS: string[] = [
+  LAYOUT_TABS.NODES,
+  LAYOUT_TABS.TOPICS,
+  LAYOUT_TABS.SERVICES,
+  LAYOUT_TABS.ACTIONS,
+  LAYOUT_TABS.APPS,
+];
+
+/** Panels whose internal state must survive tab moves and hide/show. */
+export const PERSISTENT_COMPONENTS: string[] = [
+  LAYOUT_TABS.TERMINAL,
+  LAYOUT_TABS.EDITOR,
+  LAYOUT_TABS.TOPIC_ECHO,
+  LAYOUT_TABS.TOPIC_PUBLISHER,
+  LAYOUT_TABS.SERVICE_CALLER,
+  LAYOUT_TABS.SERVICE_INTROSPECTION,
+  LAYOUT_TABS.ACTION_SEND_GOAL,
+  LAYOUT_TABS.ACTION_INTROSPECTION,
+];

@@ -21,14 +21,7 @@ import TroubleshootIcon from "@mui/icons-material/Troubleshoot";
 import TuneIcon from "@mui/icons-material/Tune";
 import WysiwygIcon from "@mui/icons-material/Wysiwyg";
 
-import {
-  Badge,
-  Button,
-  IconButton,
-  Stack,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Badge, Button, IconButton, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import {
   Action,
   Actions,
@@ -51,6 +44,7 @@ import { LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/compon
 import { DomainFlexLayout } from "@/renderer/components/layout/DomainFlexLayout";
 import {
   emitCloseComponent,
+  emitOpenComponent,
   emitSelectTab,
   emitToggleComponent,
   EVENT_CLOSE_COMPONENT,
@@ -64,6 +58,7 @@ import {
   TEventSelectTab,
 } from "@/renderer/components/layout/events";
 import { pAddTabStickyButton } from "@/renderer/components/layout/helpers";
+import { PERSISTENT_COMPONENTS } from "@/renderer/components/layout/LayoutDefines";
 import {
   DEFAULT_LAYOUT,
   LAYOUT_DOMAIN_TAB_SET,
@@ -76,11 +71,17 @@ import {
   TExtTerminalConfig,
   TLayoutTabConfig,
 } from "@/renderer/components/layout/LayoutTabConfig";
+import { isMovableTab, originContentId, takeOutTab, TMovableTab } from "@/renderer/components/layout/LayoutTabMove";
 import {
   collapseBorderOnLastTab,
   ensureBorderTabVisible,
   resolveDockTarget,
 } from "@/renderer/components/layout/LayoutTargets";
+import {
+  PanelMount,
+  PersistentPanelPortals,
+  persistentPanelStore,
+} from "@/renderer/components/layout/PersistentPanels";
 import PasswordDialog from "@/renderer/components/PasswordModal/PasswordDialog";
 import ProviderSelectionModal from "@/renderer/components/SelectionModal/ProviderSelectionModal";
 import { getInfoStateColor } from "@/renderer/components/UI/Colors";
@@ -155,6 +156,14 @@ export default function NodeManager(): JSX.Element {
   const [currentInfoState, setCurrentInfoState] = useState<TInfoState | undefined>();
 
   const { guardTabClose, requestCloseEditors, hasPending } = useDirtyEditorGuard();
+  const [tabMenu, setTabMenu] = useState<{
+    tabId: string;
+    domainTabId: string;
+    domainName: string;
+    contentId: TContentId;
+    left: number;
+    top: number;
+  } | null>(null);
 
   // const [enablePopout, setEnablePopout] = useState<boolean>(!window.commandExecutor);
 
@@ -291,6 +300,8 @@ export default function NodeManager(): JSX.Element {
 
       // delete tab
       model.doAction(Actions.deleteTab(tabId));
+      // panel is closed for good -> destroy the persistent react tree
+      persistentPanelStore.destroy(tabId);
       // Cleanup React node reference
       delete layoutComponentsRef.current[tabId];
     },
@@ -479,6 +490,19 @@ export default function NodeManager(): JSX.Element {
     if (custom) {
       return custom as React.ReactElement;
     }
+    // moved tabs carry their content id in the config -> keep the domain context
+    const effectiveContentId = contentId ?? (config?.contentId as TContentId | undefined);
+    if (PERSISTENT_COMPONENTS.includes(component || "")) {
+      persistentPanelStore.ensure(node.getId(), () => renderPanel(node, effectiveContentId));
+      return <PanelMount id={node.getId()} />;
+    }
+    return renderPanel(node, effectiveContentId);
+  }
+
+  function renderPanel(node: TabNode, contentId?: TContentId): JSX.Element {
+    const component = node.getComponent();
+    const config: TLayoutTabConfig = node.getConfig();
+
     const flexId = contentId?.domainId || contentId?.providerId;
 
     switch (component) {
@@ -680,6 +704,7 @@ export default function NodeManager(): JSX.Element {
               onRenderTab(node, renderValues);
             }}
             onCloseTab={(id: string) => deleteTab(id)}
+            onMoveTabOut={moveTabToMain}
           />
         );
       default:
@@ -844,7 +869,16 @@ export default function NodeManager(): JSX.Element {
           renderNameValues.buttons.push(
             <Tooltip
               key={`button-close-${node.getId()}`}
-              title="Open in external window"
+              title={
+                <Stack spacing={0.5}>
+                  <Typography variant="body2" fontWeight="bold" fontSize="inherit">
+                    Open in external new window
+                  </Typography>
+                  <Typography variant="caption" display="block" fontSize="inherit">
+                    The window state is not preserved
+                  </Typography>
+                </Stack>
+              }
               placement="bottom"
               disableInteractive
             >
@@ -1081,6 +1115,47 @@ export default function NodeManager(): JSX.Element {
     }
   }
 
+  /** All currently open domain sub-layouts, usable as move targets. */
+  const getDomainTargets = useCallback((): { tabId: string; name: string; contentId: TContentId }[] => {
+    const targets: { tabId: string; name: string; contentId: TContentId }[] = [];
+    modelRef.current.visitNodes((node) => {
+      if (node.getType() !== "tab") return;
+      const tab = node as TabNode;
+      if (tab.getComponent() !== LAYOUT_TABS.DOMAIN) return;
+      const cfg = tab.getConfig() as TLayoutTabConfig;
+      if (cfg?.contentId) targets.push({ tabId: tab.getId(), name: tab.getName(), contentId: cfg.contentId });
+    });
+    return targets;
+  }, []);
+
+  /** Move a tab back into the domain layout it originally came from. */
+  const moveTabToDomain = useCallback((tabId: string, domainTabId: string, contentId: TContentId): void => {
+    const tab = takeOutTab(modelRef.current, tabId);
+    if (!tab) return;
+    // the sub-layout must be mounted to receive the event
+    modelRef.current.doAction(Actions.selectTab(domainTabId));
+    emitOpenComponent({
+      id: tab.id,
+      title: tab.name,
+      component: tab.component,
+      closable: tab.closable,
+      toNodeId: tab.toNodeId,
+      config: { ...tab.config, contentId: contentId, insideDomainLayout: true },
+    });
+  }, []);
+
+  /** Move a tab out of a domain layout into the main layout (origin is preserved in config). */
+  const moveTabToMain = useCallback((tab: TMovableTab): void => {
+    emitOpenComponent({
+      id: tab.id,
+      title: tab.name,
+      component: tab.component,
+      closable: tab.closable,
+      toNodeId: tab.toNodeId,
+      config: { ...tab.config, insideDomainLayout: false },
+    });
+  }, []);
+
   const isInstallUpdateRequested = useCallback(() => {
     return auCtx.requestedInstallUpdate;
   }, [auCtx.requestedInstallUpdate]);
@@ -1175,8 +1250,22 @@ export default function NodeManager(): JSX.Element {
             saveLayout(model);
           }
         }}
-        onContextMenu={(node) => {
-          console.log(`NO context for ${node.getId()}`);
+        onContextMenu={(node, event) => {
+          if (node.getType() !== "tab" || !isMovableTab(node as TabNode)) return;
+          const origin = originContentId(node as TabNode);
+          if (!origin) return; // tab never belonged to a domain layout
+          const domainTabId = `${LAYOUT_TABS.DOMAIN}-${contentToId(origin)}`;
+          const domainTab = modelRef.current.getNodeById(domainTabId) as TabNode | undefined;
+          if (!domainTab) return; // origin domain is not open anymore
+          event.preventDefault();
+          setTabMenu({
+            tabId: node.getId(),
+            domainTabId,
+            domainName: domainTab.getName(),
+            contentId: origin,
+            left: event.clientX,
+            top: event.clientY,
+          });
         }}
         onAuxMouseClick={(node, event) => {
           // close tabs with middle mouse click
@@ -1185,6 +1274,23 @@ export default function NodeManager(): JSX.Element {
           }
         }}
       />
+
+      <PersistentPanelPortals />
+      <Menu
+        open={!!tabMenu}
+        onClose={() => setTabMenu(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={tabMenu ? { top: tabMenu.top, left: tabMenu.left } : undefined}
+      >
+        <MenuItem
+          onClick={() => {
+            if (tabMenu) moveTabToDomain(tabMenu.tabId, tabMenu.domainTabId, tabMenu.contentId);
+            setTabMenu(null);
+          }}
+        >
+          {`Move back to "${tabMenu?.domainName}"`}
+        </MenuItem>
+      </Menu>
 
       {electronCtx.terminateSubprocesses && !hasPending && rosCtx.providers.length > 0 && (
         // ask for provider shutdown before quitting GUI
