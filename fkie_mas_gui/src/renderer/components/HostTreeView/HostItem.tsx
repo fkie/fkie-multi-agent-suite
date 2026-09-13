@@ -8,6 +8,7 @@ import {
   ClickAwayListener,
   Grow,
   IconButton,
+  Menu,
   MenuItem,
   MenuList,
   Paper,
@@ -68,6 +69,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
   const [openNtpdateDialog, setOpenNtpdateDialog] = useState<boolean>(false);
   const [colorizeHosts] = useSetting<boolean>("colorizeHosts");
   const [timeDiffThreshold] = useSetting<number>("timeDiffThreshold");
+  const [contextMenuPos, setContextMenuPos] = useState<{ mouseX: number; mouseY: number } | null>(null);
 
   async function updateTime(local = true): Promise<void> {
     if (provider) {
@@ -109,6 +111,16 @@ export default function HostItem(props: HostItemProps): JSX.Element {
     } else if (index === 3) {
       setShowHelpTime(true);
     }
+  }
+
+  /**
+   * Open the time options as context menu, so they are always available,
+   * also if the time difference is below the threshold.
+   */
+  function handleContextMenu(event: React.MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenuPos({ mouseX: event.clientX + 2, mouseY: event.clientY - 6 });
   }
 
   /**
@@ -213,7 +225,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
       sx={getHostStyle(provider)}
       onDoubleClick={(event) => onDoubleClick(event, provider.id)}
       label={
-        <Box display="flex" alignItems="center" paddingLeft={0.0}>
+        <Box display="flex" alignItems="center" paddingLeft={0.0} onContextMenu={handleContextMenu}>
           {provider.rosState.ros_version === "1" && (
             <Tooltip title="Toggle Master Sync" placement="bottom-start">
               <IconButton
@@ -285,45 +297,6 @@ export default function HostItem(props: HostItemProps): JSX.Element {
                     </Grow>
                   )}
                 </Popper>
-                <SetNTPDateDialog
-                  key="sync-time-menu"
-                  open={openNtpdateDialog}
-                  onClose={(value: string) => {
-                    if (value) {
-                      // execute the command in own terminal
-                      const id = `cmd-${generateUniqueId()}`;
-                      emitOpenComponent({
-                        id: id,
-                        title: `${provider?.name()}`,
-                        closable: true,
-                        component: LAYOUT_TABS.TERMINAL,
-                        toNodeId: LAYOUT_TAB_SETS.BORDER_BOTTOM,
-                        config: {
-                          terminalConfig: {
-                            id,
-                            cmdType: CmdTypes.CMD,
-                            providerId: provider.id,
-                            host: provider.connection.host,
-                            port: provider.connection.port,
-                            node: "",
-                            screen: "",
-                            env: [],
-                            cmd: value,
-                          },
-                        },
-                      });
-                    }
-                    setOpenNtpdateDialog(false);
-                  }}
-                  defaultCmd="sudo ntpdate -v -u -t 1"
-                />
-                <DateHelpDialog
-                  key="show-time-help"
-                  open={showHelpTime}
-                  onClose={() => {
-                    setShowHelpTime(false);
-                  }}
-                />
               </Box>
             </Tooltip>
           )}
@@ -383,6 +356,74 @@ export default function HostItem(props: HostItemProps): JSX.Element {
               </Tooltip>
             ))}
           </Stack>
+
+          <Menu
+            id="host-item-context-menu"
+            open={Boolean(contextMenuPos)}
+            onClose={() => setContextMenuPos(null)}
+            anchorReference="anchorPosition"
+            anchorPosition={contextMenuPos ? { top: contextMenuPos.mouseY, left: contextMenuPos.mouseX } : undefined}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onClick={(event) => event.stopPropagation()}
+            onDoubleClick={(event) => event.stopPropagation()}
+          >
+            {optionsTimeButton.map((option, index) => (
+              <MenuItem
+                key={`context-${option}`}
+                dense
+                onClick={(event) => {
+                  setContextMenuPos(null);
+                  handleMenuTimeItemClick(event, index);
+                }}
+              >
+                {option}
+              </MenuItem>
+            ))}
+          </Menu>
+
+          <SetNTPDateDialog
+            key="sync-time-menu"
+            open={openNtpdateDialog}
+            onClose={(value: string) => {
+              if (value) {
+                // execute the command in own terminal
+                const id = `cmd-${generateUniqueId()}`;
+                emitOpenComponent({
+                  id: id,
+                  title: `${provider?.name()}`,
+                  closable: true,
+                  component: LAYOUT_TABS.TERMINAL,
+                  toNodeId: LAYOUT_TAB_SETS.BORDER_BOTTOM,
+                  config: {
+                    terminalConfig: {
+                      id,
+                      cmdType: CmdTypes.CMD,
+                      providerId: provider.id,
+                      host: provider.connection.host,
+                      port: provider.connection.port,
+                      node: "",
+                      screen: "",
+                      env: [],
+                      cmd: value,
+                    },
+                  },
+                });
+              }
+              setOpenNtpdateDialog(false);
+            }}
+            defaultCmd="sudo ntpdate -v -u -t 1"
+          />
+
+          <DateHelpDialog
+            key="show-time-help"
+            open={showHelpTime}
+            onClose={() => {
+              setShowHelpTime(false);
+            }}
+          />
         </Box>
       }
       {...children}
