@@ -376,7 +376,14 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
       }
 
       if (provId) {
-        navCtx.openSubscriber(provId, topic.name, true, false, external, openInTerminal);
+        navCtx.openSubscriber({
+          providerId: provId,
+          topic: topic.name,
+          showOptions: true,
+          defaultNoData: false,
+          externalKeyModifier: external,
+          forceOpenTerminal: openInTerminal,
+        });
       } else {
         logCtx.warn("no publisher available");
       }
@@ -395,7 +402,13 @@ export default function TopicsPanel(props: TopicsPanelProps): JSX.Element {
         provId = topic.publishers[0].providerId;
       }
 
-      navCtx.startPublisher(provId, topic.name, topic.msgType, external, openInTerminal);
+      navCtx.startPublisher({
+        providerId: provId,
+        topicName: topic.name,
+        topicType: topic.msgType,
+        externalKeyModifier: external,
+        forceOpenTerminal: openInTerminal,
+      });
     },
     [navCtx]
   );

@@ -531,14 +531,14 @@ export default function ParameterTreeItem(props: ParameterTreeItemProps): JSX.El
             <MenuItem
               sx={{ fontSize: "0.8em" }}
               onClick={(event) => {
-                navCtx.openEditorForParameter(
-                  paramInfo.providerId,
-                  paramInfo.node,
-                  paramInfo.name,
-                  `${paramInfo.value}`,
-                  paramInfo.type,
-                  event.nativeEvent.shiftKey
-                );
+                navCtx.openEditorForParameter({
+                  providerId: paramInfo.providerId,
+                  nodeName: paramInfo.node,
+                  paramName: paramInfo.name,
+                  paramValue: `${paramInfo.value}`,
+                  paramType: paramInfo.type,
+                  externalKeyModifier: event.nativeEvent.shiftKey,
+                });
                 setContextMenu(null);
               }}
             >

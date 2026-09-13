@@ -37,12 +37,61 @@ const NO_SELECTION = {
   selectedProviders: [],
 };
 
+type TOpenEditor = {
+  providerId: string;
+  rootLaunch: string;
+  path: string;
+  fileRange: TFileRange | null;
+  launchArgs: TLaunchArg[];
+  topLevelLaunchArgs: TLaunchArg[];
+  externalKeyModifier: boolean;
+  selectParameter?: TParameterRequest;
+};
+
+type TOpenEditorForParameter = {
+  providerId: string;
+  nodeName: string;
+  paramName: string;
+  paramValue?: string;
+  paramType?: string;
+  externalKeyModifier?: boolean;
+};
+
+type TStartPublisher = {
+  providerId: string;
+  topicName: string | undefined;
+  topicType: string | undefined;
+  externalKeyModifier: boolean;
+  forceOpenTerminal: boolean;
+};
+
+type TOpenSubscriberProps = {
+  providerId: string;
+  topic: string;
+  showOptions: boolean;
+  defaultNoData: boolean;
+  externalKeyModifier?: boolean;
+  forceOpenTerminal?: boolean;
+};
+
 export type TServiceCallerProps = {
   providerId: string;
   serviceName: string | undefined;
   serviceType: string | undefined;
   externalKeyModifier: boolean;
   forceOpenTerminal: boolean;
+};
+
+type TOpenTerminal = {
+  type: CmdType;
+  providerId: string;
+  node?: string;
+  screen?: string;
+  cmd?: string;
+  externalKeyModifier?: boolean;
+  forceOpenTerminal?: boolean;
+  insideDomainLayout?: boolean;
+  noPopout?: boolean;
 };
 
 export interface INavigationContext {
@@ -52,53 +101,15 @@ export interface INavigationContext {
   setSelectedFromHistory: (triggerId: string) => TNavSelection;
   layoutModel: Model | null;
   setLayoutModel: (model: Model | null) => void;
-  openEditor: (
-    providerId: string,
-    rootLaunch: string,
-    path: string,
-    fileRange: TFileRange | null,
-    launchArgs: TLaunchArg[],
-    topLevelLaunchArgs: TLaunchArg[],
-    externalKeyModifier: boolean
-  ) => void;
-  openEditorForParameter: (
-    providerId: string,
-    nodeName: string,
-    paramName: string,
-    paramValue?: string,
-    paramType?: string,
-    externalKeyModifier?: boolean
-  ) => Promise<void>;
-  startPublisher: (
-    providerId: string,
-    topicName: string | undefined,
-    topicType: string | undefined,
-    externalKeyModifier: boolean,
-    forceOpenTerminal: boolean
-  ) => void;
-  openSubscriber: (
-    providerId: string,
-    topic: string,
-    showOptions: boolean,
-    defaultNoData: boolean,
-    externalKeyModifier: boolean,
-    forceOpenTerminal: boolean
-  ) => void;
+  openEditor: (args: TOpenEditor) => void;
+  openEditorForParameter: (args: TOpenEditorForParameter) => Promise<void>;
+  startPublisher: (args: TStartPublisher) => void;
+  openSubscriber: (args: TOpenSubscriberProps) => void;
   openServiceCaller: (args: TServiceCallerProps) => void;
   openServiceIntrospection: (args: TServiceCallerProps) => void;
   openActionSendGoal: (args: TServiceCallerProps) => void;
   openActionIntrospection: (args: TServiceCallerProps) => void;
-  openTerminal: (options: {
-    type: CmdType;
-    providerId: string;
-    node?: string;
-    screen?: string;
-    cmd?: string;
-    externalKeyModifier?: boolean;
-    forceOpenTerminal?: boolean;
-    insideDomainLayout?: boolean;
-    noPopout?: boolean;
-  }) => Promise<void>;
+  openTerminal: (args: TOpenTerminal) => Promise<void>;
 }
 
 export const NavigationContext = createContext<INavigationContext | null>(null);
@@ -170,16 +181,17 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
   );
 
   const openEditor = useCallback(
-    async (
-      providerId: string,
-      rootLaunch: string,
-      path: string,
-      fileRange: TFileRange | null,
-      launchArgs: TLaunchArg[],
-      topLevelLaunchArgs: TLaunchArg[],
-      externalKeyModifier: boolean,
-      selectParameter?: TParameterRequest
-    ): Promise<void> => {
+    async (args: TOpenEditor): Promise<void> => {
+      const {
+        providerId,
+        rootLaunch,
+        path,
+        fileRange = null,
+        launchArgs,
+        topLevelLaunchArgs,
+        externalKeyModifier = false,
+        selectParameter,
+      } = args;
       const provider = rosCtx.getProviderById(providerId);
       if (!provider) return;
 
@@ -239,14 +251,8 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
 
   /** open the launch file of a node and select/insert one of its parameters */
   const openEditorForParameter = useCallback(
-    async (
-      providerId: string,
-      nodeName: string,
-      paramName: string,
-      paramValue?: string,
-      paramType?: string,
-      externalKeyModifier: boolean = false
-    ): Promise<void> => {
+    async (args: TOpenEditorForParameter): Promise<void> => {
+      const { providerId, nodeName, paramName, paramValue, paramType, externalKeyModifier = false } = args;
       const provider = rosCtx.getProviderById(providerId);
       if (!provider) return;
 
@@ -269,35 +275,30 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         return;
       }
 
-      await openEditor(
-        provider.id,
-        rootLaunch,
-        launchInfo.file_name || "",
-        launchInfo.file_range,
-        launchInfo.launch_context_arg || [],
-        launchInfo.topLevelArgs,
-        externalKeyModifier,
-        {
+      await openEditor({
+        providerId: provider.id,
+        rootLaunch: rootLaunch,
+        path: launchInfo.file_name || "",
+        fileRange: launchInfo.file_range,
+        launchArgs: launchInfo.launch_context_arg || [],
+        topLevelLaunchArgs: launchInfo.topLevelArgs,
+        externalKeyModifier: externalKeyModifier,
+        selectParameter: {
           nodeName: node.name,
           paramName,
           paramValue,
           paramType,
           // location of the node definition - used instead of the node name lookup
           fileRange: launchInfo.file_range,
-        }
-      );
+        },
+      });
     },
     [rosCtx, logCtx, openEditor]
   );
 
   const startPublisher = useCallback(
-    async (
-      providerId: string,
-      topicName: string | undefined,
-      topicType: string | undefined,
-      externalKeyModifier: boolean,
-      forceOpenTerminal: boolean
-    ): Promise<void> => {
+    async (args: TStartPublisher): Promise<void> => {
+      const { providerId, topicName, topicType, externalKeyModifier, forceOpenTerminal } = args;
       const provider = rosCtx.getProviderById(providerId) || rosCtx.getLocalProvider()[0];
       if (!provider) return;
 
@@ -361,14 +362,15 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
   );
 
   const openSubscriber = useCallback(
-    async (
-      providerId: string,
-      topic: string,
-      showOptions: boolean,
-      defaultNoData: boolean,
-      externalKeyModifier: boolean,
-      forceOpenTerminal: boolean
-    ): Promise<void> => {
+    async (args: TOpenSubscriberProps): Promise<void> => {
+      const {
+        providerId,
+        topic,
+        showOptions,
+        defaultNoData,
+        externalKeyModifier = false,
+        forceOpenTerminal = false,
+      } = args;
       const provider = rosCtx.getProviderById(providerId);
       if (!provider) return;
 
@@ -634,17 +636,7 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
   );
 
   const openTerminal = useCallback(
-    async (options: {
-      type: CmdType;
-      providerId: string;
-      node?: string;
-      screen?: string;
-      cmd?: string;
-      externalKeyModifier?: boolean;
-      forceOpenTerminal?: boolean;
-      insideDomainLayout?: boolean;
-      noPopout?: boolean;
-    }): Promise<void> => {
+    async (args: TOpenTerminal): Promise<void> => {
       const {
         type,
         providerId,
@@ -655,7 +647,7 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         forceOpenTerminal = false,
         insideDomainLayout = true,
         noPopout,
-      } = options;
+      } = args;
       logCtx.debug(`Start terminal ${type}@${providerId} for ${node || screen || cmd}`);
       const provider = rosCtx.getProviderById(providerId);
       if (!provider) return;

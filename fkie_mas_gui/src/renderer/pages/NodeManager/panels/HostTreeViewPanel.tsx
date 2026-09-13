@@ -387,15 +387,15 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
       } else {
         const [rootLaunch, launchInfo] = launchInfos[0];
         console.log(`Open for ${node.name}: ${JSON.stringify(launchInfo)}`);
-        navCtx.openEditor(
-          node.providerId,
-          rootLaunch,
-          launchInfo.file_name || "",
-          launchInfo.file_range,
-          launchInfo.launch_context_arg || [],
-          launchInfo.topLevelArgs,
-          external
-        );
+        navCtx.openEditor({
+          providerId: node.providerId,
+          rootLaunch: rootLaunch,
+          path: launchInfo.file_name || "",
+          fileRange: launchInfo.file_range,
+          launchArgs: launchInfo.launch_context_arg || [],
+          topLevelLaunchArgs: launchInfo.topLevelArgs,
+          externalKeyModifier: external,
+        });
       }
     },
     [logCtx, navCtx]
@@ -1802,15 +1802,15 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
             for (const item of items) {
               for (const launch of item.list) {
                 const launchInfo = editNodeWithMultipleLaunchInfos.node.launchInfo.get(launch);
-                navCtx.openEditor(
-                  editNodeWithMultipleLaunchInfos.node.providerId,
-                  launch,
-                  launchInfo?.file_name || "",
-                  launchInfo?.file_range as TFileRange,
-                  launchInfo?.launch_context_arg || [],
-                  launchInfo?.topLevelArgs || [],
-                  editNodeWithMultipleLaunchInfos.external
-                );
+                navCtx.openEditor({
+                  providerId: editNodeWithMultipleLaunchInfos.node.providerId,
+                  rootLaunch: launch,
+                  path: launchInfo?.file_name || "",
+                  fileRange: launchInfo?.file_range as TFileRange,
+                  launchArgs: launchInfo?.launch_context_arg || [],
+                  topLevelLaunchArgs: launchInfo?.topLevelArgs || [],
+                  externalKeyModifier: editNodeWithMultipleLaunchInfos.external,
+                });
               }
             }
             setEditNodeWithMultipleLaunchInfos(undefined);

@@ -345,7 +345,15 @@ export default function PackageExplorerPanel(): JSX.Element {
 
   function onEditFile(fileObj: PathItem | undefined, external: boolean): void {
     if (fileObj) {
-      navCtx.openEditor(fileObj.providerId || "", fileObj.path, fileObj.path, null, [], [], external);
+      navCtx.openEditor({
+        providerId: fileObj.providerId || "",
+        rootLaunch: fileObj.path,
+        path: fileObj.path,
+        fileRange: null,
+        launchArgs: [],
+        topLevelLaunchArgs: [],
+        externalKeyModifier: external,
+      });
     }
   }
 

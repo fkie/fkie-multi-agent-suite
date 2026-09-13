@@ -40,11 +40,24 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
   const [colorizeHosts] = useSetting<boolean>("colorizeHosts");
 
   function onEchoClick(topic: TopicExtendedInfo, external: boolean = false, openInTerminal: boolean = false): void {
-    navCtx.openSubscriber(providerId || "", topic.name, true, false, external, openInTerminal);
+    navCtx.openSubscriber({
+      providerId: providerId || "",
+      topic: topic.name,
+      showOptions: true,
+      defaultNoData: false,
+      externalKeyModifier: external,
+      forceOpenTerminal: openInTerminal,
+    });
   }
 
   function onPublishClick(topic: TopicExtendedInfo, external: boolean = false, openInTerminal: boolean = false): void {
-    navCtx.startPublisher(providerId || "", topic.name, topic.msgType, external, openInTerminal);
+    navCtx.startPublisher({
+      providerId: providerId || "",
+      topicName: topic.name,
+      topicType: topic.msgType,
+      externalKeyModifier: external,
+      forceOpenTerminal: openInTerminal,
+    });
   }
 
   function updateTopicList(): void {
@@ -286,7 +299,10 @@ export default function TopicDetailsItem(props: TopicDetailsItemsProps): JSX.Ele
                 placement="left"
                 disableInteractive
               >
-                <PlayArrowRoundedIcon style={{ padding: 1, color: "#09770fff" }} sx={{ fontSize: (theme) => theme.typography.fontSize }} />
+                <PlayArrowRoundedIcon
+                  style={{ padding: 1, color: "#09770fff" }}
+                  sx={{ fontSize: (theme) => theme.typography.fontSize }}
+                />
               </Tooltip>
             }
             label={
