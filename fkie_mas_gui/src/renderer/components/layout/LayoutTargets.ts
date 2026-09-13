@@ -1,6 +1,6 @@
 import { Actions, BorderNode, DockLocation, Model, TabNode } from "flexlayout-react";
 
-import { LAYOUT_TAB_SETS } from "./index";
+import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "./index";
 
 export type TDockTarget = {
   /** id of the tabset or border node to dock into */
@@ -97,6 +97,14 @@ export function collapseBorderOnLastTab(model: Model, tabId: string): void {
   // last tab of this border -> toggle (collapse) it
   if (children.length <= 1) {
     if (isSelected) model.doAction(Actions.selectTab(tabId));
+    return;
+  }
+
+  // close border if last tab is logging tab
+  if (children.length === 2) {
+    if (children[0]?.getId() === LAYOUT_TABS.LOGGING) {
+      model.doAction(Actions.selectTab(tabId));
+    }
     return;
   }
 

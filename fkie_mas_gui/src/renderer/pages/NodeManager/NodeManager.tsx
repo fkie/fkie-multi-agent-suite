@@ -1115,19 +1115,6 @@ export default function NodeManager(): JSX.Element {
     }
   }
 
-  /** All currently open domain sub-layouts, usable as move targets. */
-  const getDomainTargets = useCallback((): { tabId: string; name: string; contentId: TContentId }[] => {
-    const targets: { tabId: string; name: string; contentId: TContentId }[] = [];
-    modelRef.current.visitNodes((node) => {
-      if (node.getType() !== "tab") return;
-      const tab = node as TabNode;
-      if (tab.getComponent() !== LAYOUT_TABS.DOMAIN) return;
-      const cfg = tab.getConfig() as TLayoutTabConfig;
-      if (cfg?.contentId) targets.push({ tabId: tab.getId(), name: tab.getName(), contentId: cfg.contentId });
-    });
-    return targets;
-  }, []);
-
   /** Move a tab back into the domain layout it originally came from. */
   const moveTabToDomain = useCallback((tabId: string, domainTabId: string, contentId: TContentId): void => {
     const tab = takeOutTab(modelRef.current, tabId);
