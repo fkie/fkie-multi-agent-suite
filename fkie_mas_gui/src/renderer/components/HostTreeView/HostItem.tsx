@@ -2,6 +2,7 @@ import ChangeCircleOutlinedIcon from "@mui/icons-material/ChangeCircleOutlined";
 import ComputerIcon from "@mui/icons-material/Computer";
 import LinkIcon from "@mui/icons-material/Link";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import WatchLaterIcon from "@mui/icons-material/WatchLater";
 import {
   Box,
@@ -69,7 +70,8 @@ export default function HostItem(props: HostItemProps): JSX.Element {
   const [openNtpdateDialog, setOpenNtpdateDialog] = useState<boolean>(false);
   const [colorizeHosts] = useSetting<boolean>("colorizeHosts");
   const [timeDiffThreshold] = useSetting<number>("timeDiffThreshold");
-  const [contextMenuPos, setContextMenuPos] = useState<{ mouseX: number; mouseY: number } | null>(null);
+  // anchor for the options menu, which provides the time options independent of the time difference
+  const [optionsAnchorEl, setOptionsAnchorEl] = useState<null | HTMLElement>(null);
 
   async function updateTime(local = true): Promise<void> {
     if (provider) {
@@ -111,16 +113,6 @@ export default function HostItem(props: HostItemProps): JSX.Element {
     } else if (index === 3) {
       setShowHelpTime(true);
     }
-  }
-
-  /**
-   * Open the time options as context menu, so they are always available,
-   * also if the time difference is below the threshold.
-   */
-  function handleContextMenu(event: React.MouseEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    setContextMenuPos({ mouseX: event.clientX + 2, mouseY: event.clientY - 6 });
   }
 
   /**
@@ -225,7 +217,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
       sx={getHostStyle(provider)}
       onDoubleClick={(event) => onDoubleClick(event, provider.id)}
       label={
-        <Box display="flex" alignItems="center" paddingLeft={0.0} onContextMenu={handleContextMenu}>
+        <Box display="flex" alignItems="center" paddingLeft={0.0}>
           {provider.rosState.ros_version === "1" && (
             <Tooltip title="Toggle Master Sync" placement="bottom-start">
               <IconButton
@@ -308,6 +300,47 @@ export default function HostItem(props: HostItemProps): JSX.Element {
             <LinkOffIcon sx={{ mr: 0.5, width: 20, color: red[700] }} />
           )}
 
+          {/* three dots button: provides the time options always, also if the time is in sync */}
+          <Tooltip title="Host options" placement="bottom-start" disableInteractive>
+            <IconButton
+              size="small"
+              aria-label="Host options"
+              sx={{ mr: 0.5, padding: "2px" }}
+              onClick={(event) => {
+                setOptionsAnchorEl(optionsAnchorEl ? null : event.currentTarget);
+                event.stopPropagation();
+              }}
+              onDoubleClick={(event) => {
+                event.stopPropagation();
+              }}
+            >
+              <MoreVertIcon sx={{ fontSize: "1rem", color: grey[700] }} />
+            </IconButton>
+          </Tooltip>
+          <Menu
+            id="host-item-options-menu"
+            open={Boolean(optionsAnchorEl)}
+            anchorEl={optionsAnchorEl}
+            onClose={() => setOptionsAnchorEl(null)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            transformOrigin={{ vertical: "top", horizontal: "left" }}
+            onClick={(event) => event.stopPropagation()}
+            onDoubleClick={(event) => event.stopPropagation()}
+          >
+            {optionsTimeButton.map((option, index) => (
+              <MenuItem
+                key={`options-${option}`}
+                dense
+                onClick={(event) => {
+                  setOptionsAnchorEl(null);
+                  handleMenuTimeItemClick(event, index);
+                }}
+              >
+                {option}
+              </MenuItem>
+            ))}
+          </Menu>
+
           <Stack direction="row" display="flex" alignItems="center" sx={{ flexGrow: 1, userSelect: "none" }}>
             <Typography variant="body1" alignItems="center" marginRight={1}>
               {provider.name()}
@@ -356,33 +389,6 @@ export default function HostItem(props: HostItemProps): JSX.Element {
               </Tooltip>
             ))}
           </Stack>
-
-          <Menu
-            id="host-item-context-menu"
-            open={Boolean(contextMenuPos)}
-            onClose={() => setContextMenuPos(null)}
-            anchorReference="anchorPosition"
-            anchorPosition={contextMenuPos ? { top: contextMenuPos.mouseY, left: contextMenuPos.mouseX } : undefined}
-            onContextMenu={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-            }}
-            onClick={(event) => event.stopPropagation()}
-            onDoubleClick={(event) => event.stopPropagation()}
-          >
-            {optionsTimeButton.map((option, index) => (
-              <MenuItem
-                key={`context-${option}`}
-                dense
-                onClick={(event) => {
-                  setContextMenuPos(null);
-                  handleMenuTimeItemClick(event, index);
-                }}
-              >
-                {option}
-              </MenuItem>
-            ))}
-          </Menu>
 
           <SetNTPDateDialog
             key="sync-time-menu"
