@@ -46,6 +46,7 @@ class MonitorServicer:
         websocket.register("ros.provider.get_system_info", self.getSystemInfo)
         websocket.register("ros.provider.get_system_env", self.getSystemEnv)
         websocket.register("ros.provider.get_warnings", self.getProviderWarnings)
+        websocket.register("ros.provider.get_system_diagnostics", self.getSystemDiagnostics)
         websocket.register("ros.provider.get_diagnostics", self.getDiagnostics)
         websocket.register("ros.provider.ros_clean_purge", self.rosCleanPurge)
         websocket.register("ros.provider.shutdown", self.rosShutdown)
@@ -130,10 +131,15 @@ class MonitorServicer:
         self.websocket.publish("ros.provider.diagnostics",
                                json.dumps(self._toJsonDiagnostics(ros_msg), cls=SelfEncoder),)
 
+    def getSystemDiagnostics(self) -> DiagnosticArray:
+        Log.info(f"{self.__class__.__name__}: request: get system diagnostics")
+        ros_msg = self._monitor.get_system_diagnostics(0, 0)
+        # copy message to the JSON structure
+        return json.dumps(self._toJsonDiagnostics(ros_msg), cls=SelfEncoder)
+
     def getDiagnostics(self) -> DiagnosticArray:
         Log.info(f"{self.__class__.__name__}: request: get diagnostics")
         ros_msg = self._monitor.get_diagnostics(0, 0)
-        ros_msg.status.extend(self._monitor.get_system_diagnostics(0, 0.0).status)
         # copy message to the JSON structure
         return json.dumps(self._toJsonDiagnostics(ros_msg), cls=SelfEncoder)
 
