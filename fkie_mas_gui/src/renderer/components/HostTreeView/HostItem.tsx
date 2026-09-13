@@ -1,8 +1,12 @@
 import ChangeCircleOutlinedIcon from "@mui/icons-material/ChangeCircleOutlined";
 import ComputerIcon from "@mui/icons-material/Computer";
+import DeveloperBoardIcon from "@mui/icons-material/DeveloperBoard";
 import LinkIcon from "@mui/icons-material/Link";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
+import MemoryIcon from "@mui/icons-material/Memory";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import NetworkCheckIcon from "@mui/icons-material/NetworkCheck";
+import StorageIcon from "@mui/icons-material/Storage";
 import WatchLaterIcon from "@mui/icons-material/WatchLater";
 import {
   Box,
@@ -35,12 +39,103 @@ import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { RosNode, RosNodeStatus } from "@/renderer/models";
 import Provider from "@/renderer/providers/Provider";
+import { EVENT_DIAGNOSTICS } from "@/renderer/providers/eventTypes";
+import { TEventDiagnostics } from "@/renderer/providers/events";
 import { generateUniqueId } from "@/renderer/utils";
 import { CmdTypes, TTag } from "@/types";
+import { useCustomEventListener } from "react-custom-events";
 import Tag from "../UI/Tag";
 import DateHelpDialog from "./DateHelpDialog";
 import SetNTPDateDialog from "./SetNTPDateDialog";
 import StyledRootTreeItem from "./StyledRootTreeItem";
+
+type TDiagValue = { key: string; value: string };
+type TDiagStatus = {
+  level: number;
+  name: string;
+  message: string;
+  hardware_id: string;
+  values: TDiagValue[];
+};
+
+/** Only global (system) diagnostics, no node diagnostics */
+const SYSTEM_DIAG_NAMES = ["cpu", "memory", "hdd", "disk", "network"];
+
+function isSystemDiagnostic(status: TDiagStatus): boolean {
+  const name = (status.name || "").toLowerCase();
+  return !name.includes("/") && SYSTEM_DIAG_NAMES.some((n) => name.includes(n));
+}
+
+/** True if the status contains any real measurement (not only a timestamp) */
+function hasDiagValues(status: TDiagStatus): boolean {
+  return (status.values || []).some((v) => v.key !== "Timestamp");
+}
+
+function diagValue(status: TDiagStatus, key: string): string | undefined {
+  return status.values?.find((v) => v.key === key)?.value;
+}
+
+/** Extract the bandwidth limit in bytes/s from a message like "warn at >90.00% at 6MBit" */
+/** Extract the bandwidth limit in bytes/s from a message like "warn at >90.00% at 6MBit" */
+function networkLimitBytes(status: TDiagStatus): number | undefined {
+  // case-insensitive: the daemon writes "MBit", "Mbit" or "mbit"
+  const match = /([\d.]+)\s*([kmg])?\s*bit(?:\/s)?/i.exec(status.message || "");
+  if (!match) return undefined;
+  const value = Number.parseFloat(match[1]);
+  if (Number.isNaN(value)) return undefined;
+  const factor = { k: 1e3, m: 1e6, g: 1e9 }[(match[2] || "").toLowerCase()] ?? 1;
+  return (value * factor) / 8.0;
+}
+
+/** Format a byte rate as human readable string */
+function formatRate(bytesPerSec: number): string {
+  const units = ["B/s", "KiB/s", "MiB/s", "GiB/s"];
+  let value = bytesPerSec;
+  let index = 0;
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
+  return `${value.toFixed(2)} ${units[index]}`;
+}
+
+/** Add a percentage (and human readable rate) to network values like "enp0: sent [1s]" */
+function diagValueDisplay(status: TDiagStatus, item: TDiagValue): string {
+  if (!item.key.includes("[1s]")) return item.value;
+  const rate = Number.parseFloat(item.value);
+  if (Number.isNaN(rate)) return item.value;
+  const limit = networkLimitBytes(status);
+  const percent = limit && limit > 0 ? ` (${((rate / limit) * 100.0).toFixed(2)}%)` : "";
+  return `${formatRate(rate)}${percent}`;
+}
+
+function diagUsagePercent(status: TDiagStatus): number | undefined {
+  const free = diagValue(status, "Free [%]");
+  if (free !== undefined) return 100.0 - Number.parseFloat(free);
+  const max = diagValue(status, "Max [%]");
+  if (max !== undefined) return Number.parseFloat(max);
+  const avg = diagValue(status, "Avg [%]");
+  if (avg !== undefined) return Number.parseFloat(avg);
+  // network load: values are bytes/s per interface, compare against the limit from the message
+  const limit = networkLimitBytes(status);
+  if (limit && limit > 0) {
+    const rates = (status.values || [])
+      .filter((v) => v.key.includes("[1s]"))
+      .map((v) => Number.parseFloat(v.value))
+      .filter((v) => !Number.isNaN(v));
+    if (rates.length > 0) return (Math.max(...rates) / limit) * 100.0;
+  }
+  return undefined;
+}
+
+function diagIcon(status: TDiagStatus, color: string): JSX.Element {
+  const name = (status.name || "").toLowerCase();
+  const sx = { fontSize: "inherit", color: color };
+  if (name.includes("cpu")) return <DeveloperBoardIcon sx={sx} />;
+  if (name.includes("memory")) return <MemoryIcon sx={sx} />;
+  if (name.includes("hdd") || name.includes("disk")) return <StorageIcon sx={sx} />;
+  return <NetworkCheckIcon sx={sx} />;
+}
 
 interface HostItemProps {
   provider: Provider;
@@ -72,6 +167,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
   const [timeDiffThreshold] = useSetting<number>("timeDiffThreshold");
   // anchor for the options menu, which provides the time options independent of the time difference
   const [optionsAnchorEl, setOptionsAnchorEl] = useState<null | HTMLElement>(null);
+  const [systemDiagnostics, setSystemDiagnostics] = useState<TDiagStatus[]>([]);
 
   async function updateTime(local = true): Promise<void> {
     if (provider) {
@@ -114,6 +210,13 @@ export default function HostItem(props: HostItemProps): JSX.Element {
       setShowHelpTime(true);
     }
   }
+
+  // diagnostics are requested periodically elsewhere, we only listen for the results here
+  useCustomEventListener(EVENT_DIAGNOSTICS, (data: TEventDiagnostics) => {
+    if (data.provider.id !== provider.id) return;
+    const status = (data.diagnostics?.status || []) as unknown as TDiagStatus[];
+    setSystemDiagnostics(status.filter((item) => isSystemDiagnostic(item)));
+  });
 
   /**
    * Check if provider has master sync on
@@ -168,6 +271,64 @@ export default function HostItem(props: HostItemProps): JSX.Element {
   function formatTime(milliseconds): string {
     const sec = (milliseconds / 1000.0).toFixed(3);
     return `${sec}s`;
+  }
+
+  const getDiagnosticColor = useCallback((status: TDiagStatus): string => {
+    if (status.level >= 3) return grey[600];
+    if (status.level >= 2) return red[700];
+    if (status.level === 1) return orange[500];
+    const usage = diagUsagePercent(status);
+    if (usage === undefined || Number.isNaN(usage)) return green[600];
+    if (usage >= 80) return red[700];
+    if (usage >= 60) return orange[500];
+    return green[600];
+  }, []);
+
+  function generateDiagnosticsView(): JSX.Element {
+    if (!provider.isAvailable() || systemDiagnostics.length === 0) return <></>;
+    // show the icon if any value is available or the state is not OK
+    const visible = systemDiagnostics.filter((status) => hasDiagValues(status) || status.level > 0);
+    if (visible.length === 0) return <></>;
+    return (
+      <Stack direction="row" alignItems="center" spacing="0.2em" sx={{ marginLeft: "0.3em", fontSize: "1rem" }}>
+        {visible.map((status) => {
+          const usage = diagUsagePercent(status);
+          return (
+            <Tooltip
+              key={status.name}
+              placement="bottom"
+              disableInteractive
+              title={
+                <div>
+                  <Typography fontWeight="bold" fontSize="inherit">
+                    {status.name}
+                    {usage !== undefined && !Number.isNaN(usage) ? `: ${usage.toFixed(1)}%` : ""}
+                  </Typography>
+                  {status.message && <Typography fontSize="inherit">{status.message}</Typography>}
+                  {status.values?.map((item) => (
+                    <Stack key={item.key} direction="row" spacing="0.2em">
+                      <Typography fontSize="inherit" fontWeight="bold">
+                        {item.key}:
+                      </Typography>
+                      <Typography fontSize="inherit">{diagValueDisplay(status, item)}</Typography>
+                    </Stack>
+                  ))}
+                </div>
+              }
+            >
+              <Box
+                display="flex"
+                alignItems="center"
+                onClick={(event) => event.stopPropagation()}
+                onDoubleClick={(event) => event.stopPropagation()}
+              >
+                {diagIcon(status, getDiagnosticColor(status))}
+              </Box>
+            </Tooltip>
+          );
+        })}
+      </Stack>
+    );
   }
 
   const getHostStyle = useCallback(
@@ -346,10 +507,12 @@ export default function HostItem(props: HostItemProps): JSX.Element {
               {provider.name()}
             </Typography>
             {provider.isLocalHost && (
-              <Typography variant="body2" color="grey" flexGrow={1}>
+              <Typography variant="body2" color="grey">
                 (localhost)
               </Typography>
             )}
+            {generateDiagnosticsView()}
+
             <Typography variant="body1" alignItems="center" flexGrow={1} marginRight={1} />
 
             {nodeCount > 0 && (

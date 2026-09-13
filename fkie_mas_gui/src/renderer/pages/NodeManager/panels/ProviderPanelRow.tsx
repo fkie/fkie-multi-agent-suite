@@ -3,11 +3,16 @@ import {
   EventProviderDelay,
   EventProviderState,
   EventProviderWarnings,
+  TEventDiagnostics,
 } from "@/renderer/providers/events";
 import CheckIcon from "@mui/icons-material/Check";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import DeveloperBoardIcon from "@mui/icons-material/DeveloperBoard";
 import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 import JoinFullIcon from "@mui/icons-material/JoinFull";
+import MemoryIcon from "@mui/icons-material/Memory";
+import NetworkCheckIcon from "@mui/icons-material/NetworkCheck";
+import StorageIcon from "@mui/icons-material/Storage";
 import TextSnippetOutlinedIcon from "@mui/icons-material/TextSnippetOutlined";
 import UpgradeIcon from "@mui/icons-material/Upgrade";
 import VerticalAlignBottomIcon from "@mui/icons-material/VerticalAlignBottom";
@@ -25,7 +30,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
-import { useCallback, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import semver from "semver";
 
@@ -38,6 +43,7 @@ import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode } from "@/renderer/models";
 import { ConnectionState, Provider } from "@/renderer/providers";
 import {
+  EVENT_DIAGNOSTICS,
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_STATE,
@@ -46,6 +52,50 @@ import {
 import { CmdTypes } from "@/types";
 import { emitSelectTab } from "../../../components/layout/events";
 import { EMenuProvider } from "./OverflowMenuProvider";
+
+/** Interval to request provider diagnostics (ms) */
+const DIAGNOSTICS_UPDATE_PERIOD = 10000;
+
+type TDiagValue = { key: string; value: string };
+type TDiagStatus = {
+  level: number;
+  name: string;
+  message: string;
+  hardware_id: string;
+  values: TDiagValue[];
+};
+
+/** Only global (system) diagnostics, no node diagnostics */
+const SYSTEM_DIAG_NAMES = ["cpu", "memory", "hdd", "disk", "network"];
+
+function isSystemDiagnostic(status: TDiagStatus): boolean {
+  const name = (status.name || "").toLowerCase();
+  return !name.includes("/") && SYSTEM_DIAG_NAMES.some((n) => name.includes(n));
+}
+
+function diagValue(status: TDiagStatus, key: string): string | undefined {
+  return status.values?.find((v) => v.key === key)?.value;
+}
+
+/** Convert diagnostic values into a usage percentage, if possible */
+function diagUsagePercent(status: TDiagStatus): number | undefined {
+  const free = diagValue(status, "Free [%]");
+  if (free !== undefined) return 100.0 - Number.parseFloat(free);
+  const max = diagValue(status, "Max [%]");
+  if (max !== undefined) return Number.parseFloat(max);
+  const avg = diagValue(status, "Avg [%]");
+  if (avg !== undefined) return Number.parseFloat(avg);
+  return undefined;
+}
+
+function diagIcon(status: TDiagStatus, color: string): JSX.Element {
+  const name = (status.name || "").toLowerCase();
+  const sx = { fontSize: "inherit", color: color };
+  if (name.includes("cpu")) return <DeveloperBoardIcon sx={sx} />;
+  if (name.includes("memory")) return <MemoryIcon sx={sx} />;
+  if (name.includes("hdd") || name.includes("disk")) return <StorageIcon sx={sx} />;
+  return <NetworkCheckIcon sx={sx} />;
+}
 
 interface ProviderPanelRowProps {
   provider: Provider;
@@ -61,6 +111,19 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
   const [updated, forceUpdate] = useReducer((x) => x + 1, 0);
   const [colorizeHosts] = useSetting<boolean>("colorizeHosts");
   const [dedicatedTabsFor] = useSetting<string>("dedicatedTabsFor");
+  const [systemDiagnostics, setSystemDiagnostics] = useState<TDiagStatus[]>([]);
+
+  // periodically request diagnostics from the provider
+  useEffect(() => {
+    const requestDiagnostics = (): void => {
+      if (provider.isAvailable()) {
+        provider.updateSystemDiagnostics(null);
+      }
+    };
+    requestDiagnostics();
+    const timer = setInterval(requestDiagnostics, DIAGNOSTICS_UPDATE_PERIOD);
+    return () => clearInterval(timer);
+  }, [provider]);
 
   const closeProviderHandler = useCallback(
     async (providerId: string) => {
@@ -111,6 +174,72 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
       forceUpdate();
     }
   });
+
+  useCustomEventListener(EVENT_DIAGNOSTICS, (data: TEventDiagnostics) => {
+    if (data.provider.id === provider.id) {
+      const status = (data.diagnostics?.status || []) as unknown as TDiagStatus[];
+      setSystemDiagnostics(status.filter((item) => isSystemDiagnostic(item)));
+      forceUpdate();
+    }
+  });
+
+  const getDiagnosticColor = useCallback((status: TDiagStatus): string => {
+    if (status.level >= 3) return "grey";
+    if (status.level >= 2) return "red";
+    if (status.level === 1) return "orange";
+    const usage = diagUsagePercent(status);
+    if (usage === undefined || Number.isNaN(usage)) return "green";
+    if (usage >= 80) return "red";
+    if (usage >= 60) return "orange";
+    return "green";
+  }, []);
+
+  function generateDiagnosticsView(): JSX.Element {
+    if (!provider.isAvailable() || systemDiagnostics.length === 0) return <></>;
+    const criticalDiagnostics = systemDiagnostics.filter((status) => getDiagnosticColor(status) === "red");
+    if (criticalDiagnostics.length === 0) return <></>;
+    return (
+      <Stack direction="row" alignItems="center" spacing="0.1em">
+        {criticalDiagnostics.map((status) => {
+          const color = getDiagnosticColor(status);
+          const usage = diagUsagePercent(status);
+          return (
+            <Tooltip
+              key={status.name}
+              placement="bottom"
+              disableInteractive
+              title={
+                <div>
+                  <Typography fontWeight="bold" fontSize="inherit">
+                    {status.name}
+                    {usage !== undefined && !Number.isNaN(usage) ? `: ${usage.toFixed(1)}%` : ""}
+                  </Typography>
+                  <Typography fontSize="inherit">{status.message}</Typography>
+                  {status.values?.map((item) => (
+                    <Stack key={item.key} direction="row" spacing="0.2em">
+                      <Typography fontSize="inherit" fontWeight="bold">
+                        {item.key}:
+                      </Typography>
+                      <Typography fontSize="inherit">{item.value}</Typography>
+                    </Stack>
+                  ))}
+                </div>
+              }
+            >
+              <IconButton
+                size="small"
+                onClick={() => {
+                  onProviderMenuClick(EMenuProvider.INFO, provider);
+                }}
+              >
+                {diagIcon(status, color)}
+              </IconButton>
+            </Tooltip>
+          );
+        })}
+      </Stack>
+    );
+  }
 
   async function onProviderMenuClick(actionType: EMenuProvider, provider: Provider): Promise<void> {
     if (actionType === EMenuProvider.INFO) {
@@ -549,6 +678,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
             </Tooltip>
           )}
         </TableCell>
+        <TableCell style={{ padding: 0 }}>{generateDiagnosticsView()}</TableCell>
         <TableCell style={{ padding: 0 }}>{generateWarningsView(provider)}</TableCell>
         <TableCell style={{ padding: 0 }}>{generateStatusView(provider)}</TableCell>
         <TableCell style={{ padding: 0 }}>

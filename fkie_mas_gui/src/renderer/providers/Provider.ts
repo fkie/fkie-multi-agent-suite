@@ -68,7 +68,6 @@ import RosProviderState from "./RosProviderState";
 import { TCmdTerminal } from "./TCmdTerminal";
 import {
   EVENT_NODE_COMPOSABLE,
-  EVENT_NODE_DIAGNOSTIC,
   EVENT_NODE_LIFECYCLE,
   EVENT_PROVIDER_ACTION_FEEDBACK_PREFIX,
   EVENT_PROVIDER_ACTION_INTROSPECTION_PREFIX,
@@ -92,7 +91,8 @@ import {
   EVENT_PROVIDER_WARNINGS,
 } from "./eventTypes";
 import {
-  EventNodeDiagnostic,
+  emitDiagnostics,
+  emitNodeDiagnostic,
   EventProviderActionEvent,
   EventProviderActionIntrospection,
   EventProviderActivity,
@@ -377,6 +377,7 @@ export default class Provider implements IProvider {
           await this.updateScreens();
           await this.updateTimeDiff();
           await this.updateDiagnostics(null);
+          await this.updateSystemDiagnostics(null);
           await this.getLifecycle();
           await this.getComposable();
           await this.updateRosServices();
@@ -1643,9 +1644,21 @@ export default class Provider implements IProvider {
     for (const n of nodes) {
       const existingNode = this.rosNodes.find((node: RosNode) => node.name === n.node);
       if (!existingNode) continue;
-      const newDiag: EventNodeDiagnostic = { provider: this, node: existingNode, status: n.status };
-      emitCustomEvent(EVENT_NODE_DIAGNOSTIC, newDiag);
+      emitNodeDiagnostic({ provider: this, node: existingNode, status: n.status });
     }
+    return Promise.resolve(true);
+  };
+
+  public updateSystemDiagnostics: (msg: DiagnosticArray | null) => Promise<boolean> = async (msg = null) => {
+    let diags = msg;
+    if (diags === null) {
+      diags = await this.getSystemDiagnostics();
+      if (diags === null) {
+        return Promise.resolve(false);
+      }
+    }
+    // update the screens
+    emitDiagnostics({ provider: this, diagnostics: diags });
     return Promise.resolve(true);
   };
 
@@ -2428,6 +2441,17 @@ export default class Provider implements IProvider {
         return value.data as DiagnosticArray;
       }
       this.log().error(`Provider [${this.id}]: Error at getDiagnostics()`, `${value.message}`);
+      return null;
+    });
+    return Promise.resolve(result);
+  };
+
+  private getSystemDiagnostics: () => Promise<DiagnosticArray | null> = async () => {
+    const result = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_DIAGNOSTICS, [], false).then((value: TResultData) => {
+      if (value.result) {
+        return value.data as DiagnosticArray;
+      }
+      this.log().error(`Provider [${this.id}]: Error at getSystemDiagnostics()`, `${value.message}`);
       return null;
     });
     return Promise.resolve(result);

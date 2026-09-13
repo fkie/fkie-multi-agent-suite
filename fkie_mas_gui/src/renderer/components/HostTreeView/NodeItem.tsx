@@ -33,7 +33,7 @@ import {
   RosNode,
   RosNodeStatus,
 } from "@/renderer/models";
-import { EventNodeDiagnostic, TEventNodeCmdState, TEventNodeLifecycle } from "@/renderer/providers/events";
+import { TEventNodeCmdState, TEventNodeDiagnostic, TEventNodeLifecycle } from "@/renderer/providers/events";
 import { EVENT_NODE_CMD_STATE, EVENT_NODE_DIAGNOSTIC, EVENT_NODE_LIFECYCLE } from "@/renderer/providers/eventTypes";
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
 import { InfoStateLevel, TTag } from "@/types";
@@ -372,7 +372,7 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
     );
   };
 
-  useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
+  useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: TEventNodeDiagnostic) => {
     if (data.node.name === node.name) {
       setDiagnosticColor(node.diagnostic?.getColor(isDarkMode) || getDiagnosticColor(DiagnosticLevel.OK, isDarkMode));
     }

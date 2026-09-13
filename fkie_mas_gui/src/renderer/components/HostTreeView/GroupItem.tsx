@@ -12,8 +12,8 @@ import { useEffect, useMemo, useState } from "react";
 import { IRosContext } from "@/renderer/context/RosContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { DiagnosticLevel, getMaxDiagnosticLevel, RosNodeStatus } from "@/renderer/models";
+import { TEventNodeDiagnostic } from "@/renderer/providers/events";
 import { EVENT_NODE_DIAGNOSTIC } from "@/renderer/providers/eventTypes";
-import { EventNodeDiagnostic } from "@/renderer/providers/events";
 import { useCustomEventListener } from "react-custom-events";
 import { averageColor, getDiagnosticColor } from "../UI/Colors";
 import StyledTreeItem from "./StyledTreeItem";
@@ -240,7 +240,7 @@ export function GroupIcon(props: GroupIconProps): JSX.Element {
     const status = getGroupStatus(treeItems);
     const local = getGroupStatusLocal(treeItems);
     const border = getColorFromLifecycle(lifecycle, isDarkMode);
-    setColor(getGroupIconColor(treeItems, isDarkMode))
+    setColor(getGroupIconColor(treeItems, isDarkMode));
     return {
       groupLifecycleStatus: lifecycle,
       groupStatus: status,
@@ -249,7 +249,7 @@ export function GroupIcon(props: GroupIconProps): JSX.Element {
     };
   }, [treeItems, rosCtx, isDarkMode]);
 
-  useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
+  useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: TEventNodeDiagnostic) => {
     // update group icon if the name of the node contains the group name
     if (
       data.node.name.indexOf(`${groupName}/`) > -1 ||

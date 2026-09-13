@@ -4,6 +4,8 @@ import {
   ActionEvent,
   ActionIntrospectionEvent,
   Composable,
+  DiagnosticArray,
+  DiagnosticInfo,
   DiagnosticStatus,
   LaunchContent,
   LifecycleState,
@@ -17,7 +19,7 @@ import {
 } from "../models";
 import ConnectionState from "./ConnectionState";
 import Provider from "./Provider";
-import { EVENT_NODE_CMD_STATE } from "./eventTypes";
+import { EVENT_DIAGNOSTICS, EVENT_NODE_CMD_STATE, EVENT_NODE_DIAGNOSTIC } from "./eventTypes";
 
 export { ConnectionState };
 
@@ -268,18 +270,23 @@ export class EventProviderRosPackages {
   }
 }
 
-export class EventNodeDiagnostic {
+export type TEventNodeDiagnostic = {
   provider: Provider;
-
   node: RosNode;
-
   status: DiagnosticStatus;
+};
 
-  constructor(provider: Provider, node: RosNode, status: DiagnosticStatus) {
-    this.provider = provider;
-    this.node = node;
-    this.status = status;
-  }
+export function emitNodeDiagnostic(props: TEventNodeDiagnostic) {
+  emitCustomEvent(EVENT_NODE_DIAGNOSTIC, props);
+}
+
+export type TEventDiagnostics = {
+  provider: Provider;
+  diagnostics: DiagnosticArray;
+};
+
+export function emitDiagnostics(props: TEventDiagnostics) {
+  emitCustomEvent(EVENT_DIAGNOSTICS, props);
 }
 
 export type TEventNodeLifecycle = {

@@ -33,7 +33,7 @@ import {
   EVENT_PROVIDER_ROS_SERVICES,
   EVENT_PROVIDER_ROS_TOPICS,
 } from "@/renderer/providers/eventTypes";
-import { EventNodeDiagnostic, TEventNodeLifecycle } from "@/renderer/providers/events";
+import { TEventNodeDiagnostic, TEventNodeLifecycle } from "@/renderer/providers/events";
 import { generateUniqueId } from "@/renderer/utils";
 import { envEntryToStr } from "@/types";
 import SystemInformationPanel from "./SystemInformationPanel";
@@ -145,7 +145,7 @@ export default function DetailsPanel(): JSX.Element {
     forceUpdateTopics();
   });
 
-  useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: EventNodeDiagnostic) => {
+  useCustomEventListener(EVENT_NODE_DIAGNOSTIC, (data: TEventNodeDiagnostic) => {
     if (data.node.name === nodeShow?.name) {
       forceUpdateDiagnostics();
     }
