@@ -59,6 +59,8 @@ class WebSocketServer:
         self._handler: Set[WebSocketHandler] = set()
         self._registrations: Dict[str, Callable[..., Any]] = {}
         self._remote_registrations: Dict[str, WebSocketHandler] = {}
+        # listeners informed about changed subscription count: callback(uri, count)
+        self._subscription_listeners: List[Callable[[str, int], None]] = []
         self._spin_thread: Optional[threading.Thread] = None
         self._watchdog_thread: Optional[threading.Thread] = None
         self._server = None
@@ -203,16 +205,19 @@ class WebSocketServer:
         return self.count_clients()
 
     def _cb_subs_changed(self, uri: str) -> None:
-        with self._lock:
-            handlers = list(self._handler)
-        count = 0
-        for h in handlers:
-            try:
-                if uri in h.subscriptions():
-                    count += 1
-            except Exception:
-                continue
+        '''
+        Called by a handler if a client subscribed or unsubscribed and on
+        client disconnect.
+        '''
+        count = self.subscriptions(uri)
         self.publish("event", {"type": "subs", "uri": uri, "count": count})
+        with self._lock:
+            listeners = list(self._subscription_listeners)
+        for clb in listeners:
+            try:
+                clb(uri, count)
+            except Exception as err:
+                Log.warn(f"subscription listener for {uri} failed: {err}")
 
     # ------------------------------------------------------------------ #
     # registration / subscription
@@ -224,6 +229,64 @@ class WebSocketServer:
             if uri not in self._subscriptions:
                 self._subscriptions[uri] = []
             self._subscriptions[uri].append(callback)
+        # a local subscription also changes the subscriber count
+        self._cb_subs_changed(uri)
+
+    def unsubscribe(self, uri: str, callback: Callable[[Any], None]) -> None:
+        '''
+        Removes a local subscription added by :meth:`subscribe`.
+        '''
+        removed = False
+        with self._lock:
+            callbacks = self._subscriptions.get(uri)
+            if callbacks is not None and callback in callbacks:
+                callbacks.remove(callback)
+                removed = True
+                if not callbacks:
+                    del self._subscriptions[uri]
+        if removed:
+            self._cb_subs_changed(uri)
+
+    def subscriptions(self, uri: str) -> int:
+        '''
+        Returns the count of subscribers for the given uri. Remote clients as
+        well as local callbacks registered by :meth:`subscribe` are counted.
+
+        :param uri: the uri to check, e.g. 'ros.provider.system_diagnostics'
+        :return: count of subscribers, 0 if nobody is listening.
+        '''
+        with self._lock:
+            handlers = list(self._handler)
+            # local subscriptions are counted, too
+            count = len(self._subscriptions.get(uri, []))
+        for h in handlers:
+            try:
+                if h.has_subscription(uri):
+                    count += 1
+            except Exception:
+                # handler is currently shutting down
+                continue
+        return count
+
+    def has_subscriptions(self, uri: str) -> bool:
+        '''
+        :return: True if at least one subscriber exists for the given uri.
+        '''
+        return self.subscriptions(uri) > 0
+
+    def add_subscription_listener(self, callback: Callable[[str, int], None]) -> None:
+        '''
+        Adds a listener which is called with (uri, count) if the count of
+        subscribers changed. Allows event driven start/stop of producers.
+        '''
+        with self._lock:
+            if callback not in self._subscription_listeners:
+                self._subscription_listeners.append(callback)
+
+    def remove_subscription_listener(self, callback: Callable[[str, int], None]) -> None:
+        with self._lock:
+            if callback in self._subscription_listeners:
+                self._subscription_listeners.remove(callback)
 
     def register(self, uri: str, callback: Callable[..., Any]) -> None:
         with self._lock:
@@ -257,12 +320,17 @@ class WebSocketServer:
         return (None, False)
 
     def _get_subscriptions(self, uri: str) -> List[str]:
+        '''
+        RPC 'subs': returns the addresses of all clients subscribed to the uri.
+        Local subscriptions are reported as 'local'.
+        '''
         with self._lock:
             handlers = list(self._handler)
-        subs = []
+            local_count = len(self._subscriptions.get(uri, []))
+        subs = ['local'] * local_count
         for h in handlers:
             try:
-                if uri in h.subscriptions():
+                if h.has_subscription(uri):
                     subs.append(h.address)
             except Exception:
                 continue
@@ -278,16 +346,20 @@ class WebSocketServer:
 
         :return: True if the message was delivered to all destinations.
         '''
+        # do not hold the lock while doing network io
+        with self._lock:
+            handlers = list(self._handler)
+            local_callbacks = self._subscriptions.get(uri)
+        # skip serialization if nobody is subscribed
+        if not local_callbacks and not any(
+                self._has_subscription_quiet(con, uri) for con in handlers):
+            return True
         try:
             msg = message if isinstance(message, str) else json.dumps(
                 message, cls=SelfAllEncoder)
         except Exception as err:
             Log.warn(f"could not serialize message for {uri}: {err}")
             return False
-        # do not hold the lock while doing network io
-        with self._lock:
-            handlers = list(self._handler)
-            local_callbacks = self._subscriptions.get(uri)
         result = True
         for con in handlers:
             try:
@@ -306,6 +378,16 @@ class WebSocketServer:
                 result = False
                 Log.warn(f"local subscription for {uri} failed: {err}")
         return result
+
+    @staticmethod
+    def _has_subscription_quiet(handler: WebSocketHandler, uri: str) -> bool:
+        '''
+        Exception safe check used while publishing.
+        '''
+        try:
+            return handler.has_subscription(uri)
+        except Exception:
+            return False
 
     # ------------------------------------------------------------------ #
     # helper / watchdog
