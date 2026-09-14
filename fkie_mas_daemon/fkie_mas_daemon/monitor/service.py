@@ -60,6 +60,7 @@ class DiagnosticObj(DiagnosticStatus):
         if isinstance(item, DiagnosticStatus):
             return self.msg.name < item.name
         return False
+
     def __le__(self, item):
         if isinstance(item, DiagnosticObj):
             return self.msg.name <= item.msg.name
@@ -67,7 +68,7 @@ class DiagnosticObj(DiagnosticStatus):
             return self.msg.name <= item.name
         return False
 
-   
+
 class Service:
 
     DEBOUNCE_DIAGNOSTICS = 0.5
@@ -148,19 +149,21 @@ class Service:
                     statusName = f"/{status.name.lstrip('/').lstrip('.').replace('.', '/')}"
                     for nodeName in self._local_nodes:
                         if nodeName == statusName or statusName.startswith(f"{nodeName}"):
-                            print(f"  level: {status.level}")
+                            # removed debug print of the status level
                             filteredMsg.status.append(status)
                             break
             if len(filteredMsg.status) > 0:
                 self._callbackDiagnostics(filteredMsg)
 
     def _publish_diagnostics(self):
+        with self._mutex:
+            # release the timer first, otherwise no further timer is started
+            # if the callback raises an exception
+            self._update_timer = None
         diags = self.get_diagnostics(0, self._update_last_ts)
+        self._update_last_ts = time.time()
         if self._callbackDiagnostics and len(diags.status) > 0:
             self._callbackDiagnostics(diags)
-        self._update_last_ts = time.time()
-        self._update_timer.cancel()
-        self._update_timer = None
 
     def get_system_diagnostics(self, filter_level: int, filter_ts: float = 0):
         result = DiagnosticArray()
@@ -180,13 +183,15 @@ class Service:
 
     def get_diagnostics(self, filter_level: int, filter_ts: float = 0):
         result = DiagnosticArray()
-        # rospy.Time.from_sec(time.time())
         result.header.stamp = self._clock.now().to_msg()
         with self._mutex:
             for diag_obj in self._diagnostics:
                 if diag_obj.timestamp >= filter_ts:
-                    if int.from_bytes(diag_obj.msg.level, byteorder='big') >= filter_level:
-                        # if diag_obj.msg.level >= filter_level:
+                    # level is reported as bytes or int, depending on rclpy version
+                    level = diag_obj.msg.level
+                    if isinstance(level, (bytes, bytearray)):
+                        level = int.from_bytes(level, byteorder='big')
+                    if level >= filter_level:
                         result.status.append(diag_obj.msg)
         return result
 
