@@ -633,7 +633,7 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
               smoothScrolling: false,
               wordWrap: "off",
               fontSize: fontSize,
-              minimap: { enabled: true },
+              minimap: { enabled: false },
               selectOnLineNumbers: true,
               guides: {
                 bracketPairs: true,
