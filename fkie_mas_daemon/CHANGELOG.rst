@@ -2,6 +2,16 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.10.0 (15.09.2026)
+-------------------
+* feat(diagnostics): add visualization for ros.provider.system_diagnostics
+* perf(metrics): optimize system load reading and reporting
+* added handler for ros.provider.get_system_diagnostic
+* improved file observer
+* improved kill screen
+* fix force refresh screens
+* add support for ros.daemon.delay_update_state and update the ros.screen.get_list API
+
 5.9.0 (28.08.2026)
 ------------------
 * Prevent ros2 component containers from being quit too early on launch

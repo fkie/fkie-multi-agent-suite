@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.9.0 (15.09.2026)
+------------------
+* feat(websocket): add handler to retrieve subscription count for an URL
+* add definition for DelayRosUpdateState
+* fix: allow multiple subscriptions to the same WebSocket topic
+
 5.8.2 (12.08.2026)
 ------------------
 * fix(websocket): fix race conditions, handler cleanup and JSON errors in client and server

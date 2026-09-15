@@ -1,5 +1,44 @@
 # Changelog
 
+## 5.11.0 - 15.09.2026
+
+- docs: add URL documentation for system diagnostics
+- fix(provider-panel): correct background colors for start commands
+- feat(config): warn when ZENOH_CONFIG_OVERRIDE is set
+- feat(editor): hide minimap by default
+- refactor(terminal): use highlight icon instead of search icon
+- [fkie_mas_daemon] feat(diagnostics): add visualization for ros.provider.system_diagnostics
+- [fkie_mas_daemon] perf(metrics): optimize system load reading and reporting
+- [fkie_mas_pylib] feat(websocket): add handler to retrieve subscription for an URL
+- show system warnings for high CPU or network usage
+- [fkie_mas_daemon] added handler for ros.provider.get_system_diagnostic
+- feat(HostItem): always expose time actions via three-dots options menu
+- feat: add a context menu to host tree items for accessing time settings
+- feat: add the ability to move tabs between the main and domain layouts
+- fix: prevent the update terminal from opening in a domain tab
+- fix: prompt before closing dirty editor tabs and select the node tab afterward
+- fix: fetch the ttyd token
+- fix: keep the border visible when closing one of multiple tabs
+- fix: enable error highlighting when no screen is available
+- [fkie_mas_daemon] improved file observer
+- [fkie_mas_daemon] improved kill screen
+- add delay for ros status update on actions like start stop or kill
+- [fkie_mas_daemon] fix force refresh screens
+- update the description of ros.screen.get_list
+- [fkie_mas_daemon] add support for ros.daemon.delay_update_state and update the ros.screen.get_list API
+- add description for ros.daemon.delay_update_state
+- [fkie_mas_pylib] fix: allow multiple subscriptions to the same WebSocket topic
+- Improve terminal panel and add a description row with action buttons
+- hide warning while close terminal
+- feat: allow parameters and logger to be opened from domain tabs
+- refactor: improve layout organization by grouping tabs by domain
+- fix: detect changes to the same file across multiple domains
+- fix: reduced close events
+- fix: close tabs in domain on popout
+- open editor inside domain tab
+- fix: decoration of linenumber
+- fix: incomplete string escaping or encoding
+
 ## 5.10.2 - 10.09.2026
 
 - fix: install update when no ttyd process is running

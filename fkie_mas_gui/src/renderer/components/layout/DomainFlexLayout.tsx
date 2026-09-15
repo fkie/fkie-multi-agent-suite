@@ -105,7 +105,7 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
   const { model, saveLayout } = usePersistentLayout({
     stateKey: `${storageKey}-${contentToId(contentId)}`,
     defaultLayout,
-    version: 1,
+    version: 2,
     migrateFromLocalStorageKey: `${storageKey}-${contentToId(contentId)}`,
     keepTab: keepDomainTab,
     repairLayout: repairDomainLayout,
