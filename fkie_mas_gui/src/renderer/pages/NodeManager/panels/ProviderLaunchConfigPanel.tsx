@@ -1516,7 +1516,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                           component="pre"
                           sx={{
                             fontFamily: "monospace",
-                            backgroundColor: "#f5f5f5",
                             padding: 1,
                             borderRadius: 1,
                             overflowWrap: "break-word",
@@ -1536,7 +1535,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                           component="pre"
                           sx={{
                             fontFamily: "monospace",
-                            backgroundColor: "#f5f5f5",
                             padding: 1,
                             borderRadius: 1,
                             overflowWrap: "break-word",
@@ -1556,7 +1554,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                           component="pre"
                           sx={{
                             fontFamily: "monospace",
-                            backgroundColor: "#f5f5f5",
                             padding: 1,
                             borderRadius: 1,
                             overflowWrap: "break-word",
@@ -1576,7 +1573,6 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                           component="pre"
                           sx={{
                             fontFamily: "monospace",
-                            backgroundColor: "#f5f5f5",
                             padding: 1,
                             borderRadius: 1,
                             overflowWrap: "break-word",
