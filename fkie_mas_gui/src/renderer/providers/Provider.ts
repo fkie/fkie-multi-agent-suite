@@ -91,8 +91,8 @@ import {
   EVENT_PROVIDER_WARNINGS,
 } from "./eventTypes";
 import {
-  emitDiagnostics,
   emitNodeDiagnostic,
+  emitSystemDiagnostics,
   EventProviderActionEvent,
   EventProviderActionIntrospection,
   EventProviderActivity,
@@ -216,6 +216,7 @@ export default class Provider implements IProvider {
   rosTopics: RosTopic[] = [];
   screens: ScreensMapping[] = [];
   diagnosticInfo: DiagnosticInfo = new DiagnosticInfo();
+  systemDiagnosticInfo: DiagnosticInfo = new DiagnosticInfo();
   lifecycle: LifecycleState[] = [];
   composable: Composable[] = [];
 
@@ -354,6 +355,7 @@ export default class Provider implements IProvider {
       { uri: URI.ROS_SCREEN_LIST, callback: this.callbackScreensUpdate },
       { uri: URI.ROS_PROVIDER_WARNINGS, callback: this.callbackProviderWarnings },
       { uri: URI.ROS_PROVIDER_DIAGNOSTICS, callback: this.callbackDiagnosticsUpdate },
+      { uri: URI.ROS_PROVIDER_SYSTEM_DIAGNOSTICS, callback: this.callbackSystemDiagnosticsUpdate },
       { uri: URI.ROS_NODES_LIFECYCLE, callback: this.callbackLifecycle },
       { uri: URI.ROS_NODES_COMPOSABLE, callback: this.callbackComposable },
     ];
@@ -1649,6 +1651,7 @@ export default class Provider implements IProvider {
     return Promise.resolve(true);
   };
 
+
   public updateSystemDiagnostics: (msg: DiagnosticArray | null) => Promise<boolean> = async (msg = null) => {
     let diags = msg;
     if (diags === null) {
@@ -1657,8 +1660,9 @@ export default class Provider implements IProvider {
         return Promise.resolve(false);
       }
     }
+    this.systemDiagnosticInfo.add(diags);
     // update the screens
-    emitDiagnostics({ provider: this, diagnostics: diags });
+    emitSystemDiagnostics({ provider: this, diagnostics: diags });
     return Promise.resolve(true);
   };
 
@@ -2930,6 +2934,18 @@ export default class Provider implements IProvider {
     }
     this.updateDiagnostics(msg as unknown as DiagnosticArray);
   };
+
+    /**
+   * Update system diagnostics reported in the list of DiagnosticsArray.
+   */
+  private callbackSystemDiagnosticsUpdate: (msg: JSONObject) => void = async (msg) => {
+    this.log().debugInterface(URI.ROS_PROVIDER_SYSTEM_DIAGNOSTICS, msg, "", this.id);
+    if (!msg) {
+      return;
+    }
+    this.updateSystemDiagnostics(msg as unknown as DiagnosticArray);
+  };
+
 
   /**
    * Update the provider warnings reported in the list of SystemWarningGroup.

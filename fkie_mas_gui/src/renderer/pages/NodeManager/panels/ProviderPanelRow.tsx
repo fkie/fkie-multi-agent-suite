@@ -43,18 +43,15 @@ import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode } from "@/renderer/models";
 import { ConnectionState, Provider } from "@/renderer/providers";
 import {
-  EVENT_DIAGNOSTICS,
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
   EVENT_PROVIDER_STATE,
   EVENT_PROVIDER_WARNINGS,
+  EVENT_SYSTEM_DIAGNOSTICS,
 } from "@/renderer/providers/eventTypes";
 import { CmdTypes } from "@/types";
 import { emitSelectTab } from "../../../components/layout/events";
 import { EMenuProvider } from "./OverflowMenuProvider";
-
-/** Interval to request provider diagnostics (ms) */
-const DIAGNOSTICS_UPDATE_PERIOD = 10000;
 
 type TDiagValue = { key: string; value: string };
 type TDiagStatus = {
@@ -65,13 +62,6 @@ type TDiagStatus = {
   values: TDiagValue[];
 };
 
-/** Only global (system) diagnostics, no node diagnostics */
-const SYSTEM_DIAG_NAMES = ["cpu", "memory", "hdd", "disk", "network"];
-
-function isSystemDiagnostic(status: TDiagStatus): boolean {
-  const name = (status.name || "").toLowerCase();
-  return !name.includes("/") && SYSTEM_DIAG_NAMES.some((n) => name.includes(n));
-}
 
 function diagValue(status: TDiagStatus, key: string): string | undefined {
   return status.values?.find((v) => v.key === key)?.value;
@@ -121,8 +111,8 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
       }
     };
     requestDiagnostics();
-    const timer = setInterval(requestDiagnostics, DIAGNOSTICS_UPDATE_PERIOD);
-    return () => clearInterval(timer);
+    // const timer = setInterval(requestDiagnostics, DIAGNOSTICS_UPDATE_PERIOD);
+    // return () => clearInterval(timer);
   }, [provider]);
 
   const closeProviderHandler = useCallback(
@@ -175,10 +165,10 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
     }
   });
 
-  useCustomEventListener(EVENT_DIAGNOSTICS, (data: TEventDiagnostics) => {
+  useCustomEventListener(EVENT_SYSTEM_DIAGNOSTICS, (data: TEventDiagnostics) => {
     if (data.provider.id === provider.id) {
       const status = (data.diagnostics?.status || []) as unknown as TDiagStatus[];
-      setSystemDiagnostics(status.filter((item) => isSystemDiagnostic(item)));
+      setSystemDiagnostics(status);
       forceUpdate();
     }
   });
@@ -187,17 +177,12 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
     if (status.level >= 3) return "grey";
     if (status.level >= 2) return "red";
     if (status.level === 1) return "orange";
-    const usage = diagUsagePercent(status);
-    if (usage === undefined || Number.isNaN(usage)) return "green";
-    if (usage >= 80) return "red";
-    if (usage >= 60) return "orange";
     return "green";
   }, []);
 
-  function generateDiagnosticsView(): JSX.Element {
+  const generateDiagnosticsView = useCallback((): JSX.Element => {
     if (!provider.isAvailable() || systemDiagnostics.length === 0) return <></>;
-    const criticalDiagnostics = systemDiagnostics.filter((status) => getDiagnosticColor(status) === "red");
-    if (criticalDiagnostics.length === 0) return <></>;
+    const criticalDiagnostics = systemDiagnostics.filter((status) => getDiagnosticColor(status) !== "green");
     return (
       <Stack direction="row" alignItems="center" spacing="0.1em">
         {criticalDiagnostics.map((status) => {
@@ -239,7 +224,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
         })}
       </Stack>
     );
-  }
+  }, [provider, systemDiagnostics]);
 
   async function onProviderMenuClick(actionType: EMenuProvider, provider: Provider): Promise<void> {
     if (actionType === EMenuProvider.INFO) {
@@ -704,7 +689,7 @@ export default function ProviderPanelRow(props: ProviderPanelRowProps): JSX.Elem
         </TableCell>
       </TableRow>
     );
-  }, [provider, providersActivity, updated]);
+  }, [provider, providersActivity, updated, systemDiagnostics]);
 
   return createTableRow;
 }

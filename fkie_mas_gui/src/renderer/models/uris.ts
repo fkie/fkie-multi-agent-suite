@@ -20,6 +20,7 @@ const URI = {
   ROS_PROVIDER_GET_WARNINGS: "ros.provider.get_warnings",
   ROS_PROVIDER_WARNINGS: "ros.provider.warnings",
   ROS_PROVIDER_GET_SYSTEM_DIAGNOSTICS: "ros.provider.get_system_diagnostics",
+  ROS_PROVIDER_SYSTEM_DIAGNOSTICS: 'ros.provider.system_diagnostics',
   ROS_PROVIDER_GET_DIAGNOSTICS: "ros.provider.get_diagnostics",
   ROS_PROVIDER_DIAGNOSTICS: "ros.provider.diagnostics",
   ROS_PROVIDER_ROS_CLEAN_PURGE: "ros.provider.ros_clean_purge",

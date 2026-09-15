@@ -5,7 +5,6 @@ import {
   ActionIntrospectionEvent,
   Composable,
   DiagnosticArray,
-  DiagnosticInfo,
   DiagnosticStatus,
   LaunchContent,
   LifecycleState,
@@ -19,7 +18,7 @@ import {
 } from "../models";
 import ConnectionState from "./ConnectionState";
 import Provider from "./Provider";
-import { EVENT_DIAGNOSTICS, EVENT_NODE_CMD_STATE, EVENT_NODE_DIAGNOSTIC } from "./eventTypes";
+import { EVENT_NODE_CMD_STATE, EVENT_NODE_DIAGNOSTIC, EVENT_SYSTEM_DIAGNOSTICS } from "./eventTypes";
 
 export { ConnectionState };
 
@@ -285,8 +284,8 @@ export type TEventDiagnostics = {
   diagnostics: DiagnosticArray;
 };
 
-export function emitDiagnostics(props: TEventDiagnostics) {
-  emitCustomEvent(EVENT_DIAGNOSTICS, props);
+export function emitSystemDiagnostics(props: TEventDiagnostics) {
+  emitCustomEvent(EVENT_SYSTEM_DIAGNOSTICS, props);
 }
 
 export type TEventNodeLifecycle = {

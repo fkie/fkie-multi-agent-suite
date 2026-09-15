@@ -71,6 +71,9 @@ class MonitorServicer:
         self._sysdiag_thread: Optional[threading.Thread] = None
         # True while the last published message contained at least one warning
         self._sysdiag_had_warning = False
+        # signature of the warnings of the last published message;
+        # empty set = no active warnings
+        self._sysdiag_warning_state: frozenset = frozenset()
         # cache for the compiled exclude patterns of isRos2Process()
         self._exclude_patterns: Dict[Tuple[str, ...], List[re.Pattern]] = {}
         websocket.register("ros.provider.get_system_info", self.getSystemInfo)
@@ -150,7 +153,7 @@ class MonitorServicer:
         thread = self._sysdiag_thread
         self._sysdiag_thread = None
         if thread is not None and thread.is_alive() and thread is not threading.current_thread():
-            thread.join(timeout=self._sysdiag_interval + 1.0)
+            thread.join(timeout=1.0)
             if thread.is_alive():
                 Log.warn(f"{self.__class__.__name__}: system diagnostics thread did not stop")
 
@@ -172,8 +175,8 @@ class MonitorServicer:
             self._sysdiag_wakeup.clear()
             if self._count_subscriptions(self.SYSTEM_DIAGNOSTICS_URI) <= 0:
                 # nobody is listening: reset the state, so the next subscriber
-                # gets the current warnings again and only wait for subscribers
-                self._sysdiag_had_warning = False
+                # gets the current warnings once and only wait for subscribers
+                self._sysdiag_warning_state = frozenset()
                 self._sysdiag_wakeup.wait(self.SUBSCRIPTION_CHECK_INTERVAL)
                 continue
             ts_start = time.monotonic()
@@ -188,21 +191,35 @@ class MonitorServicer:
                 self._sysdiag_wakeup.wait(wait)
         Log.debug(f"{self.__class__.__name__}: system diagnostics loop stopped")
 
+    def _warning_signature(self, ros_msg) -> frozenset:
+        '''
+        Builds a comparable signature of all currently active warnings.
+        The message text is intentionally ignored, it usually contains
+        measured values which change in every cycle.
+        '''
+        signature = set()
+        for status in ros_msg.status:
+            level = self._diagnostic_level(status.level)
+            if level > 0:
+                signature.add((status.name, status.hardware_id, level))
+        return frozenset(signature)
+
     def _publish_system_diagnostics(self):
         '''
-        Requests the current sensor states and publishes them only if a system
-        warning is active or if the last warning was cleared.
+        Requests the current sensor states and publishes them only if the set of
+        active warnings changed, i.e. a warning appeared, disappeared or changed
+        its level. Nothing is published while the warning state is unchanged
+        (also not if there is no warning at all).
         '''
         ros_msg = self._monitor.get_system_diagnostics(0, 0)
-        has_warning = False
-        for status in ros_msg.status:
-            if self._diagnostic_level(status.level) > 0:
-                has_warning = True
-                break
-        if not has_warning and not self._sysdiag_had_warning:
-            # nothing to report and no warning was cleared
+        signature = self._warning_signature(ros_msg)
+        if signature == self._sysdiag_warning_state:
+            # no warning appeared, disappeared or changed its level
             return
-        self._sysdiag_had_warning = has_warning
+        Log.debug(
+            f"{self.__class__.__name__}: warning state changed "
+            f"({len(self._sysdiag_warning_state)} -> {len(signature)}), publish {self.SYSTEM_DIAGNOSTICS_URI}")
+        self._sysdiag_warning_state = signature
         self.websocket.publish(
             self.SYSTEM_DIAGNOSTICS_URI,
             json.dumps(self._toJsonDiagnostics(ros_msg), cls=SelfEncoder))
@@ -256,7 +273,7 @@ class MonitorServicer:
                     f"{self.__class__.__name__}: skip publish {self.PROVIDER_WARNINGS_URI}, no subscribers")
                 return
             groups = list(self._warning_groups.values())
-        self.websocket.publish(self.PROVIDER_WARNINGS_URI, groups)
+        self.websocket.publish(self.PROVIDER_WARNINGS_URI, json.dumps(groups, cls=SelfEncoder))
 
     def update_warning_groups(self, warnings: List[SystemWarningGroup]):
         updated = False
@@ -290,7 +307,7 @@ class MonitorServicer:
         Log.info(
             f"{self.__class__.__name__}: {self.PROVIDER_WARNINGS_URI} with {count_warnings} warnings in {len(groups)} groups")
         # publish outside of the lock, it performs network io
-        self.websocket.publish(self.PROVIDER_WARNINGS_URI, groups)
+        self.websocket.publish(self.PROVIDER_WARNINGS_URI, json.dumps(groups, cls=SelfEncoder))
 
     def diagnosticsCbPublisher(self, ros_msg):
         # skip the JSON conversion of the complete diagnostics array if nobody listens
@@ -310,7 +327,7 @@ class MonitorServicer:
         return json.dumps(SystemEnvironment(), cls=SelfEncoder)
 
     def getProviderWarnings(self) -> str:
-        Log.info(f"{self.__class__.__name__}: Request to [{self.PROVIDER_WARNINGS_URI[:-8]}get_warnings]")
+        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_warnings]")
         now = time.time()
         with self._warnings_lock:
             # build a new dict, do not modify the dict while iterating it
@@ -342,10 +359,6 @@ class MonitorServicer:
             )
             cbMsg.status.append(status)
         return cbMsg
-
-    def diagnosticsCbPublisher(self, ros_msg):
-        self.websocket.publish("ros.provider.diagnostics",
-                               json.dumps(self._toJsonDiagnostics(ros_msg), cls=SelfEncoder),)
 
     def getSystemDiagnostics(self) -> str:
         Log.info(f"{self.__class__.__name__}: request: get system diagnostics")

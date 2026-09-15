@@ -29,7 +29,7 @@ import {
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/components/layout";
 import { emitOpenComponent } from "@/renderer/components/layout/events";
@@ -39,7 +39,7 @@ import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { RosNode, RosNodeStatus } from "@/renderer/models";
 import Provider from "@/renderer/providers/Provider";
-import { EVENT_DIAGNOSTICS } from "@/renderer/providers/eventTypes";
+import { EVENT_SYSTEM_DIAGNOSTICS } from "@/renderer/providers/eventTypes";
 import { TEventDiagnostics } from "@/renderer/providers/events";
 import { generateUniqueId } from "@/renderer/utils";
 import { CmdTypes, TTag } from "@/types";
@@ -57,6 +57,10 @@ type TDiagStatus = {
   hardware_id: string;
   values: TDiagValue[];
 };
+type TDiagEntry = { status: TDiagStatus; receivedAt: number };
+
+/** Maximum age of a diagnostic entry to be displayed */
+const DIAG_MAX_AGE_MS = 15_000;
 
 /** Only global (system) diagnostics, no node diagnostics */
 const SYSTEM_DIAG_NAMES = ["cpu", "memory", "hdd", "disk", "network"];
@@ -167,7 +171,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
   const [timeDiffThreshold] = useSetting<number>("timeDiffThreshold");
   // anchor for the options menu, which provides the time options independent of the time difference
   const [optionsAnchorEl, setOptionsAnchorEl] = useState<null | HTMLElement>(null);
-  const [systemDiagnostics, setSystemDiagnostics] = useState<TDiagStatus[]>([]);
+  const [systemDiagnostics, setSystemDiagnostics] = useState<TDiagEntry[]>([]);
 
   async function updateTime(local = true): Promise<void> {
     if (provider) {
@@ -211,12 +215,34 @@ export default function HostItem(props: HostItemProps): JSX.Element {
     }
   }
 
-  // diagnostics are requested periodically elsewhere, we only listen for the results here
-  useCustomEventListener(EVENT_DIAGNOSTICS, (data: TEventDiagnostics) => {
+  useCustomEventListener(EVENT_SYSTEM_DIAGNOSTICS, (data: TEventDiagnostics) => {
     if (data.provider.id !== provider.id) return;
     const status = (data.diagnostics?.status || []) as unknown as TDiagStatus[];
-    setSystemDiagnostics(status.filter((item) => isSystemDiagnostic(item)));
+    const now = Date.now();
+    setSystemDiagnostics((prev) => {
+      const merged = new Map<string, TDiagEntry>(prev.map((entry) => [entry.status.name, entry]));
+      for (const item of status) {
+        if (!isSystemDiagnostic(item)) continue;
+        merged.set(item.name, { status: item, receivedAt: now });
+      }
+      // drop entries which are older than DIAG_MAX_AGE_MS
+      return [...merged.values()].filter((entry) => now - entry.receivedAt <= DIAG_MAX_AGE_MS);
+    });
   });
+
+  // remove outdated entries even if no new diagnostics arrive (e.g. provider stopped sending)
+  useEffect(() => {
+    if (systemDiagnostics.length === 0) return undefined;
+    const timer = setInterval(() => {
+      const now = Date.now();
+      setSystemDiagnostics((prev) => {
+        const fresh = prev.filter((entry) => now - entry.receivedAt <= DIAG_MAX_AGE_MS);
+        // keep the same reference if nothing changed to avoid unnecessary re-renders
+        return fresh.length === prev.length ? prev : fresh;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [systemDiagnostics.length]);
 
   /**
    * Check if provider has master sync on
@@ -277,17 +303,21 @@ export default function HostItem(props: HostItemProps): JSX.Element {
     if (status.level >= 3) return grey[600];
     if (status.level >= 2) return red[700];
     if (status.level === 1) return orange[500];
-    const usage = diagUsagePercent(status);
-    if (usage === undefined || Number.isNaN(usage)) return green[600];
-    if (usage >= 80) return red[700];
-    if (usage >= 60) return orange[500];
+    // const usage = diagUsagePercent(status);
+    // if (usage === undefined || Number.isNaN(usage)) return green[600];
+    // if (usage >= 80) return red[700];
+    // if (usage >= 60) return orange[500];
     return green[600];
   }, []);
 
-  function generateDiagnosticsView(): JSX.Element {
+  const generateDiagnosticsView = useCallback((): JSX.Element => {
     if (!provider.isAvailable() || systemDiagnostics.length === 0) return <></>;
-    // show the icon if any value is available or the state is not OK
-    const visible = systemDiagnostics.filter((status) => hasDiagValues(status) || status.level > 0);
+    const now = Date.now();
+    // show only values not older than 15s and with a real measurement or a non-OK state
+    const visible = systemDiagnostics
+      .filter((entry) => now - entry.receivedAt <= DIAG_MAX_AGE_MS)
+      .map((entry) => entry.status)
+      .filter((status) => hasDiagValues(status) || status.level > 0);
     if (visible.length === 0) return <></>;
     return (
       <Stack direction="row" alignItems="center" spacing="0.2em" sx={{ marginLeft: "0.3em", fontSize: "1rem" }}>
@@ -329,7 +359,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
         })}
       </Stack>
     );
-  }
+  }, [provider, systemDiagnostics]);
 
   const getHostStyle = useCallback(
     function getHostStyle(provider: Provider): object {
