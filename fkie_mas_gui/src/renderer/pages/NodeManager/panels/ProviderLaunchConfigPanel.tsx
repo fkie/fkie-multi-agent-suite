@@ -6,20 +6,22 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import {
-    Autocomplete,
-    Box,
-    Button,
-    Checkbox,
-    Divider,
-    FormControlLabel,
-    FormGroup,
-    Link,
-    Radio,
-    RadioGroup,
-    Stack,
-    TextField,
-    Tooltip,
-    Typography,
+  Alert,
+  AlertTitle,
+  Autocomplete,
+  Box,
+  Button,
+  Checkbox,
+  Divider,
+  FormControlLabel,
+  FormGroup,
+  Link,
+  Radio,
+  RadioGroup,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
 } from "@mui/material";
 import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
@@ -34,17 +36,17 @@ import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { ProviderLaunchConfiguration } from "@/renderer/models";
 import {
-    CYCLONE_ALLOW_MULTICAST,
-    CYCLONE_MAX_PARTICIPANTS,
-    CYCLONE_SELECTIONS,
-    CycloneAllowMulticast,
-    CycloneEnvSelection,
-    CycloneMaxParticipants,
-    RMW_SELECTIONS,
-    RmwSelection,
-    TProviderLaunchParams,
-    ZENOH_SELECTIONS,
-    ZenohEnvSelection,
+  CYCLONE_ALLOW_MULTICAST,
+  CYCLONE_MAX_PARTICIPANTS,
+  CYCLONE_SELECTIONS,
+  CycloneAllowMulticast,
+  CycloneEnvSelection,
+  CycloneMaxParticipants,
+  RMW_SELECTIONS,
+  RmwSelection,
+  TProviderLaunchParams,
+  ZENOH_SELECTIONS,
+  ZenohEnvSelection,
 } from "@/renderer/models/ProviderLaunchConfiguration";
 import { emitCloseComponent } from "../../../components/layout/events";
 
@@ -174,6 +176,19 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
       },
     }
   );
+
+  const zenohConfigOverrideEnv: string | null = useMemo(() => {
+    const value = rosCtx.systemInfo?.environment?.ZENOH_CONFIG_OVERRIDE;
+    return value && value.length > 0 ? value : null;
+  }, [rosCtx.systemInfo]);
+
+  // the environment is only valid for the local host
+  const isLocalHost = useMemo(() => {
+    const host = launchCfg.params.host;
+    return !host || host === "localhost" || host === "127.0.0.1";
+  }, [launchCfg.params.host, _valuesChanged]);
+
+  const showZenohEnvWarning = !!zenohConfigOverrideEnv && isLocalHost;
 
   useEffect(() => {
     updateStartParameter();
@@ -1357,6 +1372,60 @@ export default function ProviderLaunchConfigPanel(props: ProviderLaunchConfigPan
                           label={"start zenoh daemon"}
                           labelPlacement="end"
                         />
+                        {!!launchCfg.params.rmw.zenoh.startDaemon && !showZenohEnvWarning && (
+                          <Tooltip
+                            title="ZENOH_CONFIG_OVERRIDE may change the daemon configuration."
+                            placement="top"
+                            disableInteractive
+                          >
+                            <Stack
+                              direction="row"
+                              spacing={0.5}
+                              alignItems="center"
+                              sx={{
+                                px: 0.75,
+                                py: 0.25,
+                                borderRadius: 1,
+                                color: (theme) => theme.palette.info.dark,
+                              }}
+                            >
+                              <InfoOutlinedIcon fontSize="inherit" />
+                              <Typography variant="caption" fontWeight="bold">
+                                Make sure that ZENOH_CONFIG_OVERRIDE is unset or set correctly
+                              </Typography>
+                            </Stack>
+                          </Tooltip>
+                        )}
+
+                        {!!launchCfg.params.rmw.zenoh.startDaemon && showZenohEnvWarning && (
+                          <Alert
+                            severity="warning"
+                            variant="outlined"
+                            sx={{ mt: 1, mb: 1, "& .MuiAlert-message": { minWidth: 0, width: "100%" } }}
+                            action={<CopyButton value={zenohConfigOverrideEnv as string} fontSize="inherit" />}
+                          >
+                            <AlertTitle sx={{ mb: 0.5 }}>ZENOH_CONFIG_OVERRIDE is set in the environment</AlertTitle>
+                            <Typography variant="body2">
+                              The environment variable may conflict with the zenoh override configuration selected
+                              above.
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              component="pre"
+                              sx={{
+                                fontFamily: "monospace",
+                                mt: 0.5,
+                                p: 1,
+                                borderRadius: 1,
+                                backgroundColor: (theme) => theme.palette.action.hover,
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              {zenohConfigOverrideEnv}
+                            </Typography>
+                          </Alert>
+                        )}
                       </FormGroup>
                     )}
                   </Box>

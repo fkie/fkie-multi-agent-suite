@@ -13,6 +13,7 @@ export type TSystemInfo = {
   networkInterfaces?: si.Systeminformation.NetworkInterfacesData[];
   // networkConnections?: si.Systeminformation.NetworkConnectionsData[];
   hosts?: hostile.Lines;
+  environment?: Record<string, string>;
 
   getInfo?: () => Promise<TSystemInfo>;
 };
