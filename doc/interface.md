@@ -12,78 +12,80 @@ Each URI has one of the following types:
 - `SUB`: Subscribed by daemon.
 - `RPC`: Remote procedure call, with request and reply message.
 
-| Interface URI                                                               | Type |
-| --------------------------------------------------------------------------- | ---- |
-| [ros.daemon.ready](#rosdaemonready-pub)                                     | PUB  |
-| [ros.discovery.ready](#rosdiscoveryready-pub)                               | PUB  |
-| [ros.daemon.get_version](#rosdaemonget_version-rpc)                         | RPC  |
-| [ros.daemon.delay_update_state](#rosdaemondelay_update_state-pub)           | PUB  |
-| [ros.file.get](#rosfileget-rpc)                                             | RPC  |
-| [ros.file.save](#rosfilesave-rpc)                                           | RPC  |
-| [ros.nodes.get_list](#rosnodesget_list-rpc)                                 | RPC  |
-| [ros.services.get_list](#rosservicesget_list-rpc)                           | RPC  |
-| [ros.topics.get_list](#rostopicsget_list-rpc)                               | RPC  |
-| [ros.nodes.changed](#rosnodeschanged-pub)                                   | PUB  |
-| [ros.services.changed](#rosserviceschanged-pub)                             | PUB  |
-| [ros.topics.changed](#rostopicschanged-pub)                                 | PUB  |
-| [ros.provider.list](#rosproviderlist-pub)                                   | PUB  |
-| [ros.provider.get_list](#rosproviderget_list-rpc)                           | RPC  |
-| [ros.provider.get_timestamp](#rosproviderget_timestamp-rpc)                 | RPC  |
-| [ros.provider.get_diagnostics](#rosproviderget_diagnostics-rpc)             | RPC  |
-| [ros.provider.diagnostics](#rosproviderdiagnostics-pub)                     | PUB  |
-| [ros.provider.ros_clean_purge](#rosproviderros_clean_purge-rpc)             | RPC  |
-| [ros.provider.shutdown](#rosprovidershutdown-rpc)                           | RPC  |
-| [ros.provider.warnings](#rosproviderwarnings-pub)                           | PUB  |
-| [ros.provider.get_warnings](#rosproviderget_warnings-rpc)                   | RPC  |
-| [ros.packages.get_list](#rospackagesget_list-rpc)                           | RPC  |
-| [ros.path.get_list](#rospathget_list-rpc)                                   | RPC  |
-| [ros.path.get_log_paths](#rospathget_log_paths-rpc)                         | RPC  |
-| [ros.path.clear_log_paths](#rospathclear_log_paths-rpc)                     | RPC  |
-| [ros.path.changed](#rospathchanged-pub)                                     | PUB  |
-| [ros.launch.call_service](#launchcallservice)                               | RPC  |
-| [ros.launch.load](#roslaunchload-rpc)                                       | RPC  |
-| [ros.launch.reload](#roslaunchreload-rpc)                                   | RPC  |
-| [ros.launch.unload](#roslaunchunload-rpc)                                   | RPC  |
-| [ros.launch.get_list](#roslaunchget_list-rpc)                               | RPC  |
-| [ros.launch.start_node](#roslaunchstart_node-rpc)                           | RPC  |
-| [ros.launch.changed](#roslaunchchanged-pub)                                 | PUB  |
-| [ros.launch.get_included_files](#roslaunchget_included_files-rpc)           | RPC  |
-| [ros.launch.interpret_path](#roslaunchinterpret_path-rpc)                   | RPC  |
-| [ros.launch.get_msg_struct](#roslaunchget_msg_struct-rpc)                   | RPC  |
-| [ros.launch.get_srv_struct](#roslaunchget_srv_struct-rpc)                   | RPC  |
-| [ros.launch.get_message_types](#roslaunchget_message_types-rpc)             | RPC  |
-| [ros.launch.publish_message](#roslaunchpublish_message-rpc)                 | RPC  |
-| [ros.nodes.get_loggers](#rosnodesget_loggers-rpc)                           | RPC  |
-| [ros.nodes.set_logger_level](#rosnodesset_logger_level-rpc)                 | RPC  |
-| [ros.nodes.stop_node](#rosnodesstop_node-rpc)                               | RPC  |
-| [ros.nodes.unregister](#rosnodesunregister-rpc)                             | RPC  |
-| [ros.screen.kill_node](#rosnodeskill_node-rpc)                              | RPC  |
-| [ros.screen.get_list](#rosscreenget_list-rpc)                               | RPC  |
-| [ros.screen.list](#rosscreenlist-pub)                                       | PUB  |
-| [ros.publisher.start](#rospublisherstart-rpc)                               | RPC  |
-| [ros.publisher.stop](#rospublisherstop-rpc)                                 | RPC  |
-| [ros.publisher.has](#rospublisherhas-rpc)                                   | RPC  |
-| [ros.subscriber.start](#rossubscriberstart-rpc)                             | RPC  |
-| [ros.subscriber.stop](#rossubscriberstop-rpc)                               | RPC  |
-| [ros.subscriber.event.{TOPIC}](#rossubscribereventtopic-pub)                | PUB  |
-| [ros.subscriber.filter.{TOPIC}](#rossubscriberfiltertopic-sub)              | SUB  |
-| [ros.system.get_uri](#rossystemget_uri-rpc)                                 | RPC  |
-| [ros.parameters.get_list](#rosparametersget_list-rpc)                       | RPC  |
-| [ros.parameters.get_node_parameters](#rosparametersget_node_parameters-rpc) | RPC  |
-| [ros.parameters.set_parameter](#rosparametersset_parameter-rpc)             | RPC  |
-| [ros.parameters.delete_parameters](#rosparametersdelete_parameters-rpc)     | RPC  |
-| [ros.process.find_node](#rosprocessfind_node-rpc)                           | RPC  |
-| [ros.process.kill](#rosprocesskill-rpc)                                     | RPC  |
-| [ros.action.send_goal](#rosactionsend_goal-rpc)                             | RPC  |
-| [ros.action.feedback.{ACTION}](#rosactionfeedbackaction-pub)                | PUB  |
-| [ros.action.result.{ACTION}](#rosactionresultaction-pub)                    | PUB  |
-| [ros.action.stop](#rosactionstop-rpc)                                       | RPC  |
-| [ros.action.introspection.start](#rosactionintrospectionstart-rpc)          | RPC  |
-| [ros.action.introspection.stop](#rosactionintrospectionstop-rpc)            | RPC  |
-| [ros.action.introspection.{ACTION}](#rosactionintrospectionaction-pub)      | PUB  |
-| [ros.service.introspection.start](#rosserviceintrospectionstart-rpc)        | RPC  |
-| [ros.service.introspection.stop](#rosserviceintrospectionstop-rpc)          | RPC  |
-| [ros.service.introspection.{SERVICE}](#rosserviceintrospectionservice-pub)  | PUB  |
+| Interface URI                                                                 | Type |
+| ----------------------------------------------------------------------------- | ---- |
+| [ros.daemon.ready](#rosdaemonready-pub)                                       | PUB  |
+| [ros.discovery.ready](#rosdiscoveryready-pub)                                 | PUB  |
+| [ros.daemon.get_version](#rosdaemonget_version-rpc)                           | RPC  |
+| [ros.daemon.delay_update_state](#rosdaemondelay_update_state-pub)             | PUB  |
+| [ros.file.get](#rosfileget-rpc)                                               | RPC  |
+| [ros.file.save](#rosfilesave-rpc)                                             | RPC  |
+| [ros.nodes.get_list](#rosnodesget_list-rpc)                                   | RPC  |
+| [ros.services.get_list](#rosservicesget_list-rpc)                             | RPC  |
+| [ros.topics.get_list](#rostopicsget_list-rpc)                                 | RPC  |
+| [ros.nodes.changed](#rosnodeschanged-pub)                                     | PUB  |
+| [ros.services.changed](#rosserviceschanged-pub)                               | PUB  |
+| [ros.topics.changed](#rostopicschanged-pub)                                   | PUB  |
+| [ros.provider.list](#rosproviderlist-pub)                                     | PUB  |
+| [ros.provider.get_list](#rosproviderget_list-rpc)                             | RPC  |
+| [ros.provider.get_timestamp](#rosproviderget_timestamp-rpc)                   | RPC  |
+| [ros.provider.get_diagnostics](#rosproviderget_diagnostics-rpc)               | RPC  |
+| [ros.provider.diagnostics](#rosproviderdiagnostics-pub)                       | PUB  |
+| [ros.provider.get_system_diagnostics](#rosproviderget_system_diagnostics-rpc) | RPC  |
+| [ros.provider.system_diagnostics](#rosprovidersystem-diagnostics-pub)         | PUB  |
+| [ros.provider.ros_clean_purge](#rosproviderros_clean_purge-rpc)               | RPC  |
+| [ros.provider.shutdown](#rosprovidershutdown-rpc)                             | RPC  |
+| [ros.provider.warnings](#rosproviderwarnings-pub)                             | PUB  |
+| [ros.provider.get_warnings](#rosproviderget_warnings-rpc)                     | RPC  |
+| [ros.packages.get_list](#rospackagesget_list-rpc)                             | RPC  |
+| [ros.path.get_list](#rospathget_list-rpc)                                     | RPC  |
+| [ros.path.get_log_paths](#rospathget_log_paths-rpc)                           | RPC  |
+| [ros.path.clear_log_paths](#rospathclear_log_paths-rpc)                       | RPC  |
+| [ros.path.changed](#rospathchanged-pub)                                       | PUB  |
+| [ros.launch.call_service](#launchcallservice)                                 | RPC  |
+| [ros.launch.load](#roslaunchload-rpc)                                         | RPC  |
+| [ros.launch.reload](#roslaunchreload-rpc)                                     | RPC  |
+| [ros.launch.unload](#roslaunchunload-rpc)                                     | RPC  |
+| [ros.launch.get_list](#roslaunchget_list-rpc)                                 | RPC  |
+| [ros.launch.start_node](#roslaunchstart_node-rpc)                             | RPC  |
+| [ros.launch.changed](#roslaunchchanged-pub)                                   | PUB  |
+| [ros.launch.get_included_files](#roslaunchget_included_files-rpc)             | RPC  |
+| [ros.launch.interpret_path](#roslaunchinterpret_path-rpc)                     | RPC  |
+| [ros.launch.get_msg_struct](#roslaunchget_msg_struct-rpc)                     | RPC  |
+| [ros.launch.get_srv_struct](#roslaunchget_srv_struct-rpc)                     | RPC  |
+| [ros.launch.get_message_types](#roslaunchget_message_types-rpc)               | RPC  |
+| [ros.launch.publish_message](#roslaunchpublish_message-rpc)                   | RPC  |
+| [ros.nodes.get_loggers](#rosnodesget_loggers-rpc)                             | RPC  |
+| [ros.nodes.set_logger_level](#rosnodesset_logger_level-rpc)                   | RPC  |
+| [ros.nodes.stop_node](#rosnodesstop_node-rpc)                                 | RPC  |
+| [ros.nodes.unregister](#rosnodesunregister-rpc)                               | RPC  |
+| [ros.screen.kill_node](#rosnodeskill_node-rpc)                                | RPC  |
+| [ros.screen.get_list](#rosscreenget_list-rpc)                                 | RPC  |
+| [ros.screen.list](#rosscreenlist-pub)                                         | PUB  |
+| [ros.publisher.start](#rospublisherstart-rpc)                                 | RPC  |
+| [ros.publisher.stop](#rospublisherstop-rpc)                                   | RPC  |
+| [ros.publisher.has](#rospublisherhas-rpc)                                     | RPC  |
+| [ros.subscriber.start](#rossubscriberstart-rpc)                               | RPC  |
+| [ros.subscriber.stop](#rossubscriberstop-rpc)                                 | RPC  |
+| [ros.subscriber.event.{TOPIC}](#rossubscribereventtopic-pub)                  | PUB  |
+| [ros.subscriber.filter.{TOPIC}](#rossubscriberfiltertopic-sub)                | SUB  |
+| [ros.system.get_uri](#rossystemget_uri-rpc)                                   | RPC  |
+| [ros.parameters.get_list](#rosparametersget_list-rpc)                         | RPC  |
+| [ros.parameters.get_node_parameters](#rosparametersget_node_parameters-rpc)   | RPC  |
+| [ros.parameters.set_parameter](#rosparametersset_parameter-rpc)               | RPC  |
+| [ros.parameters.delete_parameters](#rosparametersdelete_parameters-rpc)       | RPC  |
+| [ros.process.find_node](#rosprocessfind_node-rpc)                             | RPC  |
+| [ros.process.kill](#rosprocesskill-rpc)                                       | RPC  |
+| [ros.action.send_goal](#rosactionsend_goal-rpc)                               | RPC  |
+| [ros.action.feedback.{ACTION}](#rosactionfeedbackaction-pub)                  | PUB  |
+| [ros.action.result.{ACTION}](#rosactionresultaction-pub)                      | PUB  |
+| [ros.action.stop](#rosactionstop-rpc)                                         | RPC  |
+| [ros.action.introspection.start](#rosactionintrospectionstart-rpc)            | RPC  |
+| [ros.action.introspection.stop](#rosactionintrospectionstop-rpc)              | RPC  |
+| [ros.action.introspection.{ACTION}](#rosactionintrospectionaction-pub)        | PUB  |
+| [ros.service.introspection.start](#rosserviceintrospectionstart-rpc)          | RPC  |
+| [ros.service.introspection.stop](#rosserviceintrospectionstop-rpc)            | RPC  |
+| [ros.service.introspection.{SERVICE}](#rosserviceintrospectionservice-pub)    | PUB  |
 
 ## Message formats
 
@@ -220,6 +222,20 @@ Requests all available diagnostics.
 ### ros.provider.diagnostics `PUB`
 
 Updates to diagnostics.
+
+> **[DiagnosticArray]()[]**
+
+### ros.provider.get_system_diagnostics `RPC`
+
+Retrieves available diagnostics about the system state, such as CPU usage and network load.
+
+`Request`: `empty`
+
+`Reply`: [DiagnosticArray]()[]
+
+### ros.provider.system_diagnostics `PUB`
+
+Updates to system diagnostics.
 
 > **[DiagnosticArray]()[]**
 
