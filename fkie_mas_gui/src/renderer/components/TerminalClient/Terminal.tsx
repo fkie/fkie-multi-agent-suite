@@ -6,11 +6,11 @@ Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 */
 
 import CloseIcon from "@mui/icons-material/Close";
+import ClosedCaptionOffIcon from "@mui/icons-material/ClosedCaptionOff";
 import FirstPageIcon from "@mui/icons-material/FirstPage";
 import LastPageIcon from "@mui/icons-material/LastPage";
 import MoneyIcon from "@mui/icons-material/Money";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
-import SearchIcon from "@mui/icons-material/Search";
 import { Alert, AlertTitle, Box, IconButton, Link, Stack, ToggleButton, Tooltip, Typography } from "@mui/material";
 import { FitAddon } from "@xterm/addon-fit";
 import { ISearchOptions, SearchAddon } from "@xterm/addon-search";
@@ -537,15 +537,15 @@ export class Terminal extends React.Component<Props, XtermState> {
   }
 
   private async fetchToken(): Promise<string> {
-  const url = this.resolveTokenUrl();
-  if (!url) return "";
+    const url = this.resolveTokenUrl();
+    if (!url) return "";
 
-  if (window.ttydApi?.fetchToken) {
-    return window.ttydApi.fetchToken(url);
+    if (window.ttydApi?.fetchToken) {
+      return window.ttydApi.fetchToken(url);
+    }
+    console.warn("[ttyd] no main process bridge available, skipping token request");
+    return "";
   }
-  console.warn("[ttyd] no main process bridge available, skipping token request");
-  return "";
-}
 
   private async connect(): Promise<void> {
     if (this.isUnmounting) return;
@@ -849,7 +849,7 @@ export class Terminal extends React.Component<Props, XtermState> {
               this.setState((prev) => ({ ...prev, showSearchBar: !prev.showSearchBar }));
             }}
           >
-            <SearchIcon sx={{ fontSize: "inherit" }} fontSize="inherit" />
+            <ClosedCaptionOffIcon sx={{ fontSize: "inherit" }} fontSize="inherit" />
           </ToggleButton>
         </Tooltip>
         <Tooltip
@@ -964,7 +964,16 @@ export class Terminal extends React.Component<Props, XtermState> {
               onCloseRequest={() => {
                 this.closeSearchBar();
               }}
-              placeholder="Search Text (Supports Regular Expressions)"
+              searchIcon={
+                <ClosedCaptionOffIcon
+                  sx={{
+                    marginRight: 1,
+                    color: "gray",
+                    fontSize: "inherit",
+                  }}
+                />
+              }
+              placeholder="Highlight Text (Supports Regular Expressions)"
               defaultValue={this.searchText}
               fullWidth
             />
