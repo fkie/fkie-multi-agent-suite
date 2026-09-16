@@ -1,9 +1,11 @@
 import DeleteIcon from "@mui/icons-material/Delete";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import {
   Alert,
   AlertTitle,
   Autocomplete,
+  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -27,6 +29,8 @@ import { getDir } from "@/renderer/models/FileItem";
 import { enqueueSnackbar } from "notistack";
 import { ErrorAlertComponent } from "../UI";
 import DraggablePaper from "../UI/DraggablePaper";
+
+type ArgOption = { value: string; deletable: boolean; reason?: string };
 
 interface LaunchArgumentWithHistory extends LaunchArgument {
   history: string[];
@@ -102,7 +106,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
         const rosPackage = "";
         const launch = "";
         const path = file;
-        const args = [];
+        const args: LaunchArgument[] = [];
         const forceFirstFile = true;
         const requestArgs = true;
         const masteruri = "";
@@ -324,27 +328,53 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
     setOpen(false);
   }
 
+  // Build options per arg: declared choices (locked) + history entries (deletable)
+  const buildOptions = (arg: LaunchArgumentWithHistory): ArgOption[] => {
+    const seen = new Set<string>();
+    const result: ArgOption[] = [];
+
+    for (const choice of arg.choices ?? []) {
+      if (choice && !seen.has(choice)) {
+        seen.add(choice);
+        result.push({
+          value: choice,
+          deletable: false,
+          reason: "Declared as 'choice' in the launch file - cannot be removed.",
+        });
+      }
+    }
+    for (const entry of arg.history) {
+      if (entry && !seen.has(entry)) {
+        seen.add(entry);
+        result.push({ value: entry, deletable: true });
+      }
+    }
+    return result;
+  };
+
+  // Remove an entry from history AND from choices, reset the value if needed
   const deleteHistoryOption = useCallback(
     (argName: string, option: string): void => {
       setCurrentArgs((prev) =>
         prev.map((arg) => {
-          if (arg.name === argName) {
-            arg.history = arg.history.filter((value) => value !== option);
-          }
-          return arg;
+          if (arg.name !== argName) return arg;
+          const history = arg.history.filter((value) => value !== option);
+          const choices = arg.choices?.filter((value) => value !== option);
+          const value = arg.value === option ? (history[0] ?? choices?.[0] ?? "") : arg.value;
+          return { ...arg, history, choices, value };
         })
       );
-      const newHistory = {};
-      for (const [key, value] of Object.entries(argHistory)) {
-        if (key === argName) {
-          newHistory[key] = value.filter((val) => val !== option);
-        } else {
-          newHistory[key] = value;
+
+      setArgHistory((prev) => {
+        const next: Record<string, string[]> = {};
+        for (const [key, value] of Object.entries(prev ?? {})) {
+          const list = key === argName ? value.filter((val) => val !== option) : value;
+          if (list.length > 0) next[key] = list;
         }
-      }
-      setArgHistory(newHistory);
+        return next;
+      });
     },
-    [argHistory, setArgHistory]
+    [setArgHistory]
   );
 
   const openFileDialog = useCallback(
@@ -388,6 +418,17 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
     }
     return Number.isNaN(Number(value));
   }
+
+  // Immutable update; persist "lastOpenPath" only on committed selections
+  const updateArgValue = useCallback(
+    (argName: string, newValue: string, commit: boolean): void => {
+      setCurrentArgs((prev) => prev.map((item) => (item.name === argName ? { ...item, value: newValue } : item)));
+      if (commit && isPathParam(argName, newValue)) {
+        setLastOpenPath(newValue);
+      }
+    },
+    [setLastOpenPath]
+  );
 
   return (
     <Dialog
@@ -441,140 +482,122 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
           <Stack>
             <Stack>
               {currentArgs.map((arg) => {
-                const optionsTmp = new Set([...(arg.choices || []), ...arg.history]);
-                const options = Array.from(optionsTmp).filter((value) => value);
+                const options = buildOptions(arg);
+                const optionValues = options.map((o) => o.value);
                 return (
                   <Stack key={`stack-launch-load-${arg.name}`} direction="row">
-                    {options.length > 1 || (options.length === 1 && options[0] !== arg.value) ? (
-                      <Autocomplete
-                        key={`autocomplete-launch-load-${arg.name}`}
-                        size="small"
-                        fullWidth
-                        autoHighlight
-                        disableListWrap
-                        handleHomeEndKeys={false}
-                        options={options}
-                        getOptionLabel={(option) => option}
-                        value={arg.value}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label={arg.name}
-                            color="info"
-                            variant="outlined"
-                            margin="dense"
-                            size="small"
-                            error={booleanWordRegex.test(arg.value)}
-                            helperText={
-                              booleanWordRegex.test(arg.value)
-                                ? "Use uppercase True/False, otherwise some eval statements may fail."
-                                : ""
-                            }
-                          />
-                        )}
-                        renderOption={(props, option) => {
-                          return (
-                            <Stack {...(props as HTMLAttributes<HTMLDivElement>)} key={option} direction="row">
-                              <Typography style={{ overflowWrap: "anywhere" }} width="stretch">
-                                {option}
-                              </Typography>
+                    <Autocomplete
+                      key={`autocomplete-launch-load-${arg.name}`}
+                      size="small"
+                      fullWidth
+                      freeSolo // allow arbitrary user input
+                      autoSelect={false}
+                      clearOnBlur={false}
+                      selectOnFocus
+                      autoHighlight
+                      disableListWrap
+                      handleHomeEndKeys={false}
+                      options={optionValues}
+                      inputValue={arg.value}
+                      getOptionLabel={(option) => `${option}`}
+                      value={arg.value}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label={arg.name}
+                          color="info"
+                          variant="outlined"
+                          margin="dense"
+                          size="small"
+                          error={booleanWordRegex.test(arg.value)}
+                          helperText={
+                            booleanWordRegex.test(arg.value)
+                              ? "Use uppercase True/False, otherwise some eval statements may fail."
+                              : ""
+                          }
+                        />
+                      )}
+                      renderOption={(optionProps, option) => {
+                        const entry = options.find((o) => o.value === option);
+                        const deletable = entry?.deletable ?? false;
+                        // Reason shown instead of the delete button for non-removable entries
+                        const reason =
+                          entry?.reason ?? "This value is declared in the launch file and cannot be removed.";
+                        return (
+                          <Stack
+                            {...(optionProps as HTMLAttributes<HTMLDivElement>)}
+                            key={option}
+                            direction="row"
+                            alignItems="center"
+                          >
+                            <Typography style={{ overflowWrap: "anywhere" }} width="stretch">
+                              {option}
+                            </Typography>
+                            {/* Only history entries can be removed, declared choices stay */}
+                            {deletable ? (
                               <IconButton
                                 component="label"
-                                onClick={(event) => {
-                                  deleteHistoryOption(arg.name, option);
+                                size="small"
+                                onMouseDown={(event) => {
+                                  // prevent the option from being selected by the Autocomplete
+                                  event.preventDefault();
                                   event.stopPropagation();
+                                }}
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  deleteHistoryOption(arg.name, option);
                                 }}
                               >
                                 <DeleteIcon sx={{ fontSize: "1em" }} />
                               </IconButton>
-                            </Stack>
-                          );
-                        }}
-                        onChange={(_event, newArgValue) => {
-                          setCurrentArgs((prev) =>
-                            prev.map((item) => {
-                              if (item.name === arg.name) {
-                                item.value = newArgValue as string;
-                                if (isPathParam(item.name, item.value)) {
-                                  setLastOpenPath(item.value);
-                                }
-                              }
-                              return item;
-                            })
-                          );
-                        }}
-                        onInputChange={(_event, newInputValue) => {
-                          setCurrentArgs((prev) =>
-                            prev.map((item) => {
-                              if (item.name === arg.name) {
-                                item.value = newInputValue;
-                                if (isPathParam(item.name, item.value)) {
-                                  setLastOpenPath(item.value);
-                                }
-                              }
-                              return item;
-                            })
-                          );
-                        }}
-                        isOptionEqualToValue={(option, value) => {
-                          return value === undefined || value === "" || option === value;
-                        }}
-                        onWheel={(event) => {
-                          // Only react when the field is focused, avoids accidental value changes
-                          // if (document.activeElement !== event.currentTarget.querySelector("input")) {
-                          //   return;
-                          // }
-                          const currentIndex = options.indexOf(arg.value);
-                          const direction = event.deltaY > 0 ? 1 : -1;
-                          const base = currentIndex === -1 ? 0 : currentIndex;
-                          // Clamp to the list boundaries -> no endless (cyclic) scrolling
-                          const newIndex = Math.min(Math.max(base + direction, 0), options.length - 1);
-                          if (newIndex === currentIndex) return;
-                          setCurrentArgs((prev) =>
-                            prev.map((item) => {
-                              if (item.name === arg.name) {
-                                item.value = options[newIndex];
-                                if (isPathParam(item.name, item.value)) {
-                                  setLastOpenPath(item.value);
-                                }
-                              }
-                              return item;
-                            })
-                          );
-                        }}
-                        onMouseEnter={() => {
-                          setScrollBar("hidden");
-                        }}
-                        onMouseLeave={() => {
-                          setScrollBar("auto");
-                        }}
-                      />
-                    ) : (
-                      <TextField
-                        id={`textfield-launch-load-${arg.name}`}
-                        fullWidth
-                        label={arg.name}
-                        value={arg.value}
-                        variant="outlined"
-                        size="small"
-                        error={booleanWordRegex.test(arg.value)}
-                        helperText={
-                          booleanWordRegex.test(arg.value)
-                            ? "Use uppercase True/False, otherwise some eval statements may fail."
-                            : ""
-                        }
-                        onChange={(event) => {
-                          setCurrentArgs((prev) =>
-                            prev.map((item) => {
-                              if (item.name === arg.name) {
-                                item.value = event.target.value;
-                              }
-                              return item;
-                            })
-                          );
-                        }}
-                      />
-                    )}
+                            ) : (
+                              <Tooltip title={reason} disableInteractive>
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    p: "5px", // matches IconButton size="small" padding
+                                    cursor: "help",
+                                    opacity: 0.6,
+                                  }}
+                                  onMouseDown={(event) => event.stopPropagation()}
+                                  onClick={(event) => event.stopPropagation()}
+                                >
+                                  <LockOutlinedIcon sx={{ fontSize: "1em" }} />
+                                </Box>
+                              </Tooltip>
+                            )}
+                          </Stack>
+                        );
+                      }}
+                      onChange={(_event, newArgValue) => updateArgValue(arg.name, (newArgValue as string) ?? "", true)}
+                      onInputChange={(_event, newInputValue) => updateArgValue(arg.name, newInputValue, false)}
+                      isOptionEqualToValue={(option, value) => {
+                        return value === undefined || value === "" || option === value;
+                      }}
+                      onWheel={(event) => {
+                        if (optionValues.length === 0) return;
+                        const currentIndex = optionValues.indexOf(arg.value);
+                        const direction = event.deltaY > 0 ? 1 : -1;
+                        const base = currentIndex === -1 ? 0 : currentIndex;
+                        const newIndex = Math.min(Math.max(base + direction, 0), optionValues.length - 1);
+                        if (newIndex === currentIndex) return;
+
+                        event.preventDefault();
+                        // commit = true -> treated like a real selection (persists lastOpenPath)
+                        updateArgValue(arg.name, optionValues[newIndex], true);
+                      }}
+                      onMouseEnter={() => {
+                        setScrollBar("hidden");
+                      }}
+                      onMouseLeave={() => {
+                        setScrollBar("auto");
+                      }}
+                    />
+
                     {isPathParam(arg.name, arg.value) && (
                       <Tooltip
                         title={
