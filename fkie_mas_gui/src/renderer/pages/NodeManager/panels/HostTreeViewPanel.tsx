@@ -711,39 +711,89 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
    * - "last":  container nodes come after the nodes running inside them (e.g. for START)
    */
   function sortByContainerHierarchy(nodes: RosNode[], order: "first" | "last" = "first"): RosNode[] {
-    // only nodes handled within this call are relevant
+    // only containers handled within this call are relevant
     const containersByName = new Map<string, RosNode>();
     for (const node of nodes) {
       if (node.is_container) {
         containersByName.set(node.name, node);
       }
     }
-    if (containersByName.size === 0) return nodes;
+    if (containersByName.size === 0) return [...nodes];
 
-    const depths = new Map<string, number>();
-
-    const getDepth = (node: RosNode, visited: Set<string>): number => {
-      const cached = depths.get(node.name);
-      if (cached !== undefined) return cached;
-      if (visited.has(node.name)) return 0; // cycle protection
-      visited.add(node.name);
-      let depth = 0;
-      for (const containerName of getContainerNames(node)) {
-        const container = containersByName.get(containerName);
-        if (!container || container.name === node.name) continue;
-        depth = Math.max(depth, getDepth(container, visited) + 1);
+    // containers a node is loaded into, restricted to containers of this call
+    const parentsOf = (node: RosNode): string[] => {
+      const parents: string[] = [];
+      for (const name of getContainerNames(node)) {
+        if (name === node.name) continue; // self reference
+        if (containersByName.has(name)) parents.push(name);
       }
-      visited.delete(node.name);
-      depths.set(node.name, depth);
-      return depth;
+      return parents;
     };
 
-    // "first" -> ascending depth, "last" -> descending depth; keep stable order otherwise
-    const direction = order === "first" ? 1 : -1;
-    return nodes
-      .map((node, index) => ({ node, index, depth: getDepth(node, new Set<string>()) }))
-      .sort((a, b) => direction * (a.depth - b.depth) || a.index - b.index)
-      .map((entry) => entry.node);
+    if (order === "first") {
+      // container is stopped first -> its composed nodes die with it and are dropped here.
+      // ignore parent edges that lead back to the node itself (broken/cyclic config),
+      // otherwise a cycle would remove all of its members and nothing would be stopped.
+      const leadsTo = (from: string, target: string, seen = new Set<string>()): boolean => {
+        if (from === target) return true;
+        if (seen.has(from)) return false;
+        seen.add(from);
+        const container = containersByName.get(from);
+        if (!container) return false;
+        return parentsOf(container).some((next) => leadsTo(next, target, seen));
+      };
+
+      return nodes.filter((node) => !parentsOf(node).some((parent) => !leadsTo(parent, node.name)));
+    }
+
+    // order === "last": all members first, the container directly afterwards
+    const pendingMembers = new Map<string, Set<string>>(); // container -> members not emitted yet
+    const membershipsOf = new Map<string, string[]>(); // node -> containers it belongs to
+    for (const containerName of containersByName.keys()) {
+      pendingMembers.set(containerName, new Set<string>());
+    }
+    for (const node of nodes) {
+      const parents = parentsOf(node);
+      if (parents.length === 0) continue;
+      membershipsOf.set(node.name, parents);
+      for (const parent of parents) {
+        pendingMembers.get(parent)!.add(node.name);
+      }
+    }
+
+    const result: RosNode[] = [];
+    const emitted = new Set<string>();
+    const waiting = new Set<string>(); // containers still waiting for their members
+
+    const emit = (node: RosNode): void => {
+      if (emitted.has(node.name)) return;
+      emitted.add(node.name);
+      waiting.delete(node.name);
+      result.push(node);
+      for (const parentName of membershipsOf.get(node.name) ?? []) {
+        const members = pendingMembers.get(parentName);
+        if (!members) continue;
+        members.delete(node.name);
+        // last member emitted -> the container may follow immediately
+        if (members.size === 0 && waiting.has(parentName)) {
+          emit(containersByName.get(parentName)!);
+        }
+      }
+    };
+
+    for (const node of nodes) {
+      if (node.is_container && pendingMembers.get(node.name)!.size > 0) {
+        waiting.add(node.name); // defer until its members are stopped
+      } else {
+        emit(node); // plain node or empty container keeps its original position
+      }
+    }
+    // unresolved containers (e.g. cyclic configuration): keep original order
+    for (const node of nodes) {
+      if (!emitted.has(node.name)) emit(node);
+    }
+
+    return result;
   }
 
   /**
@@ -784,7 +834,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     let maxKillTime = 0;
     if (nodesToStop.length > 0) {
       // stop container nodes before the nodes running inside them
-      const orderedNodesToStop = sortByContainerHierarchy(nodesToStop, "last");
+      const orderedNodesToStop = sortByContainerHierarchy(nodesToStop, "first");
 
       enqueue(
         orderedNodesToStop.map((node) => ({ node, action: "STOP" as QueueActionType })),
