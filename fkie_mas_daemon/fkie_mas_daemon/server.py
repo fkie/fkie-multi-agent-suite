@@ -84,10 +84,7 @@ class Server:
         self.screen_servicer = ScreenServicer(self.ws_server)
         self.ros_state_servicer = RosStateServicer(self.ws_server, self.monitor_servicer, self.ENDPOINT_NOTIFICATION_INTERVAL)
         self.parameter_servicer = ParameterServicer(self.ws_server)
-        self.launch_servicer = LaunchServicer(
-            self.ws_server,
-            ws_port=self.ws_port,
-        )
+        self.launch_servicer = LaunchServicer(self.ws_server)
         self.version_servicer = VersionServicer(self.ws_server, self.ros_state_servicer)
 
         self.rosname = ns_join(

@@ -166,7 +166,7 @@ class LaunchServicer:
     # leaf locks: they are never held while any other lock is acquired and in
     # particular never while calling into the observer.
 
-    def __init__(self, websocket: WebSocketServer, ws_port: int):
+    def __init__(self, websocket: WebSocketServer):
         Log.info("Create ROS2 launch servicer")
         self._loaded_files_lock = RLock()
         self._node_exec_lock = Lock()
@@ -175,7 +175,6 @@ class LaunchServicer:
         self._node_exec: Dict[str, str] = {}   # node name -> executable path
         self._peers: Dict[str, object] = {}
         self._is_running = True
-        self.ws_port = ws_port
         self.websocket = websocket
         self.xml_validator = LaunchValidator()
         self._callback_service_group = ReentrantCallbackGroup()
@@ -1345,7 +1344,7 @@ class LaunchServicer:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.subscriber.start]: {topic}")
         namespace, name = ros2_subscriber_nodename_tuple(topic)
         fullname = os.path.join(namespace, name)
-        args = [f'--ws_port={self.ws_port}',
+        args = [f'--ws_port={self.websocket.port}',
                 f'--topic={topic}',
                 f'--message_type={request.message_type}']
         if request.filter.no_data:
@@ -1378,7 +1377,7 @@ class LaunchServicer:
         Log.debug(f"{self.__class__.__name__}: Request to [ros.action.send_goal]: {request}")
         namespace, name = ros2_action_nodename_tuple(request.action_name)
         fullname = os.path.join(namespace, name)
-        args = [f'--ws_port={self.ws_port}',
+        args = [f'--ws_port={self.websocket.port}',
                 f'--action_name={request.action_name}',
                 f'--action_type={request.action_type}']
         if request.goal:
@@ -1394,7 +1393,7 @@ class LaunchServicer:
         # own node name, so it does not collide with the action client
         namespace, name = ros2_action_introspection_nodename_tuple(request.action_name)
         fullname = os.path.join(namespace, name)
-        args = [f'--ws_port={self.ws_port}',
+        args = [f'--ws_port={self.websocket.port}',
                 f'--action_name={request.action_name}',
                 f'--action_type={request.action_type}']
         return self._start_mas_node('mas-action-introspection', fullname, args)
@@ -1403,7 +1402,7 @@ class LaunchServicer:
         request = request_json
         namespace, name = ros2_service_introspection_nodename_tuple(request.service_name)
         fullname = os.path.join(namespace, name)
-        args = [f'--ws_port={self.ws_port}',
+        args = [f'--ws_port={self.websocket.port}',
                 f'--service_name={request.service_name}',
                 f'--service_type={request.service_type}']
         return self._start_mas_node('mas-service-introspection', fullname, args)
