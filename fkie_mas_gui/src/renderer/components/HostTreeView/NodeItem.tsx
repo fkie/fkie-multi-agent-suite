@@ -782,6 +782,8 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
     nodeIcon,
     isDarkMode,
     composableTag,
+    onDoubleClick,
+    onMiddleClick,
   ]);
 
   return createNode;

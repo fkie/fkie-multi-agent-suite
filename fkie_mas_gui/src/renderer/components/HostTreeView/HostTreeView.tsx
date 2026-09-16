@@ -447,7 +447,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
                   providerId: node.providerId as string,
                   node: node.name,
                   screen: screen,
-                  externalKeyModifier: false,
+                  externalKeyModifier: event.nativeEvent.shiftKey,
                   forceOpenTerminal: event.nativeEvent.ctrlKey,
                   insideDomainLayout: true,
                 });
@@ -457,7 +457,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
                 type: CmdTypes.LOG,
                 providerId: node.providerId as string,
                 node: node.name,
-                externalKeyModifier: false,
+                externalKeyModifier: event.nativeEvent.shiftKey,
                 forceOpenTerminal: event.nativeEvent.ctrlKey,
                 insideDomainLayout: true,
               });
@@ -466,7 +466,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         }
       });
     },
-    [rosCtx.nodeMap, keyNodeList, openScreenByDefault]
+    [rosCtx.nodeMap, keyNodeList, openScreenByDefault, navCtx.openTerminal]
   );
 
   /**
@@ -491,7 +491,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         }
       });
     },
-    [rosCtx.nodeMap, keyNodeList]
+    [rosCtx.nodeMap, keyNodeList, navCtx.openTerminal]
   );
 
   const handleClickOnLoggers = useCallback(

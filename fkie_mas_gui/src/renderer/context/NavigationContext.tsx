@@ -663,7 +663,7 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
       if (forceOpenTerminal) {
         try {
           const terminalCmd = await provider.cmdForType(type, node, "", screen, cmd, env);
-          logCtx.debug(`terminalCmd ${terminalCmd}`);
+          logCtx.debug(`terminalCmd ${JSON.stringify(terminalCmd)}`);
           const result = await window.commandExecutor?.execTerminal(
             provider.isLocalHost ? null : { host: provider.host() },
             `"${type.toLocaleUpperCase()} ${node}@${provider.host()}"`,
