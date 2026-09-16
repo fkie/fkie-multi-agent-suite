@@ -472,7 +472,7 @@ interface Props {
 }
 
 export function SettingsProvider({ children, transformer }: Props): React.ReactElement {
-  const MIN_VERSION_DAEMON = "5.10.0";
+  const MIN_VERSION_DAEMON = "5.10.1";
   const tx = transformer ?? identityTransformer;
   const txRef = useRef(tx);
   txRef.current = tx;

@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.11.1 - 16.09.2026
+
+- [fkie_mas_daemon] fix(daemon): use non-default WebSocket port for subscriber and introspection services
+- fix(terminal): correct emulator option handling and command reporting
+- fix(xml): support composable_node tags and harden xmlNodeBlockAt
+- fix(nodes): stop composable nodes and their container in the correct order
+- fix(LaunchFileModal): keep input focus and fix history/choices deletion
+- fix: open log or screen on node double-click and middle-click
+
 ## 5.11.0 - 15.09.2026
 
 - docs: add URL documentation for system diagnostics

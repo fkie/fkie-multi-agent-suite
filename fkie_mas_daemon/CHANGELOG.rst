@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.10.1 (16.09.2026)
+-------------------
+* fix(daemon): use non-default WebSocket port for subscriber and introspection services
+
 5.10.0 (15.09.2026)
 -------------------
 * feat(diagnostics): add visualization for ros.provider.system_diagnostics
