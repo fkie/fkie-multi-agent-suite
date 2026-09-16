@@ -9,6 +9,7 @@ import { ITerminalOptions, ITheme } from "@xterm/xterm";
 
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
+import { TCmdTerminal } from "@/renderer/providers";
 import Provider from "@/renderer/providers/Provider";
 import { CmdType } from "@/types";
 import { Box } from "@mui/material";
@@ -77,7 +78,7 @@ function createTerminalTheme(errorHighlighting: boolean): ITheme {
 
 interface ITerminalClient {
   type: CmdType;
-  initialCommands: string[];
+  initialCommands: TCmdTerminal[];
   /** Session identifier, forwarded to onCtrlD */
   sessionId: string;
   wsUrl: string;
@@ -114,8 +115,8 @@ export default function TerminalClient(props: ITerminalClient): JSX.Element {
   return (
     <Box width="100%" flexGrow={1} minHeight={0} overflow="hidden">
       <Terminal
-        key={`xterm-${wsUrl}-${sessionId}-${JSON.stringify(initialCommands)}`}
-        id={`xterm-${wsUrl}-${sessionId}-${JSON.stringify(initialCommands)}`}
+        key={`xterm-${wsUrl}-${sessionId}`}
+        id={`xterm-${wsUrl}-${sessionId}`}
         type={type}
         wsUrl={wsUrl}
         sessionId={sessionId}

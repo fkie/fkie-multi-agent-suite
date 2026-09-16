@@ -299,7 +299,7 @@ export const AutoUpdateProvider = ({
           insideDomainLayout: false,
         });
       } else {
-        const result = await window.commandExecutor?.execTerminal(null, "'update mas'", `${getUpdateCli(gui, ros)} -w`);
+        const result = await window.commandExecutor?.execTerminal(null, "update mas", `${getUpdateCli(gui, ros)} -w`);
         if (result) {
           if (!result.result) setUpdateError(result.message);
         } else {

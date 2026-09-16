@@ -22,6 +22,7 @@ import "@xterm/xterm/css/xterm.css";
 import React from "react";
 
 import { BUTTON_LOCATIONS, ISettingsContext } from "@/renderer/context/SettingsContext";
+import { TCmdTerminal } from "@/renderer/providers";
 import Provider from "@/renderer/providers/Provider";
 import { CmdType, CmdTypes } from "@/types";
 import SearchBar from "../UI/SearchBar";
@@ -78,7 +79,7 @@ interface Props {
   sessionId: string;
   clientOptions: ClientOptions;
   termOptions: ITerminalOptions;
-  initialCommands: string[];
+  initialCommands: TCmdTerminal[];
   name: string;
   type: CmdType;
   onIncomingData?: (data: string) => void;
@@ -708,7 +709,7 @@ export class Terminal extends React.Component<Props, XtermState> {
     socket.send(textEncoder.encode(JSON.stringify({ AuthToken: this.token ?? "", columns: cols, rows: rows })));
 
     for (const command of this.props.initialCommands ?? []) {
-      this.socket?.send(textEncoder.encode(CommandClient.INPUT + command));
+      this.socket?.send(textEncoder.encode(`${CommandClient.INPUT}${command.cmd}\r`));
     }
     if (this.type === CmdTypes.SET_TIME && this.provider) this.sendTimeSync();
     this.safeFit();
@@ -938,7 +939,7 @@ export class Terminal extends React.Component<Props, XtermState> {
               borderLeftStyle: "solid",
             }}
           >
-            {this.props.initialCommands[this.props.initialCommands.length - 1]?.split(";").slice(-1)[0] || ""}
+            {this.props.initialCommands[this.props.initialCommands.length - 1]?.displayCmd || ""}
           </Typography>
           {this.props.buttonLocation === BUTTON_LOCATIONS.RIGHT && this.createAdvButtons()}
         </Stack>

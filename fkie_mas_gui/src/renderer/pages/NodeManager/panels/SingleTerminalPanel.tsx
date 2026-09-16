@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import TerminalClient from "@/renderer/components/TerminalClient/TerminalClient";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
+import { TCmdTerminal } from "@/renderer/providers";
 import Provider from "@/renderer/providers/Provider";
 import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 import { ConnectionState, EventProviderState } from "@/renderer/providers/events";
@@ -25,7 +26,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
   const { id, type, provider, nodeName = "", screen = "", cmd = "", env = [] } = props;
 
   const rosCtx = useRosContext();
-  const [initialCommands, setInitialCommands] = useState<string[]>([]);
+  const [initialCommands, setInitialCommands] = useState<TCmdTerminal[]>([]);
   const [providerId, setProviderId] = useState("");
   const [currentHost, setCurrentHost] = useState<string>();
   const [ttydPort, setTtydPort] = useState<number>(8681);
@@ -45,8 +46,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
       setProviderId(provider.id);
       setCurrentHost(provider.host());
 
-      let sid = `${nodeName.replaceAll("/", "")}`;
-      if (!sid) sid = provider.id;
+      const sid = `${provider.id}-${nodeName.replaceAll("/", "")}-${cmd}`;
       setSessionId(sid);
 
       const terminalCmd = await provider.cmdForType(type, nodeName, "", newScreen, cmd, env);
@@ -54,7 +54,7 @@ export default function SingleTerminalPanel(props: SingleTerminalPanelProps): JS
         setError(terminalCmd.error);
       }
       if (type !== CmdTypes.SET_TIME && terminalCmd.cmd) {
-        setInitialCommands([`${terminalCmd.cmd}\r`]);
+        setInitialCommands([terminalCmd]);
       }
       if (type === CmdTypes.SCREEN) {
         setLastScreenUsed(terminalCmd.screen);

@@ -180,11 +180,11 @@ export const SETTINGS_DEF: Record<string, ISettingsParam> = {
     description: "Terminal command to display the log file. The file name is appended. (+F: waiting for more data)",
     type: "string",
     freeSolo: true,
-    default: "while [ ! -f {LOG_FILE} ]; do sleep 1.0; done; /usr/bin/less -fLQR +G +F",
+    default: "while [ ! -f {LOG_FILE} ]; do sleep 1.0; done; /usr/bin/less -fLQR +G +F {LOG_FILE}",
     options: [
       "/usr/bin/less -fLQR +G",
       "/usr/bin/less -fLQR +G +F",
-      "while [ ! -f {LOG_FILE} ]; do sleep 1.0; done; /usr/bin/less -fLQR +G +F",
+      "while [ ! -f {LOG_FILE} ]; do sleep 1.0; done; /usr/bin/less -fLQR +G +F {LOG_FILE}",
     ],
     group: "Logging",
   },

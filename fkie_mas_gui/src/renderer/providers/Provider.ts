@@ -513,20 +513,24 @@ export default class Provider implements IProvider {
     cmd: string,
     env: TEnvEntry[]
   ) => Promise<TCmdTerminal> = async (type, nodeName = "", topicName = "", screenName = "", cmd = "", env = []) => {
-    const result: TCmdTerminal = { success: true, screen: "", cmd: "", log: "", external: true };
+    const KEEP_OPEN = `; echo; echo "[process finished - press Enter for a shell]"; read -r _ || true; exec "\${SHELL:-/bin/bash}" -i`;
+    const result: TCmdTerminal = { success: true, screen: "", cmd: "", log: "", external: true, displayCmd: "" };
     let cmdType = type;
     if (cmdType === CmdTypes.SCREEN && screenName === "") {
       cmdType = CmdTypes.LOG;
     }
     switch (cmdType) {
-      case CmdTypes.CMD: {
+      case CmdTypes.CMD:
+      case CmdTypes.TERMINAL: {
         const prefix = this.createRosEnvExportPrefix(env);
-        result.cmd = cmd ? `${prefix} ${cmd}` : `${prefix}`;
+        result.cmd = cmd ? `${prefix} ${cmd}${KEEP_OPEN}` : `${prefix}; exec "\${SHELL:-/bin/bash}" -i`;
+        result.displayCmd = cmd;
         break;
       }
       case CmdTypes.SCREEN:
         if (screenName && screenName.length > 0) {
           result.cmd = `screen -d -r ${screenName}`;
+          result.displayCmd = result.cmd;
           result.screen = screenName;
         } else {
           // search screen with node name
@@ -537,6 +541,7 @@ export default class Provider implements IProvider {
             createdScreenName = nodeName.substring(1).replaceAll("/", ".");
           }
           result.cmd = `screen -d -r $(ps aux | grep "/usr/bin/SCREEN" | grep "${createdScreenName}" | awk '{print $2}')`;
+          result.displayCmd = result.cmd;
           result.screen = createdScreenName;
         }
         break;
@@ -545,7 +550,11 @@ export default class Provider implements IProvider {
         if (replyLogPaths.success && replyLogPaths.paths.length > 0) {
           const logPath = replyLogPaths.paths[0];
           // `tail -f ${logPaths[0].screen_log} \r`,
-          result.cmd = `${this.settings().paramLogCommand.replaceAll("{LOG_FILE}", logPath.screen_log)} ${logPath.screen_log}`;
+          const hasLogVar = this.settings().paramLogCommand.includes("{LOG_FILE}")
+          const logCmd = hasLogVar ? this.settings().paramLogCommand.replaceAll("{LOG_FILE}", logPath.screen_log) : this.settings().paramLogCommand + logPath.screen_log
+          result.displayCmd = logCmd.split(";").slice(-1)[0] || "";
+          result.cmd = `${logCmd}${KEEP_OPEN}`;
+
           result.log = logPath.screen_log;
         } else {
           result.success = false;
@@ -559,18 +568,19 @@ export default class Provider implements IProvider {
         } else if (this.rosState.ros_version === "2") {
           const prefix = this.createRosEnvExportPrefix(env);
           result.cmd = `${prefix} ros2 topic echo ${topicName}`;
+          result.displayCmd = result.cmd;
         }
         break;
       }
-      case CmdTypes.TERMINAL: {
-        const prefix = this.createRosEnvExportPrefix(env);
-        result.cmd = cmd ? `${prefix} ${cmd}` : `${prefix}`;
-        break;
-      }
+
       case CmdTypes.SET_TIME:
         result.cmd = cmd;
+        result.displayCmd = result.cmd;
         break;
       default:
+        // fail loudly instead of opening an empty terminal
+        result.success = false;
+        result.error = `unsupported command type: ${cmdType}`;
         break;
     }
     this.log().debug(`terminal command: ${JSON.stringify(result)}`);
@@ -1744,7 +1754,7 @@ export default class Provider implements IProvider {
           for (const parsed of parsedList) {
             // filter only the launch files associated to the provider
             if (this.rosState.masteruri && parsed.masteruri !== this.rosState.masteruri) {
-              return false;
+              continue;
             }
             launchList.push(
               new LaunchContent(
@@ -2176,7 +2186,7 @@ export default class Provider implements IProvider {
   public stopActionIntrospection: (actionName: string) => Promise<Result> = async (actionName) => {
     if (this.activeIntrospections.includes(actionName)) {
       this.activeIntrospections = this.activeIntrospections.filter((a) => a !== actionName);
-      await this.connection.closeSubscription(this.generateIntrospectionUri(actionName)).catch(() => {});
+      await this.connection.closeSubscription(this.generateIntrospectionUri(actionName)).catch(() => { });
     }
     return this.makeCall(URI.ROS_ACTION_STOP_INTROSPECTION, [actionName], false).then((v: TResultData) =>
       v.result ? (v.data as Result) : new Result(false, v.message as string)
@@ -2226,7 +2236,7 @@ export default class Provider implements IProvider {
   };
 
   public stopServiceIntrospection = async (serviceName: string): Promise<Result> => {
-    await this.connection.closeSubscription(this.generateServiceIntrospectionUri(serviceName)).catch(() => {});
+    await this.connection.closeSubscription(this.generateServiceIntrospectionUri(serviceName)).catch(() => { });
     return this.makeCall("ros.service.introspection.stop", [serviceName], false).then((v: TResultData) =>
       v.result ? (v.data as Result) : new Result(false, v.message as string)
     );
@@ -2935,9 +2945,9 @@ export default class Provider implements IProvider {
     this.updateDiagnostics(msg as unknown as DiagnosticArray);
   };
 
-    /**
-   * Update system diagnostics reported in the list of DiagnosticsArray.
-   */
+  /**
+ * Update system diagnostics reported in the list of DiagnosticsArray.
+ */
   private callbackSystemDiagnosticsUpdate: (msg: JSONObject) => void = async (msg) => {
     this.log().debugInterface(URI.ROS_PROVIDER_SYSTEM_DIAGNOSTICS, msg, "", this.id);
     if (!msg) {
@@ -3081,12 +3091,12 @@ export default class Provider implements IProvider {
    * send message to delay ROS update
    */
   public delayRosUpdate: () => Promise<Result> = async () => {
-    const delay = this.settings().paramDelayROSUpdateAfterAction;
-    if (delay <= 0) {
+    const delaySec = this.settings().paramDelayROSUpdateAfterAction;
+    if (delaySec <= 0) {
       return { result: true, message: "No delay requested" };
     }
     const msg = {
-      sec: this.settings().paramDelayROSUpdateAfterAction,
+      sec: delaySec,
     };
     this.log().debugInterface(URI.ROS_DELAY_UPDATE_STATE, msg, "", this.id);
     const result = await this.connection.publish(URI.ROS_DELAY_UPDATE_STATE, msg).then((value: Result) => {

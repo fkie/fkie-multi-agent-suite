@@ -1,16 +1,134 @@
 import { CommandExecutorEvents, TCommandExecutor, TSystemInfo } from "@/types";
 import { ipcMain } from "electron";
 import log from "electron-log";
-import { spawn, StdioOptions } from "node:child_process";
+import { spawn, spawnSync, StdioOptions } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { quote } from "shell-quote";
 import { Client, ClientChannel, ClientErrorExtensions, ConnectConfig } from "ssh2";
 import CommandLine from "./CommandLine";
 import { SystemInfo } from "./SystemInfo";
 
+type TTerminalSpec = {
+  bin: string;
+  /** args before the command, e.g. title/hold */
+  preArgs: (title: string, hold: boolean) => string[];
+  /** separator + command args; MUST be last */
+  execArgs: (script: string) => string[];
+  /** true for D-Bus based terminals: exit code says nothing about success */
+  detached: boolean;
+};
+
 const textDecoder = new TextDecoder();
+
+function terminalSpec(bin: string, hasHoldProfile: boolean): TTerminalSpec {
+  let real = bin;
+  try {
+    // may throw on a dangling /etc/alternatives symlink
+    real = fs.realpathSync(bin);
+  } catch {
+    log.warn(`cannot resolve symlink of ${bin}, using path as is`);
+  }
+  const base = path.basename(real);
+
+  // "-ic" instead of "-lc": ~/.bashrc guards like [ -z "$PS1" ] && return
+  // would skip the ROS setup in a non-interactive shell.
+  const bash = (s: string): string[] => ["/bin/bash", "-ic", s];
+
+  switch (base) {
+    case "gnome-terminal":
+      return {
+        bin,
+        preArgs: (t, hold) => [
+          ...(t ? [`--title=${t}`] : []),
+          ...(hold && hasHoldProfile ? ["--profile", "hold"] : []),
+        ],
+        execArgs: (s) => ["--", ...bash(s)],
+        detached: true,
+      };
+
+    case "gnome-terminal.wrapper":
+      // the Debian wrapper only understands the legacy syntax: -t TITLE -e "STRING"
+      return {
+        bin,
+        preArgs: (t) => (t ? ["-t", t] : []),
+        execArgs: (s) => ["-e", `/bin/bash -ic ${shq(s)}`],
+        detached: true,
+      };
+
+    case "ptyxis":
+    case "kgx":
+      // neither supports a title option -> omit it
+      return { bin, preArgs: () => [], execArgs: (s) => ["--", ...bash(s)], detached: true };
+
+    case "tilix":
+      // -e takes ONE string -> quote the whole command line
+      return {
+        bin,
+        preArgs: (t) => (t ? ["-t", t] : []),
+        execArgs: (s) => ["-e", `/bin/bash -ic ${shq(s)}`],
+        detached: true,
+      };
+
+    case "terminator":
+      return {
+        bin,
+        // "-u" (--no-dbus) prevents the handoff to a running instance
+        preArgs: (t) => [...(t ? ["-T", t] : []), "-u"],
+        // "-x" is argparse REMAINDER -> must be last
+        execArgs: (s) => ["-x", ...bash(s)],
+        detached: false,
+      };
+
+    case "xfce4-terminal":
+      return {
+        bin,
+        // --disable-server: do not hand the window over to a running instance
+        preArgs: (t) => [...(t ? ["-T", t] : []), "--disable-server"],
+        execArgs: (s) => ["-x", ...bash(s)],
+        detached: false,
+      };
+
+    case "konsole":
+      return {
+        bin,
+        // --nofork keeps the exit code meaningful (konsole forks by default)
+        preArgs: (t) => [...(t ? ["-p", `tabtitle=${t}`] : []), "--nofork"],
+        execArgs: (s) => ["-e", ...bash(s)],
+        detached: false,
+      };
+
+    case "kitty":
+      return { bin, preArgs: (t) => (t ? ["--title", t] : []), execArgs: (s) => bash(s), detached: false };
+
+    case "alacritty":
+      // "-e" consumes all remaining args -> must be last
+      return { bin, preArgs: (t) => (t ? ["-t", t] : []), execArgs: (s) => ["-e", ...bash(s)], detached: false };
+
+    case "foot":
+      // foot takes the program as positional argument, "-e" is not portable
+      return { bin, preArgs: (t) => (t ? ["-T", t] : []), execArgs: (s) => bash(s), detached: false };
+
+    case "wezterm":
+      // wezterm needs the "start" subcommand and has no --title
+      return { bin, preArgs: () => ["start"], execArgs: (s) => ["--", ...bash(s)], detached: false };
+
+    case "lxterminal":
+    case "qterminal":
+      return {
+        bin,
+        preArgs: (t) => (t ? ["-T", t] : []),
+        execArgs: (s) => ["-e", `/bin/bash -ic ${shq(s)}`],
+        detached: true,
+      };
+
+    case "mate-terminal":
+      return { bin, preArgs: (t) => (t ? [`--title=${t}`] : []), execArgs: (s) => ["--", ...bash(s)], detached: true };
+
+    default: // xterm, uxterm, lxterm, urxvt, st, ...
+      return { bin, preArgs: (t) => (t ? ["-T", t] : []), execArgs: (s) => ["-e", ...bash(s)], detached: false };
+  }
+}
 
 /**
  * Class CommandExecutor: Execute commands locally or remote using SSH2 interface
@@ -28,6 +146,9 @@ export default class CommandExecutor implements TCommandExecutor {
 
   systemInfo?: TSystemInfo;
 
+  /** Cached path of the detected terminal emulator ("" = none found yet). */
+  private detectedTerminal: string | null = null;
+
   /**
    * Terminal configuration and detection options.
    *
@@ -42,11 +163,11 @@ export default class CommandExecutor implements TCommandExecutor {
     noClose: string;
     title: string;
   } = {
-    terminals: ["/usr/bin/x-terminal-emulator", "/usr/bin/xterm", "/opt/x11/bin/xterm"],
-    exec: "-e /bin/bash -c",
-    noClose: "",
-    title: "",
-  };
+      terminals: ["/usr/bin/x-terminal-emulator", "/usr/bin/xterm", "/opt/x11/bin/xterm"],
+      exec: "-e /bin/bash -c",
+      noClose: "",
+      title: "",
+    };
 
   constructor(commandLine: CommandLine) {
     this.commandLine = commandLine;
@@ -154,97 +275,97 @@ export default class CommandExecutor implements TCommandExecutor {
     credential: ConnectConfig | null,
     command: string
   ) => {
-    let c = credential;
+      let c = credential;
 
-    // if no credential is given, assumes local host
-    if (!c) c = this.localCredential;
+      // if no credential is given, assumes local host
+      if (!c) c = this.localCredential;
 
-    // Set the STDIO config: Ignore or redirect STDOUT/STDERR to current console
-    let stdioOptions: StdioOptions | undefined = ["ignore", "pipe", "pipe"];
-    const parentOut = !this.commandLine?.getArg("hide-output-from-background-processes");
-    if (parentOut) {
-      stdioOptions = ["inherit", "pipe", "pipe"];
-    }
-
-    const localIps = ["localhost", "127.0.0.1", os.hostname()];
-
-    if (this.systemInfo) {
-      for (const ni of this.systemInfo.networkInterfaces || []) {
-        localIps.push(ni.ip4);
+      // Set the STDIO config: Ignore or redirect STDOUT/STDERR to current console
+      let stdioOptions: StdioOptions | undefined = ["ignore", "pipe", "pipe"];
+      const parentOut = !this.commandLine?.getArg("hide-output-from-background-processes");
+      if (parentOut) {
+        stdioOptions = ["inherit", "pipe", "pipe"];
       }
-    }
 
-    if (c.host === undefined || localIps.includes(c.host)) {
-      // local command: do not use SSH but child process instead
-      return new Promise((resolve) => {
-        try {
-          let errorString = "";
-          let resultString = "";
-          log.info(`<cmd>${command}`);
-          const child = spawn(command, [], {
-            shell: true,
-            stdio: stdioOptions,
-            detached: false,
-          });
+      const localIps = ["localhost", "127.0.0.1", os.hostname()];
 
-          child.on("close", (code) => {
-            if (code !== 0) {
-              resolve({
-                result: false,
-                message: errorString,
-                command,
-              });
-            } else {
-              resolve({
-                result: true,
-                message: resultString,
-                command,
-              });
-            }
-          });
+      if (this.systemInfo) {
+        for (const ni of this.systemInfo.networkInterfaces || []) {
+          localIps.push(ni.ip4);
+        }
+      }
 
-          child.stdout?.on("data", (data) => {
-            if (parentOut) {
-              console.log(`${data}`);
-              resultString += `${data}`;
-              for (const item of `${data}`.split("\n")) {
-                if (
-                  item.includes("[rosrun] Couldn't find executable") ||
-                  item.includes("[ERROR]") ||
-                  item.includes("[error]")
-                ) {
-                  errorString += item;
+      if (c.host === undefined || localIps.includes(c.host)) {
+        // local command: do not use SSH but child process instead
+        return new Promise((resolve) => {
+          try {
+            let errorString = "";
+            let resultString = "";
+            log.info(`<cmd>${command}`);
+            const child = spawn(command, [], {
+              shell: true,
+              stdio: stdioOptions,
+              detached: false,
+            });
+
+            child.on("close", (code) => {
+              if (code !== 0) {
+                resolve({
+                  result: false,
+                  message: errorString,
+                  command,
+                });
+              } else {
+                resolve({
+                  result: true,
+                  message: resultString,
+                  command,
+                });
+              }
+            });
+
+            child.stdout?.on("data", (data) => {
+              if (parentOut) {
+                console.log(`${data}`);
+                resultString += `${data}`;
+                for (const item of `${data}`.split("\n")) {
+                  if (
+                    item.includes("[rosrun] Couldn't find executable") ||
+                    item.includes("[ERROR]") ||
+                    item.includes("[error]")
+                  ) {
+                    errorString += item;
+                  }
                 }
               }
-            }
-          });
+            });
 
-          child.stderr?.on("data", (data) => {
-            if (parentOut) {
-              console.error(`${data}`);
-            }
-            errorString += data;
-          });
+            child.stderr?.on("data", (data) => {
+              if (parentOut) {
+                console.error(`${data}`);
+              }
+              errorString += data;
+            });
 
-          child.on("error", (error) => {
-            if (parentOut) {
-              console.error(`${error}`);
-            }
-            errorString += error;
-          });
-        } catch (error) {
-          resolve({
-            result: false,
-            message: `Catch error ${error}`,
-            command,
-          });
-        }
-      });
-    }
+            child.on("error", (error) => {
+              if (parentOut) {
+                console.error(`${error}`);
+              }
+              errorString += error;
+            });
+          } catch (error) {
+            resolve({
+              result: false,
+              message: `Catch error ${error}`,
+              command,
+            });
+          }
+        });
+      }
 
-    // command must be executed remotely
-    return this.execRemote(c, command, 0);
-  };
+      // command must be executed remotely
+      return this.execRemote(c, command, 0);
+    };
 
   /**
    * Executes a command on a remote host via SSH.
@@ -259,154 +380,120 @@ export default class CommandExecutor implements TCommandExecutor {
     command,
     keyIndex = 0
   ) => {
-    console.log(`exec on ${credential.host}: ${command}`);
-    const parentOut = !this.commandLine?.getArg("hide-output-from-background-processes");
-    const connectionConfig = this.generateConfig(credential, keyIndex);
+      console.log(`exec on ${credential.host}: ${command}`);
+      const parentOut = !this.commandLine?.getArg("hide-output-from-background-processes");
+      const connectionConfig = this.generateConfig(credential, keyIndex);
 
-    return new Promise((resolve) => {
-      if (!command) {
-        resolve({
-          result: false,
-          message: "Invalid empty command",
-          command,
-          connectConfig: connectionConfig,
-        });
-        return;
-      }
+      return new Promise((resolve) => {
+        if (!command) {
+          resolve({
+            result: false,
+            message: "Invalid empty command",
+            command,
+            connectConfig: connectionConfig,
+          });
+          return;
+        }
 
-      const conn: Client = new Client();
-      try {
-        conn
-          .on("ready", () => {
-            conn.exec(command, (err: Error | undefined, sshStream: ClientChannel) => {
-              if (credential) {
-                log.info(`<ssh:${credential.username}@${credential.host}:${credential.port}>${command}`);
-              }
-              if (err) {
-                resolve({
-                  result: false,
-                  message: err?.message,
-                  command,
-                });
-                return;
-              }
-              let errorString = "";
-
-              sshStream
-                .on("close", (code: number) => {
-                  // TODO: Check code/signal to validate response or errors
-                  if (code !== 0) {
-                    resolve({
-                      result: false,
-                      message: errorString,
-                      command,
-                    });
-                  } else {
-                    resolve({
-                      result: true,
-                      message: "",
-                      command,
-                    });
-                  }
-                  conn.end();
-                })
-                .stdout.on("data", (data: Buffer) => {
-                  if (parentOut) {
-                    console.log(`${textDecoder.decode(data)}`);
-                  }
-                  resolve({
-                    result: true,
-                    message: textDecoder.decode(data),
-                    command,
-                  });
-                })
-                .stderr.on("data", (data: Buffer) => {
-                  if (parentOut) {
-                    console.error(`${textDecoder.decode(data)}`);
-                  }
-                  errorString += textDecoder.decode(data);
+        const conn: Client = new Client();
+        try {
+          conn
+            .on("ready", () => {
+              conn.exec(command, (err: Error | undefined, sshStream: ClientChannel) => {
+                if (credential) {
+                  log.info(`<ssh:${credential.username}@${credential.host}:${credential.port}>${command}`);
+                }
+                if (err) {
                   resolve({
                     result: false,
-                    message: textDecoder.decode(data),
+                    message: err?.message,
                     command,
                   });
-                });
-            });
-          })
-          .connect(connectionConfig);
+                  return;
+                }
+                let errorString = "";
 
-        conn.on("error", async (error: Error & ClientErrorExtensions) => {
-          log.warn("CommandExecutor - connect error: ", JSON.stringify(error));
-          connectionConfig.password = undefined;
-          connectionConfig.privateKey = undefined;
-          if (error.level === "client-authentication") {
-            if (keyIndex + 1 < this.privateSshKeys.length) {
-              const result = await this.execRemote(connectionConfig, command, keyIndex + 1);
-              resolve(result);
+                sshStream
+                  .on("close", (code: number) => {
+                    // TODO: Check code/signal to validate response or errors
+                    if (code !== 0) {
+                      resolve({
+                        result: false,
+                        message: errorString,
+                        command,
+                      });
+                    } else {
+                      resolve({
+                        result: true,
+                        message: "",
+                        command,
+                      });
+                    }
+                    conn.end();
+                  })
+                  .stdout.on("data", (data: Buffer) => {
+                    if (parentOut) {
+                      console.log(`${textDecoder.decode(data)}`);
+                    }
+                    resolve({
+                      result: true,
+                      message: textDecoder.decode(data),
+                      command,
+                    });
+                  })
+                  .stderr.on("data", (data: Buffer) => {
+                    if (parentOut) {
+                      console.error(`${textDecoder.decode(data)}`);
+                    }
+                    errorString += textDecoder.decode(data);
+                    resolve({
+                      result: false,
+                      message: textDecoder.decode(data),
+                      command,
+                    });
+                  });
+              });
+            })
+            .connect(connectionConfig);
+
+          conn.on("error", async (error: Error & ClientErrorExtensions) => {
+            log.warn("CommandExecutor - connect error: ", JSON.stringify(error));
+            connectionConfig.password = undefined;
+            connectionConfig.privateKey = undefined;
+            if (error.level === "client-authentication") {
+              if (keyIndex + 1 < this.privateSshKeys.length) {
+                const result = await this.execRemote(connectionConfig, command, keyIndex + 1);
+                resolve(result);
+              } else {
+                resolve({
+                  result: false,
+                  message: error.message,
+                  command,
+                  connectConfig: connectionConfig,
+                });
+              }
             } else {
               resolve({
                 result: false,
                 message: error.message,
                 command,
-                connectConfig: connectionConfig,
               });
             }
-          } else {
-            resolve({
-              result: false,
-              message: error.message,
-              command,
-            });
+          });
+        } catch (error) {
+          let errorMessage = "Failed to execute remote command";
+          if (error instanceof Error) {
+            errorMessage = error.message;
           }
-        });
-      } catch (error) {
-        let errorMessage = "Failed to execute remote command";
-        if (error instanceof Error) {
-          errorMessage = error.message;
+          log.info("CommandExecutor - exec error: ", error);
+          resolve({
+            result: false,
+            message: errorMessage,
+            command,
+          });
         }
-        log.info("CommandExecutor - exec error: ", error);
-        resolve({
-          result: false,
-          message: errorMessage,
-          command,
-        });
-      }
-    });
-  };
-
-  /**
-   * Safely build a script argument for "bash -c".
-   *
-   * Wraps the given script in single quotes and escapes all existing
-   * single quotes using the standard shell pattern: ' -> '\''.
-   *
-   * Example:
-   *  script:  ssh host /bin/sh -c 'export FOO='\''bar'\'''
-   *  result: 'ssh host /bin/sh -c '\''export FOO='\''bar'\''''
-   */
-  private buildBashScriptArg(script: string): string {
-    const escaped = script.replace(/'/g, `'\\''`);
-    return `'${escaped}'`;
-  }
-
-  /**
-   * Build the command string that will actually be executed by /bin/sh on
-   * the local or remote side.
-   *
-   * - If sshCmd is non-empty, the command is executed remotely via ssh:
-   *      sshCmd /bin/sh -c 'command'
-   * - Otherwise the command is executed locally:
-   *      /bin/sh -c 'command'
-   *
-   * The inner command is quoted using shell-quote to be safe for /bin/sh -c.
-   */
-  private buildShellCommand(sshCmd: string, command: string): string {
-    const quotedInner = quote([command]); // e.g. 'export FOO=bar; echo test'
-    if (sshCmd) {
-      return `${sshCmd} /bin/sh -c ${quotedInner}`;
-    }
-    return `/bin/sh -c ${quotedInner}`;
-  }
+      });
+    };
 
   /**
    * Executes a command in an external Terminal (using a SSH connection on remote hosts)
@@ -414,96 +501,108 @@ export default class CommandExecutor implements TCommandExecutor {
    * @param title - Terminal title
    * @param command - Command to execute (will be passed to /bin/sh -c)
    */
+
   public async execTerminal(
     credential: ConnectConfig | null,
     title: string,
     command: string
   ): Promise<{ result: boolean; message: string; command: string }> {
-    let terminalEmulator = "";
-    let terminalTitleOpt = this.terminalOptions.title;
-    let noCloseOpt = this.terminalOptions.noClose;
-    let terminalExecOpt = this.terminalOptions.exec;
+    if (!command?.trim()) {
+      return { result: false, message: "Refusing to open a terminal with an empty command", command };
+    }
+    const bin = this.findTerminal();
+    if (!bin) return { result: false, message: "No terminal emulator found", command };
 
-    // Try to find a working terminal from the configured list
-    for (const t of this.terminalOptions.terminals) {
+    const spec = terminalSpec(bin, this.hasGnomeHoldProfile());
+    let script = command;
+    if (credential) {
+      const c = this.generateConfig(credential, 0);
+      script = `/usr/bin/ssh -t -oStrictHostKeyChecking=no -oConnectTimeout=30 ${c.username}@${c.host} ${shq(command)}`;
+    }
+
+    const args = [...spec.preArgs(title.replaceAll('"', ""), true), ...spec.execArgs(script)];
+    const cmdLine = cmdLineForLog(bin, args);
+    log.info(`<terminal> ${cmdLine}`);
+
+    return new Promise((resolve) => {
+      // no shell: true -> args are passed verbatim, no quoting/whitespace issues
+      const child = spawn(bin, args, { shell: false, detached: true, stdio: ["ignore", "pipe", "pipe"] });
+      let out = "";
+      child.stdout?.on("data", (d) => {
+        out += `${d}`;
+      });
+      child.stderr?.on("data", (d) => {
+        out += `${d}`;
+      });
+
+      let settled = false;
+      const finish = (result: boolean, message: string): void => {
+        if (settled) return;
+        settled = true;
+        if (!result) log.error(`<terminal> failed: ${message} | ${cmdLine}`);
+        resolve({ result, message, command: cmdLine });
+      };
+
+      // assume success only if the process is still alive after the grace period
+      const timer = setTimeout(() => finish(true, ""), 1500);
+
+      child.on("error", (e) => {
+        clearTimeout(timer);
+        finish(false, `${e}`);
+      });
+      child.on("exit", (code, signal) => {
+        // report the real reason instead of silently assuming success
+        if (code === 0 && spec.detached) return; // window lives in another process
+        clearTimeout(timer);
+        if (code === 0) {
+          finish(true, "");
+          return;
+        }
+        finish(false, out.trim() || `terminal exited with code ${code}${signal ? ` (${signal})` : ""}`);
+      });
+      child.unref();
+    });
+  }
+
+  /**
+   * Find the first executable terminal emulator from the configured candidate list.
+   * The result is cached; pass force=true to re-run the detection.
+   *
+   * @returns absolute path of the terminal binary or "" if none is available
+   */
+  public findTerminal(force: boolean = false): string {
+    if (!force && this.detectedTerminal !== null) {
+      return this.detectedTerminal;
+    }
+
+    const candidates = [
+      ...this.terminalOptions.terminals,
+      // additional fallbacks for systems without x-terminal-emulator alternatives
+      "/usr/bin/gnome-terminal",
+      "/usr/bin/konsole",
+      "/usr/bin/xfce4-terminal",
+      "/usr/bin/terminator",
+      "/usr/bin/kitty",
+      "/usr/bin/alacritty",
+      "/usr/bin/foot",
+      "/usr/bin/ptyxis",
+      "/usr/bin/tilix",
+    ];
+
+    for (const t of candidates) {
       try {
         fs.accessSync(t, fs.constants.X_OK);
-        const resolvedPath = fs.realpathSync(t, null);
-        const basename = path.basename(resolvedPath);
-
-        // Decide how to pass a command to the terminal
-        // Many terminals support "-x /bin/bash -c" or "-e /bin/bash -c"
-        if (["terminator", "gnome-terminal", "xfce4-terminal"].includes(basename)) {
-          terminalExecOpt = "-x /bin/bash -c";
-        } else {
-          // Default to "-e /bin/bash -c" for xterm and most others
-          terminalExecOpt = "-e /bin/bash -c";
-        }
-
-        // Configure "no close" behavior and title option depending on terminal
-        if (["terminator", "gnome-terminal", "gnome-terminal.wrapper"].includes(basename)) {
-          // If your external terminal closes after the execution, you can change this behavior in profiles.
-          // You can also create a profile with name 'hold'. This profile will then be loaded by node_manager.
-          noCloseOpt = "--profile hold";
-          // Title handling can be done via profiles; we keep default here.
-        } else if (["xfce4-terminal", "xterm", "lxterm", "uxterm"].includes(basename)) {
-          noCloseOpt = "";
-          terminalTitleOpt = "-T";
-        } else if (["konsole"].includes(basename)) {
-          noCloseOpt = "--noclose";
-          terminalTitleOpt = "";
-        }
-
-        terminalEmulator = t;
-        break;
+        this.detectedTerminal = t;
+        log.info(`terminal emulator detected: ${t} -> ${fs.realpathSync(t)}`);
+        return t;
       } catch {
-        // continue with next terminal
+        // not available, try next candidate
       }
     }
 
-    if (!terminalEmulator) {
-      return {
-        result: false,
-        message: `No terminal found! Please install one of: ${this.terminalOptions.terminals.join(", ")}`,
-        command,
-      };
-    }
-
-    let terminalTitle = "";
-    if (title && terminalTitleOpt) {
-      terminalTitle = `${terminalTitleOpt} ${title}`.trim();
-    }
-
-    let sshCmd = "";
-    if (credential) {
-      // generate string for SSH command
-      const c: ConnectConfig = this.generateConfig(credential, 0);
-      sshCmd = [
-        "/usr/bin/ssh",
-        "-aqtxXC",
-        "-oClearAllForwardings=yes",
-        "-oConnectTimeout=30",
-        "-oStrictHostKeyChecking=no",
-        "-oVerifyHostKeyDNS=no",
-        "-oCheckHostIP=no",
-        [c.username, c.host].join("@"),
-      ].join(" ");
-    }
-
-    // Build the script to be executed either locally or remotely via ssh
-    const shellCommand = this.buildShellCommand(sshCmd, command);
-
-    // Now wrap that script as a single safe argument for "bash -c"
-    const bashCommandArg = this.buildBashScriptArg(shellCommand);
-
-    // Assemble the final command that is executed locally (spawn with shell: true)
-    // Example:
-    //   x-terminal-emulator -T "Title" --profile hold -x /bin/bash -c 'ssh user@host /bin/sh -c '\''export ...; ros2 ...'\'''
-    const parts = [terminalEmulator, terminalTitle, noCloseOpt, terminalExecOpt, bashCommandArg].filter((p) => !!p);
-
-    const cmd = parts.join(" ").replace(/\s+/g, " ").trim();
-
-    return this.exec(null, cmd);
+    log.warn(`no terminal emulator found, tried: ${candidates.join(", ")}`);
+    this.detectedTerminal = "";
+    return "";
   }
 
   private wildcardMatch(text: string | undefined, pattern: string) {
@@ -545,6 +644,35 @@ export default class CommandExecutor implements TCommandExecutor {
 
     return config;
   }
+
+  /** Check whether a gnome-terminal profile named "hold" exists. */
+  private hasGnomeHoldProfile(): boolean {
+    try {
+      const out = spawnSync("gsettings", ["get", "org.gnome.Terminal.ProfilesList", "list"], { encoding: "utf8" });
+      if (out.status !== 0) return false;
+      const ids = (out.stdout.match(/'([^']+)'/g) || []).map((s) => s.replaceAll("'", ""));
+      return ids.some((id) => {
+        const name = spawnSync(
+          "gsettings",
+          ["get", `org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:${id}/`, "visible-name"],
+          { encoding: "utf8" }
+        );
+        return name.status === 0 && name.stdout.trim().replaceAll("'", "") === "hold";
+      });
+    } catch {
+      return false;
+    }
+  }
+}
+
+/** Quote a single argument for POSIX shells (only for logging/copy&paste). */
+function shq(arg: string): string {
+  return /^[A-Za-z0-9_@%+=:,./-]+$/.test(arg) ? arg : `'${arg.replaceAll("'", `'\\''`)}'`;
+}
+
+/** Build a copy-pasteable command line for logs. */
+export function cmdLineForLog(bin: string, args: string[]): string {
+  return [bin, ...args].map(shq).join(" ");
 }
 
 /**
