@@ -193,28 +193,113 @@ function pythonValue(value: string | undefined, type: string | undefined): strin
 
 /* ------------------------------- XML launch ------------------------------- */
 
-type TXmlNodeBlock = {
-  tagStart: number;
-  tagEnd: number;
+export type TXmlNodeBlock = {
+  tag: string;        // "node" | "composable_node" | ...
+  tagStart: number;   // index of "<"
+  tagEnd: number;     // exclusive end of the opening tag (== bodyStart)
   bodyStart: number;
-  bodyEnd: number;
+  bodyEnd: number;    // index of "</tag>" or bodyStart if self-closing
+  blockEnd: number;   // exclusive end including the closing tag
   selfClosing: boolean;
 };
 
-/** opening <node ...> tag which encloses the given offset */
-function xmlNodeBlockAt(text: string, offset: number): TXmlNodeBlock | null {
-  let tagStart = text.lastIndexOf("<node", offset);
-  // skip tags like <nodelet
-  while (tagStart >= 0 && !/^<node[\s/>]/.test(text.slice(tagStart, tagStart + 6))) {
-    tagStart = text.lastIndexOf("<node", tagStart - 1);
+export const NODE_TAG_NAMES = ["node", "composable_node", "node_container"] as const;
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Ranges that must be ignored: comments, CDATA, processing instructions. */
+function ignoredRanges(text: string): Array<[number, number]> {
+  const ranges: Array<[number, number]> = [];
+  const re = /<!--[\s\S]*?(?:-->|$)|<!\[CDATA\[[\s\S]*?(?:\]\]>|$)|<\?[\s\S]*?(?:\?>|$)/g;
+  for (let m; (m = re.exec(text)); ) ranges.push([m.index, m.index + m[0].length]);
+  return ranges;
+}
+
+const inRanges = (ranges: Array<[number, number]>, i: number) =>
+  ranges.some(([a, b]) => i >= a && i < b);
+
+/** Quote-aware scan for the end of an opening tag starting at `from` ("<"). */
+function openTagEnd(text: string, from: number): { end: number; selfClosing: boolean } | null {
+  let quote: string | null = null;
+  for (let i = from + 1; i < text.length; i++) {
+    const ch = text[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { quote = ch; continue; }
+    if (ch === "<") return null;              // malformed: new tag started
+    if (ch === ">") {
+      let j = i - 1;
+      while (j > from && /\s/.test(text[j])) j--;  // allow "/ >"
+      return { end: i + 1, selfClosing: text[j] === "/" };
+    }
   }
-  if (tagStart < 0) return null;
-  const tag = /^<node\b[^>]*?(\/?)>/.exec(text.slice(tagStart));
-  if (!tag) return null;
-  const selfClosing = tag[1] === "/";
-  const bodyStart = tagStart + tag[0].length;
-  const closeIdx = selfClosing ? -1 : text.indexOf("</node>", bodyStart);
-  return { tagStart, tagEnd: bodyStart, bodyStart, bodyEnd: closeIdx < 0 ? bodyStart : closeIdx, selfClosing };
+  return null;                                 // unterminated tag
+}
+
+/** Find the matching close tag with depth counting. */
+function matchingClose(
+  text: string,
+  tag: string,
+  bodyStart: number,
+  ignored: Array<[number, number]>,
+): { bodyEnd: number; blockEnd: number } | null {
+  const re = new RegExp(`<${escapeRe(tag)}(?=[\\s/>])|</${escapeRe(tag)}\\s*>`, "g");
+  re.lastIndex = bodyStart;
+  let depth = 1;
+  for (let m; (m = re.exec(text)); ) {
+    if (inRanges(ignored, m.index)) continue;
+    if (m[0][1] === "/") {
+      if (--depth === 0) return { bodyEnd: m.index, blockEnd: m.index + m[0].length };
+    } else {
+      const open = openTagEnd(text, m.index);
+      if (!open) break;                        // malformed
+      if (!open.selfClosing) depth++;
+      re.lastIndex = open.end;                 // don't rescan attributes
+    }
+  }
+  return null;
+}
+
+export function xmlNodeBlockAt(
+  text: string,
+  offset: number,
+  tagNames: readonly string[] = NODE_TAG_NAMES,
+): TXmlNodeBlock | null {
+  if (offset < 0 || offset > text.length || tagNames.length === 0) return null;
+
+  const ignored = ignoredRanges(text);
+  const re = new RegExp(`<(${tagNames.map(escapeRe).join("|")})(?=[\\s/>])`, "g");
+
+  // Collect all candidate openings starting at or before `offset`.
+  const candidates: Array<{ index: number; tag: string }> = [];
+  for (let m; (m = re.exec(text)) && m.index <= offset; ) {
+    if (!inRanges(ignored, m.index)) candidates.push({ index: m.index, tag: m[1] });
+  }
+
+  // Walk from innermost/nearest outwards and return the first block containing `offset`.
+  for (let i = candidates.length - 1; i >= 0; i--) {
+    const { index: tagStart, tag } = candidates[i];
+    const open = openTagEnd(text, tagStart);
+    if (!open) continue;
+
+    const bodyStart = open.end;
+    let bodyEnd = bodyStart;
+    let blockEnd = bodyStart;
+
+    if (!open.selfClosing) {
+      const close = matchingClose(text, tag, bodyStart, ignored);
+      if (!close) continue;                    // unclosed element -> not a valid block
+      bodyEnd = close.bodyEnd;
+      blockEnd = close.blockEnd;
+    }
+
+    if (offset >= tagStart && offset <= blockEnd) {
+      return { tag, tagStart, tagEnd: bodyStart, bodyStart, bodyEnd, blockEnd, selfClosing: open.selfClosing };
+    }
+  }
+  return null;
 }
 
 function lookupXml(model: editor.ITextModel, request: TParameterRequest, rosVersion: "1" | "2"): TParameterLookup {
