@@ -368,11 +368,9 @@ function pythonNodeBlockAt(text: string, offset: number): { start: number; end: 
 
 function lookupPython(model: editor.ITextModel, request: TParameterRequest): TParameterLookup {
   const offset = rangeOffset(model, request);
-  console.log(`offset: ${JSON.stringify(offset)}`);
   if (offset === null) return { found: false, error: "No node location available for this file" };
   const text = model.getValue();
   const block = pythonNodeBlockAt(text, offset);
-  console.log(`block: ${JSON.stringify(block)}`);
   if (!block) return { found: false, error: "No node definition found at the reported position" };
 
   const short = shortParamName(request.paramName, request.nodeName);
