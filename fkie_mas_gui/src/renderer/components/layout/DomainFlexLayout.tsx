@@ -4,7 +4,7 @@ import FeaturedPlayListIcon from "@mui/icons-material/FeaturedPlayList";
 import TopicIcon from "@mui/icons-material/Topic";
 import { Box, Menu, MenuItem } from "@mui/material";
 import * as FlexLayout from "flexlayout-react";
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 
 import {
@@ -23,7 +23,7 @@ import { usePersistentLayout } from "@/renderer/hooks/usePersistentLayout";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { DOMAIN_LAYOUT_COMPONENTS, LAYOUT_TABS } from "./LayoutDefines";
 import { hasJsonNode, TJsonNode } from "./LayoutPersistance";
-import { isMovableTab, takeOutTab, TMovableTab } from "./LayoutTabMove";
+import { isMovableTab, TMovableTab, takeOutTab } from "./LayoutTabMove";
 import {
   collapseBorderOnLastTab,
   deleteTabAndSelectNodes,
@@ -71,7 +71,7 @@ function createDefaultDomainLayout(contentId: TContentId): FlexLayout.IJsonModel
 
 type DomainFlexLayoutProps = {
   storageKey: string;
-  insideTabId: string;
+  insideTabId?: string;
   contentId: TContentId;
   factory: (tabNode: FlexLayout.TabNode, contentId: TContentId) => JSX.Element;
   onRenderTab: (node: FlexLayout.TabNode, renderValues: FlexLayout.ITabRenderValues) => void;
@@ -80,11 +80,10 @@ type DomainFlexLayoutProps = {
 };
 
 export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | null {
-  const { contentId, storageKey, insideTabId, factory, onRenderTab, onCloseTab, onMoveTabOut } = props;
+  const { contentId, storageKey, factory, onRenderTab, onCloseTab, onMoveTabOut } = props;
   const [tabMenu, setTabMenu] = useState<{ tabId: string; left: number; top: number } | null>(null);
 
   const rosCtx = useRosContext();
-  const [forceUpdate, setForceUpdate] = useReducer((x) => x + 1, 0);
 
   const nodesTabId = `${LAYOUT_TABS.NODES}-${contentToId(contentId)}`;
   const defaultLayout = useMemo(() => createDefaultDomainLayout(contentId), [contentId]);
@@ -221,9 +220,6 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
 
   useCustomEventListener(EVENT_SELECT_TAB, (data: TEventSelectTab) => {
     // when the surrounding domain tab becomes active again, force a resize
-    if (data.tabId === insideTabId) {
-      setForceUpdate();
-    }
     model?.doAction(FlexLayout.Actions.selectTab(data.tabId));
   });
 
@@ -306,7 +302,11 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
         }}
         onAuxMouseClick={(node, event) => {
           // close tabs with middle mouse click
-          if (event?.button === 1 && node.getType() === "tab" && (node as FlexLayout.TabSetNode | FlexLayout.TabNode).isEnableClose()) {
+          if (
+            event?.button === 1 &&
+            node.getType() === "tab" &&
+            (node as FlexLayout.TabSetNode | FlexLayout.TabNode).isEnableClose()
+          ) {
             deleteTab(node.getId());
           }
         }}
