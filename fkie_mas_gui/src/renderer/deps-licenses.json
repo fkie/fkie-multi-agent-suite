@@ -231,13 +231,6 @@
     "link": "git+https://github.com/corygibbons/react-file-icon.git"
   },
   {
-    "name": "react-json-tree",
-    "licenseType": "MIT",
-    "installedVersion": "0.20.0",
-    "author": "Shu Uesugi <shu@chibicode.com> (http://github.com/chibicode)",
-    "link": "git+https://github.com/reduxjs/redux-devtools.git"
-  },
-  {
     "name": "react-router-dom",
     "licenseType": "MIT",
     "installedVersion": "6.30.4",
