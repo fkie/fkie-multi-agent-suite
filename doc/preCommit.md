@@ -19,6 +19,9 @@ cd fkie_mas_gui && npm ci && cd ..
 
 # Register the hooks in your clone
 pre-commit install --install-hooks
+
+### Skip formatting-only commits in `git blame`
+git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
 
 #### Running hooks manually
@@ -37,3 +40,9 @@ Bump the pinned hook versions and commit the result:
 pre-commit autoupdate
 pre-commit run --all-files
 ```
+
+
+#### Style-only commits
+
+Formatting-only revisions are committed separately as `style: ...` and their
+SHAs are listed in `.git-blame-ignore-revs`.
