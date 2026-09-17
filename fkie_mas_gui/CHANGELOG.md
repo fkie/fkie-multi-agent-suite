@@ -1,5 +1,21 @@
 # Changelog
 
+## 5.11.2 - 17.09.2026
+
+- fix(tsc-typecheck): removed unused variable
+- feat(long-press-button): trigger action on release only when button is focused
+- fix: open logs with setting without {LOG_FILE}
+- fix: enable closing tabs with middle-click in domain layouts
+- docs: updated pre-commit
+- chore: ignore style-only revision in git blame
+- [fkie_mas_daemon, fkie_mas_discovery, fkie_mas_msgs, fkie_mas_pylib, fkie_mas_sync] style: apply pre-commit
+- build: add pre-commit configuration and developer docs
+- chore(gui): consolidate formatting and linting on Biome
+- fix lint warnings
+- removed react-json-tree
+- removed jtest
+- [fkie_mas_daemon] docs(daemon): improve MAS Daemon README
+
 ## 5.11.1 - 16.09.2026
 
 - [fkie_mas_daemon] fix(daemon): use non-default WebSocket port for subscriber and introspection services
@@ -226,7 +242,7 @@ Moved start external app button to hosts row
 
 Wait until the log file has been created when viewing the log
 Fix for issue #12
-Ask for creadentials on github rate limit
+Ask for credentials on github rate limit
 
 ## 5.7.1 - 11.06.2026
 
@@ -433,7 +449,7 @@ Fixed start nodes with removing environment variables
 
 Changed handling of environment provided by launch config
 Moved env from node to launch file and added remove_environment to node
-Fixed read includ files with let arguments in the name
+Fixed read include files with let arguments in the name
 Search for <let .../> declarations and show in hovered info
 Added more document symbols
 Fixed restart nodes if only one not running node should be restarted
@@ -499,7 +515,7 @@ Fixed the display of orphaned nodes from remote providers
 
 Added warning if logger options of a node are not available
 Fixed group selection in node tree
-Fixed showing lifecycle for groups whit non-running nodes
+Fixed showing lifecycle for groups with non-running nodes
 History entries are not deleted when the length of the history is reduced.
 Added history editor for published message
 Adding history editor for published messages
@@ -966,7 +982,7 @@ Fixed remove outdated provider
 Fixed stop system nodes on forced restart
 Added parameter to prepend RMW_IMPLEMENTATION while start mas discovery
 Use local addresses if no discovery node available, but a screen for a node was found
-Remove outdated discoverd daemons
+Remove outdated discovered daemons
 Added icon as indicator for delayed start
 Added the possibility to search for a process of a node to stop
 On click to show screens for a host inform user if no screens available
@@ -1020,7 +1036,7 @@ Added middle click on node to open screen
 Added parameter change detection on reload file
 Focus load button in launch dialog by default
 Fixed update of available screens
-Fixed call service, it was brocken after added action handling
+Fixed call service, it was broken after added action handling
 
 ## 4.2.14 - 03.04.2025
 
@@ -1089,7 +1105,7 @@ Changed default state of visible node details
 
 ## 4.2.6 - 01.03.2025
 
-Prepand RMW_IMPLEMENTATION=rmw_fastrtps_cpp for discovery node
+Prepend RMW_IMPLEMENTATION=rmw_fastrtps_cpp for discovery node
 Replaced get_participants service by latched participants topic for communication between daemon and discovery
 
 ## 4.2.5 - 28.02.2025
@@ -1259,7 +1275,7 @@ Bump version of some depended libraries
 
 ## 3.0.1 - 09.01.2025
 
-Added dependecy python3-netifaces for mas_pylib
+Added dependency python3-netifaces for mas_pylib
 Updated docker files
 Fixed: show screens of not running nodes e.g. ExecuteProcess, see issue #4
 Fixed: daemon for galactic
@@ -1507,7 +1523,7 @@ Select nodes tab on close tab if it is in the same set
 Added option to open editor in external window by default
 Reduced control buttons using key modifiers
 Run refresh nodes callback also if not connected to provider
-Prepand always "RMW_IMPLEMENTATION=rmw_fastrtps_cpp" while start ros2 discovery node
+Prepend always "RMW_IMPLEMENTATION=rmw_fastrtps_cpp" while start ros2 discovery node
 Fixed: detection of running discovery node in ros2
 
 ## 2.3.1 - 26.07.2024
@@ -1580,7 +1596,7 @@ Scroll to the end on log open
 ## 2.1.3 - 18.07.2024
 
 Changed position of node control buttons to left side
-Changed search bars to case insensetive
+Changed search bars to case insensitive
 Changed position of external apps button
 Removed table header for publisher and subscriber in node details panel
 Fixed: warning in package manager
