@@ -1,13 +1,13 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
   "vcs": {
-    "enabled": false,
+    "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": false
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": []
+    "includes": ["**", "!**/out", "!**/dist", "!**/node_modules", "!**/resources"]
   },
   "formatter": {
     "enabled": true,
@@ -19,24 +19,41 @@
     "lineWidth": 120,
     "attributePosition": "auto",
     "bracketSpacing": true,
-    "ignore": [".vscode", "out", "dist", "pnpm-lock.yaml", "LICENSE.md", "tsconfig.json", "tsconfig.*.json"]
+    "includes": [
+      "**",
+      "!**/.vscode",
+      "!**/out",
+      "!**/dist",
+      "!**/pnpm-lock.yaml",
+      "!**/LICENSE.md",
+      "!**/tsconfig.json",
+      "!**/tsconfig.*.json"
+    ]
   },
-  "organizeImports": {
-    "enabled": false
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "style": {
         "useImportType": "off",
-        "noInferrableTypes": "off"
+        "noInferrableTypes": "off",
+        "noNonNullAssertion": "info"
       },
       "complexity": {
         "useLiteralKeys": "warn"
       },
       "correctness": {
         "useExhaustiveDependencies": "warn"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn"
       }
     }
   },
@@ -52,5 +69,16 @@
       "attributePosition": "auto",
       "bracketSpacing": true
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/tsconfig*.json", "**/jsconfig*.json"],
+      "json": {
+        "parser": {
+          "allowComments": true,
+          "allowTrailingCommas": true
+        }
+      }
+    }
+  ]
 }

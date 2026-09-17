@@ -1,6 +1,6 @@
+import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig, externalizeDepsPlugin } from "electron-vite";
-import { resolve } from "node:path";
 
 import cliArgs from "./src/renderer/assets/cliArgs.json";
 
@@ -23,7 +23,7 @@ export default defineConfig({
   main: {
     resolve: {
       alias: {
-        "@": resolve("./src"),
+        "@": resolve(__dirname, "src"),
         "@public": resolve("./src/renderer/assets"),
       },
     },
@@ -32,7 +32,7 @@ export default defineConfig({
   preload: {
     resolve: {
       alias: {
-        "@": resolve("./src"),
+        "@": resolve(__dirname, "src"),
       },
     },
     plugins: [externalizeDepsPlugin()],
@@ -40,7 +40,7 @@ export default defineConfig({
   renderer: {
     resolve: {
       alias: {
-        "@": resolve("./src"),
+        "@": resolve(__dirname, "src"),
       },
     },
     optimizeDeps: {

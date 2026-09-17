@@ -28,13 +28,6 @@
     "link": "git+https://github.com/emotion-js/emotion.git#main"
   },
   {
-    "name": "@eslint/compat",
-    "licenseType": "Apache-2.0",
-    "installedVersion": "1.4.1",
-    "author": "Nicholas C. Zakas",
-    "link": "git+https://github.com/eslint/rewrite.git"
-  },
-  {
     "name": "@monaco-editor/react",
     "licenseType": "MIT",
     "installedVersion": "4.7.0",
@@ -221,7 +214,7 @@
     "licenseType": "MIT",
     "installedVersion": "4.7.1",
     "author": "Matt Zabriskie",
-    "link": "https://github.com/react-grid-layout/react-draggable.git"
+    "link": "git+https://github.com/react-grid-layout/react-draggable.git"
   },
   {
     "name": "react-file-icon",
@@ -233,7 +226,7 @@
   {
     "name": "react-router-dom",
     "licenseType": "MIT",
-    "installedVersion": "6.30.4",
+    "installedVersion": "6.30.6",
     "author": "Remix Software <hello@remix.run>",
     "link": "git+https://github.com/remix-run/react-router.git"
   },
@@ -296,23 +289,9 @@
   {
     "name": "@biomejs/biome",
     "licenseType": "MIT OR Apache-2.0",
-    "installedVersion": "1.9.4",
+    "installedVersion": "2.5.14",
     "author": "Emanuele Stoppa",
     "link": "git+https://github.com/biomejs/biome.git"
-  },
-  {
-    "name": "@electron-toolkit/eslint-config-prettier",
-    "licenseType": "MIT",
-    "installedVersion": "3.0.0",
-    "author": "Alex Wei<https://github.com/alex8088>",
-    "link": "git+https://github.com/alex8088/electron-toolkit.git"
-  },
-  {
-    "name": "@electron-toolkit/eslint-config-ts",
-    "licenseType": "MIT",
-    "installedVersion": "3.1.0",
-    "author": "Alex Wei<https://github.com/alex8088>",
-    "link": "git+https://github.com/alex8088/electron-toolkit.git"
   },
   {
     "name": "@electron-toolkit/tsconfig",
@@ -347,14 +326,14 @@
     "licenseType": "MIT",
     "installedVersion": "8.67.0",
     "author": "n/a",
-    "link": "git+https://github.com/typescript-eslint/typescript-eslint.git"
+    "link": "https://github.com/typescript-eslint/typescript-eslint.git"
   },
   {
     "name": "@typescript-eslint/parser",
     "licenseType": "MIT",
     "installedVersion": "8.67.0",
     "author": "n/a",
-    "link": "git+https://github.com/typescript-eslint/typescript-eslint.git"
+    "link": "https://github.com/typescript-eslint/typescript-eslint.git"
   },
   {
     "name": "@vitejs/plugin-react",
@@ -406,11 +385,11 @@
     "link": "git+https://github.com/sindresorhus/globals.git"
   },
   {
-    "name": "prettier",
+    "name": "jiti",
     "licenseType": "MIT",
-    "installedVersion": "3.9.6",
-    "author": "James Long",
-    "link": "git+https://github.com/prettier/prettier.git"
+    "installedVersion": "2.7.0",
+    "author": "n/a",
+    "link": "git+https://github.com/unjs/jiti.git"
   },
   {
     "name": "react",
@@ -438,7 +417,7 @@
     "licenseType": "MIT",
     "installedVersion": "8.67.0",
     "author": "n/a",
-    "link": "git+https://github.com/typescript-eslint/typescript-eslint.git"
+    "link": "https://github.com/typescript-eslint/typescript-eslint.git"
   },
   {
     "name": "vite",
