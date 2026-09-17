@@ -23,7 +23,7 @@ import { usePersistentLayout } from "@/renderer/hooks/usePersistentLayout";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { DOMAIN_LAYOUT_COMPONENTS, LAYOUT_TABS } from "./LayoutDefines";
 import { hasJsonNode, TJsonNode } from "./LayoutPersistance";
-import { isMovableTab, TMovableTab, takeOutTab } from "./LayoutTabMove";
+import { isMovableTab, takeOutTab, TMovableTab } from "./LayoutTabMove";
 import {
   collapseBorderOnLastTab,
   deleteTabAndSelectNodes,
@@ -273,7 +273,7 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
 
   useEffect(() => {
     window.dispatchEvent(new Event("resize"));
-  }, [forceUpdate]);
+  }, []);
 
   if (!model) return null;
 
@@ -303,6 +303,12 @@ export function DomainFlexLayout(props: DomainFlexLayoutProps): JSX.Element | nu
           if (node.getType() !== "tab" || !isMovableTab(node as FlexLayout.TabNode)) return;
           event.preventDefault();
           setTabMenu({ tabId: node.getId(), left: event.clientX, top: event.clientY });
+        }}
+        onAuxMouseClick={(node, event) => {
+          // close tabs with middle mouse click
+          if (event?.button === 1 && node.getType() === "tab" && (node as FlexLayout.TabSetNode | FlexLayout.TabNode).isEnableClose()) {
+            deleteTab(node.getId());
+          }
         }}
       />
       <Menu
