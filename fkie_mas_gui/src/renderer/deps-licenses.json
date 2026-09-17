@@ -189,13 +189,6 @@
     "link": "git+https://github.com/json5/json5.git"
   },
   {
-    "name": "jtest",
-    "licenseType": "ISC",
-    "installedVersion": "0.0.1",
-    "author": "Jeffrey Liu",
-    "link": "git://github.com/liuch/test-module.git"
-  },
-  {
     "name": "monaco-editor",
     "licenseType": "MIT",
     "installedVersion": "0.56.0",

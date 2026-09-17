@@ -63,7 +63,6 @@
     "hostile": "^1.4.0",
     "idb": "^8.0.3",
     "json5": "^2.2.3",
-    "jtest": "^0.0.1",
     "monaco-editor": "^0.56.0",
     "notistack": "^3.0.2",
     "react-app-polyfill": "^3.0.0",
