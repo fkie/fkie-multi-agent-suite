@@ -1,9 +1,43 @@
-MAS Daemon is an instance which allows the MAS Gui a remote access to configuration files . Through the daemon the launch file can be edited, loaded and the containing nodes executed by MAS GUI.
+### MAS Daemon
 
-The daemon instance is usually launched by MAS Gui through SSH connection. After that the MAS Gui communicates with daemon using WebSockets on port 35430+(ROS_DOMAIN_ID), __35685+(NetworkId) with ROS1__. These ports should be open in the firewall.
+MAS Daemon provides the MAS GUI with remote access to configuration files. It allows the GUI to edit and load launch files and to execute their nodes remotely.
 
-Beside offering remote configuration access to MAS Gui the daemon supports many other features, e.g. system monitoring, forwarding diagnostic messages or auto start/load of launchfiles.
+The daemon is usually started by the MAS GUI through an SSH connection. Once running, the MAS GUI communicates with it via WebSockets using the following ports:
 
-For ROS2 composable nodes, `MAS_COMPONENT_LOAD_TIMEOUT` controls how many seconds autostart waits for the container load service and response. It defaults to 30; set it to 0 to wait until daemon shutdown.
 
-The configuration is stored at *$HOME/.config/ros.fkie/mas_daemon.yaml* and can be changed through MAS Gui for each host.
+- **ROS 2:** `35430 + ROS_DOMAIN_ID`
+- **ROS 1:** `35685 + NetworkId`
+
+Make sure that the corresponding port is allowed by the firewall.
+
+In addition to remote configuration access, MAS Daemon provides features such as:
+
+
+- System monitoring
+- Forwarding of diagnostic messages
+
+- Automatic loading and starting of launch files
+
+#### Environment Variables
+
+
+- **`ROS_DOMAIN_ID`**  
+
+  Determines the WebSocket port offset for ROS 2.
+
+
+- **`MAS_COMPONENT_LOAD_TIMEOUT`** *(ROS 2 only)*  
+
+  Defines how many seconds the autostart process waits for a composable node container's load service and its response.  
+  The default value is `30`. Set it to `0` to wait indefinitely until the daemon is shut down.
+
+
+- **`MAS_SYSTEM_DIAGNOSTIC`** *(ROS 2 only)*  
+
+  Can be used to disable system monitoring.
+
+#### Configuration
+
+The daemon configuration is stored in:
+
+`$HOME/.config/ros.fkie/mas_daemon.yaml`
