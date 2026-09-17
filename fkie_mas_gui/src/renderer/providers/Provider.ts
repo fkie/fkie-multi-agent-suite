@@ -1,4 +1,3 @@
-import { emitCustomEvent } from "react-custom-events";
 import {
   CmdType,
   CmdTypes,
@@ -12,6 +11,7 @@ import {
   TSystemInfo,
 } from "@/types";
 import { TResultParam } from "@/types/TResultParam";
+import { emitCustomEvent } from "react-custom-events";
 import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
 import { getDefaultPortFromRos, ISettingsContext } from "../context/SettingsContext";
 import {
@@ -64,6 +64,8 @@ import { envFromSystemEnv } from "../models/ProviderLaunchConfiguration";
 import { delay, generateUniqueId } from "../utils";
 import ConnectionState from "./ConnectionState";
 import {
+  emitNodeDiagnostic,
+  emitSystemDiagnostics,
   EventProviderActionEvent,
   EventProviderActionIntrospection,
   EventProviderActivity,
@@ -83,8 +85,6 @@ import {
   EventProviderSubscriberEvent,
   EventProviderTimeDiff,
   EventProviderWarnings,
-  emitNodeDiagnostic,
-  emitSystemDiagnostics,
   TEventNodeComposable,
   TEventNodeLifecycle,
 } from "./events";
@@ -553,7 +553,7 @@ export default class Provider implements IProvider {
           const hasLogVar = this.settings().paramLogCommand.includes("{LOG_FILE}");
           const logCmd = hasLogVar
             ? this.settings().paramLogCommand.replaceAll("{LOG_FILE}", logPath.screen_log)
-            : this.settings().paramLogCommand + logPath.screen_log;
+            : `${this.settings().paramLogCommand} ${logPath.screen_log}`;
           result.displayCmd = logCmd.split(";").slice(-1)[0] || "";
           result.cmd = `${logCmd}${KEEP_OPEN}`;
 
@@ -746,7 +746,7 @@ export default class Provider implements IProvider {
           if (this.connection.domainId < 0) {
             // update domain id if we connect using port
             if (this.rosState.ros_domain_id) {
-              this.connection.domainId = Number.parseInt(this.rosState.ros_domain_id);
+              this.connection.domainId = Number.parseInt(this.rosState.ros_domain_id, 10);
             }
           }
           // TODO: visualize warning if hosts are not equal
@@ -1438,11 +1438,11 @@ export default class Provider implements IProvider {
                     // TODO: split node name and get the path step by step from: {ns: {node: {ros__parameters}}}
                   }
                   if (allNodes) {
-                    let rosParameters = allNodes["ros__parameters"];
+                    let rosParameters = allNodes.ros__parameters;
                     if (!rosParameters) {
                       rosParameters = allNodes;
                     }
-                    const capabilityGroup = rosParameters["capability_group"];
+                    const capabilityGroup = rosParameters.capability_group;
                     if (capabilityGroup) {
                       nodeGroup = this.toNodeGroup(`${capabilityGroup}`, uniqueNodeName);
                     }
@@ -1496,7 +1496,7 @@ export default class Provider implements IProvider {
               killTime = LaunchNodeInfo.getEnvParam(launchNode.additional_env, "MAS_KILL_ON_STOP");
             }
             if (killTime !== undefined) {
-              nodes[idxLn].sigkill_timeout = Number.parseInt(killTime as string);
+              nodes[idxLn].sigkill_timeout = Number.parseInt(killTime as string, 10);
             }
           }
 
@@ -1594,7 +1594,7 @@ export default class Provider implements IProvider {
         }
         n.screens = screen.screens;
         n.isLocal = true;
-        n.processIds.push(Number.parseInt(screen.name.split(".")[0]));
+        n.processIds.push(Number.parseInt(screen.name.split(".")[0], 10));
         if (screen.name === "/mas-gui") {
           n.system_node = true;
         }
