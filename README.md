@@ -119,6 +119,10 @@ mas-gui.AppImage --no-sandbox
 
 For ROS interfaces and parameterization see the [ROS Wiki](http://www.ros.org/wiki/multimaster_fkie). For configuration details you find example launch files in each package.
 
+## Development
+
+To ensure consistent code style, we use [pre-commit](./doc/preCommit.md)
+
 ## License
 
 MIT © [Fraunhofer FKIE](https://www.fkie.fraunhofer.de/en.html)

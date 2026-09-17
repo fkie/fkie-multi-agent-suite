@@ -1,0 +1,118 @@
+# Run `pre-commit install --install-hooks` after cloning.
+minimum_pre_commit_version: "3.5.0"
+
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+default_stages: [pre-commit]
+
+# Keep the whole repo out of scope for generated and vendored trees.
+exclude: |
+  (?x)^(
+      fkie_mas_gui/out/.*|
+      fkie_mas_gui/dist/.*|
+      fkie_mas_gui/resources/.*|
+      .*/node_modules/.*|
+      .*\.min\.(js|css)|
+      .*\.svg
+  )$
+
+repos:
+  # ---------------------------------------------------------------- hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+        # Lockfiles legitimately exceed the limit.
+        exclude: ^fkie_mas_gui/package-lock\.json$
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-xml
+      - id: check-toml
+      - id: check-json
+        # tsconfig*.json and .vscode/*.json are JSONC, not strict JSON.
+        exclude: |
+          (?x)^(
+              (.*/)?tsconfig.*\.json|
+              (.*/)?\.vscode/.*\.json|
+              (.*/)?biome\.jsonc?
+          )$
+
+  # ------------------------------------------------------------------ python
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.8
+    hooks:
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # ------------------------------------------------- javascript / typescript
+  # Biome owns formatting, import sorting and non type-aware linting.
+  # --config-path points at the directory holding biome.json, so paths
+  # handed over by pre-commit stay relative to the repository root.
+  - repo: local
+    hooks:
+      - id: biome-check
+        name: biome check
+        language: system
+        entry: >
+          bash -c 'cd fkie_mas_gui && exec ./node_modules/.bin/biome check --write
+          --no-errors-on-unmatched --files-ignore-unknown=true "${@#fkie_mas_gui/}"' biome-check
+        files: ^fkie_mas_gui/.*\.(ts|tsx|js|jsx|mjs|cjs|json|jsonc)$
+        # Never let a formatter touch the lockfile.
+        exclude: ^fkie_mas_gui/package-lock\.json$
+        pass_filenames: true
+
+  # ----------------------------------------------------------- commit message
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, chore, docs, style, refactor, perf, test, build, ci, revert]
+
+  # ------------------------------------------------------------- spell check
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+        additional_dependencies: [tomli]
+        exclude: ^fkie_mas_gui/package-lock\.json$
+
+  # --------------------------------------------------------------- secrets
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  # ------------------------------------------------ slow gates: pre-push only
+  - repo: local
+    hooks:
+      - id: tsc-typecheck
+        name: tsc --noEmit (gui)
+        language: system
+        entry: bash -c 'cd fkie_mas_gui && npm run typecheck'
+        files: ^fkie_mas_gui/.*\.(ts|tsx)$
+        pass_filenames: false
+        require_serial: true
+        stages: [pre-push]
+
+      - id: eslint-typeaware
+        name: eslint (type-aware rules)
+        language: system
+        entry: bash -c 'cd fkie_mas_gui && npx --no eslint --max-warnings=0 .'
+        files: ^fkie_mas_gui/.*\.(ts|tsx|js|jsx|mjs|cjs)$
+        pass_filenames: false
+        require_serial: true
+        stages: [pre-push]
