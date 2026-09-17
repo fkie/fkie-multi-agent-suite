@@ -34,11 +34,19 @@ export class ModelRegistry {
   }
 
   create(editorId: string, uri: string, content: string, language: string): editor.ITextModel {
-    let model = this.get(uri);
-    if (model) {
-      model.dispose();
+    // Dispose and unregister a previously created model for the same URI
+    const existing = this.get(uri);
+    if (existing) {
+      existing.dispose();
+      this.models.delete(uri);
     }
-    model = this.monaco.editor.createModel(content, language, this.monaco.Uri.file(uri));
+
+    const model = this.monaco.editor.createModel(content, language, this.monaco.Uri.file(uri));
+
+    if (!model) {
+      throw new Error(`Failed to create Monaco model for URI "${uri}"`);
+    }
+
     this.models.set(uri, model);
     this.updateRegistry(editorId, model);
 
