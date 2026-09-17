@@ -7,45 +7,46 @@
 # ****************************************************************************
 
 
-import os
 import argparse
 import json
+import os
 import signal
 import sys
 import time
 import traceback
-from typing import Optional
+
 import rclpy
+from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import SubscriberEvent, SubscriberFilter
+from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket.client import WebSocketClient
 from rclpy.duration import Duration
+from rclpy.qos import QoSDurabilityPolicy, QoSReliabilityPolicy
 from rclpy.serialization import deserialize_message
 from rosidl_runtime_py.utilities import get_message
-from rclpy.qos import QoSDurabilityPolicy, QoSReliabilityPolicy
-from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.interface.runtime_interface import SubscriberEvent
-from fkie_mas_pylib.interface.runtime_interface import SubscriberFilter
-from fkie_mas_pylib.defines import ros2_subscriber_nodename_tuple
-from fkie_mas_pylib.websocket.client import WebSocketClient
-from fkie_mas_pylib import formats
+
 import fkie_mas_daemon as nmd
-from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib import formats
+
 from .msg_encoder import MsgEncoder
 
 
 def str2bool(v):
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 class RosSubscriberLauncher:
-    '''
+    """
     Launches the ROS node to forward a topic subscription.
-    '''
+    """
 
     DEFAULT_WINDOWS_SIZE = 5000
 
@@ -56,11 +57,10 @@ class RosSubscriberLauncher:
         parsed_args, remaining_args = self.parser.parse_known_args()
         if parsed_args.help:
             return None
-        self.namespace, self.name = ros2_subscriber_nodename_tuple(
-            parsed_args.topic)
-        print('\33]0;%s\a' % (self.name), end='', flush=True)
+        self.namespace, self.name = ros2_subscriber_nodename_tuple(parsed_args.topic)
+        print("\33]0;%s\a" % (self.name), end="", flush=True)
         self._port = parsed_args.ws_port
-        if os.environ.get('ROS_DISTRO') != 'galactic':
+        if os.environ.get("ROS_DISTRO") != "galactic":
             signal.signal(signal.SIGTERM, self.exit_gracefully)
             signal.signal(signal.SIGINT, self.exit_gracefully)
         rclpy.init(args=remaining_args)
@@ -85,7 +85,7 @@ class RosSubscriberLauncher:
         self._latched_messages = []
         # stats parameter
         self._last_received_ts = 0
-        self._msg_t0 = -1.
+        self._msg_t0 = -1.0
         self._msg_tn = 0
         self._times = []
         self._bytes = []
@@ -104,8 +104,7 @@ class RosSubscriberLauncher:
         #                                # history=QoSHistoryPolicy.KEEP_LAST,
         #                                # reliability=QoSReliabilityPolicy.RELIABLE)
         #                                )
-        self.wsClient.subscribe(
-            f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
+        self.wsClient.subscribe(f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
         self.wsClient.subscribe("event", self._on_ws_event)
         self._on_shutdown = False
         self.__msg_class = get_message(self._message_type)
@@ -114,87 +113,95 @@ class RosSubscriberLauncher:
         # self.sub = nmd.ros_node.create_subscription(
         #     self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
         self.sub_raw = nmd.ros_node.create_subscription(
-            self.__msg_class, self._topic, self._msg_handle_raw, qos_profile=qos_state_profile, raw=True)
+            self.__msg_class, self._topic, self._msg_handle_raw, qos_profile=qos_state_profile, raw=True
+        )
 
     def __del__(self):
         self.stop()
 
     def stop(self):
-        if hasattr(self, 'wsClient'):
+        if hasattr(self, "wsClient"):
             if self.wsClient:
                 self.wsClient.shutdown()
                 self.wsClient = None
 
-    def exit_gracefully(self, signum = -1, frame = None):
+    def exit_gracefully(self, signum=-1, frame=None):
         if self._on_shutdown:
             return
         self._on_shutdown = True
-        print('shutdown rclpy')
+        print("shutdown rclpy")
         self.stop()
         if rclpy.ok():
             self.sub_raw.destroy()
             rclpy.shutdown()
-        print('bye!')
+        print("bye!")
 
     def _on_ws_event(self, msg):
         if msg.type == "subs" and msg.count == 0:
             if msg.uri == f"ros.subscriber.event.{self._topic.replace('/', '_')}":
-                Log.info(f"No websocket subscriptions for 'ros.subscriber.event.{self._topic.replace('/', '_')}' -> exit!")
+                Log.info(
+                    f"No websocket subscriptions for 'ros.subscriber.event.{self._topic.replace('/', '_')}' -> exit!"
+                )
                 self.exit_gracefully()
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
 
-    def profile_configure_short_keys(self,
-                                     profile: rclpy.qos.QoSProfile = None, reliability: Optional[str] = None,
-                                     durability: Optional[str] = None, depth: Optional[int] = None, history: Optional[str] = None,
-                                     liveliness: Optional[str] = None, liveliness_lease_duration_s: Optional[int] = None,
-                                     ) -> rclpy.qos.QoSProfile:
+    def profile_configure_short_keys(
+        self,
+        profile: rclpy.qos.QoSProfile = None,
+        reliability: str | None = None,
+        durability: str | None = None,
+        depth: int | None = None,
+        history: str | None = None,
+        liveliness: str | None = None,
+        liveliness_lease_duration_s: int | None = None,
+    ) -> rclpy.qos.QoSProfile:
         """Configure a QoSProfile given a profile, and optional overrides."""
         if history:
-            profile.history = rclpy.qos.QoSHistoryPolicy.get_from_short_key(
-                history)
+            profile.history = rclpy.qos.QoSHistoryPolicy.get_from_short_key(history)
         if durability:
-            profile.durability = rclpy.qos.QoSDurabilityPolicy.get_from_short_key(
-                durability)
+            profile.durability = rclpy.qos.QoSDurabilityPolicy.get_from_short_key(durability)
         if reliability:
-            profile.reliability = rclpy.qos.QoSReliabilityPolicy.get_from_short_key(
-                reliability)
+            profile.reliability = rclpy.qos.QoSReliabilityPolicy.get_from_short_key(reliability)
         if liveliness:
-            profile.liveliness = rclpy.qos.QoSLivelinessPolicy.get_from_short_key(
-                liveliness)
+            profile.liveliness = rclpy.qos.QoSLivelinessPolicy.get_from_short_key(liveliness)
         if liveliness_lease_duration_s and liveliness_lease_duration_s >= 0:
-            profile.liveliness_lease_duration = Duration(
-                seconds=liveliness_lease_duration_s)
+            profile.liveliness_lease_duration = Duration(seconds=liveliness_lease_duration_s)
         if depth and depth >= 0:
             profile.depth = depth
         else:
-            if (profile.durability == rclpy.qos.QoSDurabilityPolicy.TRANSIENT_LOCAL
-                    and profile.depth == 0):
+            if profile.durability == rclpy.qos.QoSDurabilityPolicy.TRANSIENT_LOCAL and profile.depth == 0:
                 profile.depth = 1
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
-    def qos_profile_from_short_keys(self,
-                                    preset_profile: str, reliability: Optional[str] = None, durability: Optional[str] = None,
-                                    depth: Optional[int] = None, history: Optional[str] = None, liveliness: Optional[str] = None,
-                                    liveliness_lease_duration_s: Optional[float] = None,
-                                    ) -> rclpy.qos.QoSProfile:
+    def qos_profile_from_short_keys(
+        self,
+        preset_profile: str,
+        reliability: str | None = None,
+        durability: str | None = None,
+        depth: int | None = None,
+        history: str | None = None,
+        liveliness: str | None = None,
+        liveliness_lease_duration_s: float | None = None,
+    ) -> rclpy.qos.QoSProfile:
         """Construct a QoSProfile given the name of a preset, and optional overrides."""
         # Build a QoS profile based on user-supplied arguments
-        profile = rclpy.qos.QoSPresetProfiles.get_from_short_key(
-            preset_profile)
+        profile = rclpy.qos.QoSPresetProfiles.get_from_short_key(preset_profile)
         self.profile_configure_short_keys(
-            profile, reliability, durability, depth, history, liveliness, liveliness_lease_duration_s)
+            profile, reliability, durability, depth, history, liveliness, liveliness_lease_duration_s
+        )
         return profile
 
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
     def choose_qos(self, args, topic):
-        if (args.qos_reliability is not None or
-                args.qos_durability is not None or
-                args.qos_depth is not None or
-                args.qos_history is not None or
-                args.qos_liveliness is not None or
-                args.qos_liveliness_lease_duration_seconds is not None):
-
+        if (
+            args.qos_reliability is not None
+            or args.qos_durability is not None
+            or args.qos_depth is not None
+            or args.qos_history is not None
+            or args.qos_liveliness is not None
+            or args.qos_liveliness_lease_duration_seconds is not None
+        ):
             return self.qos_profile_from_short_keys(
                 args.qos_profile,
                 reliability=args.qos_reliability,
@@ -202,10 +209,10 @@ class RosSubscriberLauncher:
                 depth=args.qos_depth,
                 history=args.qos_history,
                 liveliness=args.qos_liveliness,
-                liveliness_lease_duration_s=args.qos_liveliness_lease_duration_seconds)
+                liveliness_lease_duration_s=args.qos_liveliness_lease_duration_seconds,
+            )
 
-        qos_profile = rclpy.qos.QoSPresetProfiles.get_from_short_key(
-            args.qos_profile)
+        qos_profile = rclpy.qos.QoSPresetProfiles.get_from_short_key(args.qos_profile)
         reliability_reliable_endpoints_count = 0
         durability_transient_local_endpoints_count = 0
 
@@ -215,9 +222,9 @@ class RosSubscriberLauncher:
             return qos_profile
 
         for info in pubs_info:
-            if (info.qos_profile.reliability == QoSReliabilityPolicy.RELIABLE):
+            if info.qos_profile.reliability == QoSReliabilityPolicy.RELIABLE:
                 reliability_reliable_endpoints_count += 1
-            if (info.qos_profile.durability == QoSDurabilityPolicy.TRANSIENT_LOCAL):
+            if info.qos_profile.durability == QoSDurabilityPolicy.TRANSIENT_LOCAL:
                 durability_transient_local_endpoints_count += 1
 
         # If all endpoints are reliable, ask for reliable
@@ -226,10 +233,10 @@ class RosSubscriberLauncher:
         else:
             if reliability_reliable_endpoints_count > 0:
                 print(
-                    'Some, but not all, publishers are offering '
-                    'QoSReliabilityPolicy.RELIABLE. Falling back to '
-                    'QoSReliabilityPolicy.BEST_EFFORT as it will connect '
-                    'to all publishers'
+                    "Some, but not all, publishers are offering "
+                    "QoSReliabilityPolicy.RELIABLE. Falling back to "
+                    "QoSReliabilityPolicy.BEST_EFFORT as it will connect "
+                    "to all publishers"
                 )
             qos_profile.reliability = QoSReliabilityPolicy.BEST_EFFORT
 
@@ -239,10 +246,10 @@ class RosSubscriberLauncher:
         else:
             if durability_transient_local_endpoints_count > 0:
                 print(
-                    'Some, but not all, publishers are offering '
-                    'QoSDurabilityPolicy.TRANSIENT_LOCAL. Falling back to '
-                    'QoSDurabilityPolicy.VOLATILE as it will connect '
-                    'to all publishers'
+                    "Some, but not all, publishers are offering "
+                    "QoSDurabilityPolicy.TRANSIENT_LOCAL. Falling back to "
+                    "QoSDurabilityPolicy.VOLATILE as it will connect "
+                    "to all publishers"
                 )
             qos_profile.durability = QoSDurabilityPolicy.VOLATILE
 
@@ -258,8 +265,7 @@ class RosSubscriberLauncher:
         except Exception:
             # on load error the process will be killed to notify user
             # in node_manager about error
-            self.ros_node.get_logger().warning('Start failed: %s' %
-                                               traceback.format_exc())
+            self.ros_node.get_logger().warning("Start failed: %s" % traceback.format_exc())
             sys.stdout.write(traceback.format_exc())
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
@@ -269,76 +275,101 @@ class RosSubscriberLauncher:
     # from https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/api/__init__.py
     def add_qos_arguments(self, parser: argparse.ArgumentParser, subscribe_or_publish: str, default_profile_str):
         parser.add_argument(
-            '--qos-profile',
+            "--qos-profile",
             choices=rclpy.qos.QoSPresetProfiles.short_keys(),
-            help=(
-                f'Quality of service preset profile to {subscribe_or_publish} with'
-                f' (default: {default_profile_str})'),
-            default=default_profile_str)
-        default_profile = rclpy.qos.QoSPresetProfiles.get_from_short_key(
-            default_profile_str)
+            help=(f"Quality of service preset profile to {subscribe_or_publish} with (default: {default_profile_str})"),
+            default=default_profile_str,
+        )
+        default_profile = rclpy.qos.QoSPresetProfiles.get_from_short_key(default_profile_str)
         parser.add_argument(
-            '--qos-depth', metavar='N', type=int,
-            help=(
-                f'Queue size setting to {subscribe_or_publish} with '
-                '(overrides depth value of --qos-profile option)'))
+            "--qos-depth",
+            metavar="N",
+            type=int,
+            help=(f"Queue size setting to {subscribe_or_publish} with (overrides depth value of --qos-profile option)"),
+        )
         parser.add_argument(
-            '--qos-history',
+            "--qos-history",
             choices=rclpy.qos.QoSHistoryPolicy.short_keys(),
             help=(
-                f'History of samples setting to {subscribe_or_publish} with '
-                '(overrides history value of --qos-profile option, default: '
-                f'{default_profile.history.short_key})'))
+                f"History of samples setting to {subscribe_or_publish} with "
+                "(overrides history value of --qos-profile option, default: "
+                f"{default_profile.history.short_key})"
+            ),
+        )
         parser.add_argument(
-            '--qos-reliability',
+            "--qos-reliability",
             choices=rclpy.qos.QoSReliabilityPolicy.short_keys(),
             help=(
-                f'Quality of service reliability setting to {subscribe_or_publish} with '
-                '(overrides reliability value of --qos-profile option, default: '
-                'Compatible profile with running endpoints )'))
+                f"Quality of service reliability setting to {subscribe_or_publish} with "
+                "(overrides reliability value of --qos-profile option, default: "
+                "Compatible profile with running endpoints )"
+            ),
+        )
         parser.add_argument(
-            '--qos-durability',
+            "--qos-durability",
             choices=rclpy.qos.QoSDurabilityPolicy.short_keys(),
             help=(
-                f'Quality of service durability setting to {subscribe_or_publish} with '
-                '(overrides durability value of --qos-profile option, default: '
-                'Compatible profile with running endpoints )'))
+                f"Quality of service durability setting to {subscribe_or_publish} with "
+                "(overrides durability value of --qos-profile option, default: "
+                "Compatible profile with running endpoints )"
+            ),
+        )
         parser.add_argument(
-            '--qos-liveliness',
+            "--qos-liveliness",
             choices=rclpy.qos.QoSLivelinessPolicy.short_keys(),
             help=(
-                f'Quality of service liveliness setting to {subscribe_or_publish} with '
-                '(overrides liveliness value of --qos-profile option'))
+                f"Quality of service liveliness setting to {subscribe_or_publish} with "
+                "(overrides liveliness value of --qos-profile option"
+            ),
+        )
         parser.add_argument(
-            '--qos-liveliness-lease-duration-seconds',
+            "--qos-liveliness-lease-duration-seconds",
             type=float,
             help=(
-                f'Quality of service liveliness lease duration setting to {subscribe_or_publish} '
-                'with (overrides liveliness lease duration value of --qos-profile option'))
+                f"Quality of service liveliness lease duration setting to {subscribe_or_publish} "
+                "with (overrides liveliness lease duration value of --qos-profile option"
+            ),
+        )
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--ws_port', nargs='?', type=int,
-                            required=True,  help='port for ws server')
-        parser.add_argument('-t', '--topic', nargs='?', required=True,
-                            help="Name of the ROS topic to listen to (e.g. '/chatter')")
-        parser.add_argument("-m", "--message_type", nargs='?', required=True,
-                            help="Type of the ROS message (e.g. 'std_msgs/msg/String')")
-        parser.add_argument('--no_data', action='store_true',
-                            help='Report only statistics without message content.')
-        parser.add_argument('--no_arr', action='store_true',
-                            help='Exclude arrays.')
-        parser.add_argument('--no_str', action='store_true',
-                            help='Exclude string fields.')
-        parser.add_argument('--hz', nargs='?', type=int, default=1,
-                            help='Rate to forward messages. Ignored on latched topics. Disabled by 0.')
-        parser.add_argument('--window', nargs='?', type=int, default=0,
-                            help='window size, in # of messages, for calculating rate.')
-        parser.add_argument('--array_items_count', nargs='?', type=int, default=15,
-                            help='Maximum array length in messages reported to the gui')
-        parser.add_argument('--tcp_no_delay', action='store_true',
-                            help='use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1).')
-        self.add_qos_arguments(parser, 'subscribe', 'sensor_data')
+        parser.add_argument("--ws_port", nargs="?", type=int, required=True, help="port for ws server")
+        parser.add_argument(
+            "-t", "--topic", nargs="?", required=True, help="Name of the ROS topic to listen to (e.g. '/chatter')"
+        )
+        parser.add_argument(
+            "-m",
+            "--message_type",
+            nargs="?",
+            required=True,
+            help="Type of the ROS message (e.g. 'std_msgs/msg/String')",
+        )
+        parser.add_argument("--no_data", action="store_true", help="Report only statistics without message content.")
+        parser.add_argument("--no_arr", action="store_true", help="Exclude arrays.")
+        parser.add_argument("--no_str", action="store_true", help="Exclude string fields.")
+        parser.add_argument(
+            "--hz",
+            nargs="?",
+            type=int,
+            default=1,
+            help="Rate to forward messages. Ignored on latched topics. Disabled by 0.",
+        )
+        parser.add_argument(
+            "--window", nargs="?", type=int, default=0, help="window size, in # of messages, for calculating rate."
+        )
+        parser.add_argument(
+            "--array_items_count",
+            nargs="?",
+            type=int,
+            default=15,
+            help="Maximum array length in messages reported to the gui",
+        )
+        parser.add_argument(
+            "--tcp_no_delay",
+            action="store_true",
+            help="use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1).",
+        )
+        self.add_qos_arguments(parser, "subscribe", "sensor_data")
         # parser.add_argument('--use_sim_time', type=str2bool, nargs='?', const=True, default=False, help='Enable ROS simulation time (Only ROS2).')
         parser.set_defaults(no_data=False)
         parser.set_defaults(no_arr=False)
@@ -357,7 +388,11 @@ class RosSubscriberLauncher:
         event.latched = self._latched
         json_msg_size = -1
         if not self._no_data:
-            data_str = json.dumps(msg, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str, "array_items_count": self._array_items_count})
+            data_str = json.dumps(
+                msg,
+                cls=MsgEncoder,
+                **{"no_arr": self._no_arr, "no_str": self._no_str, "array_items_count": self._array_items_count},
+            )
             json_msg_size = len(data_str)
             event.data = json.loads(data_str)
         if json_msg_size > 1048576:
@@ -379,7 +414,10 @@ class RosSubscriberLauncher:
                 timeouted = True
         if event.latched or timeouted:
             self.wsClient.publish(
-                f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), latched=self._latched)
+                f"ros.subscriber.event.{self._topic.replace('/', '_')}",
+                json.dumps(event, cls=SelfEncoder),
+                latched=self._latched,
+            )
 
     def _calc_stats(self, msg_size, event):
         current_time = time.time()
@@ -421,7 +459,7 @@ class RosSubscriberLauncher:
         n = len(self._times)
         if n > 1:
             avg = sum_times / n
-            event.rate = 1. / avg if avg > 0. else 0
+            event.rate = 1.0 / avg if avg > 0.0 else 0
 
         # # min and max
         # if self.SHOW_JITTER or self.show_only_rate:
@@ -450,7 +488,7 @@ class RosSubscriberLauncher:
         if resetStats:
             self._count_received = 0
             self._last_received_ts = 0
-            self._msg_t0 = -1.
+            self._msg_t0 = -1.0
             self._msg_tn = 0
             self._times = []
             self._bytes = []

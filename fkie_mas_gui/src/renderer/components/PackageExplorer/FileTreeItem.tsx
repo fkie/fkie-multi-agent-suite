@@ -1,11 +1,10 @@
 import { Box, LinearProgress, Tooltip, Typography } from "@mui/material";
 import { blue } from "@mui/material/colors";
+import { treeItemClasses } from "@mui/x-tree-view";
 import { useRef, useState } from "react";
 import { FileIcon } from "react-file-icon";
-
 import { LAUNCH_FILE_EXTENSIONS } from "@/renderer/context/SettingsContext";
 import { getFileExtension, PathItem } from "@/renderer/models";
-import { treeItemClasses } from "@mui/x-tree-view";
 import StyledTreeItem from "../PackageExplorer/StyledTreeItem";
 import CopyButton from "../UI/CopyButton";
 import defaultFileIconStyles from "./FileIconDefaultStyles";

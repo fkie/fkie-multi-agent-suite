@@ -1,3 +1,4 @@
+import { emitCustomEvent } from "react-custom-events";
 import {
   CmdType,
   CmdTypes,
@@ -11,7 +12,6 @@ import {
   TSystemInfo,
 } from "@/types";
 import { TResultParam } from "@/types/TResultParam";
-import { emitCustomEvent } from "react-custom-events";
 import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
 import { getDefaultPortFromRos, ISettingsContext } from "../context/SettingsContext";
 import {
@@ -63,9 +63,31 @@ import { parseDiagnostics } from "../models/Diagnostics";
 import { envFromSystemEnv } from "../models/ProviderLaunchConfiguration";
 import { delay, generateUniqueId } from "../utils";
 import ConnectionState from "./ConnectionState";
-import ProviderConnection, { TProviderTimestamp, TResultClearPath, TResultStartNode } from "./ProviderConnection";
-import RosProviderState from "./RosProviderState";
-import { TCmdTerminal } from "./TCmdTerminal";
+import {
+  EventProviderActionEvent,
+  EventProviderActionIntrospection,
+  EventProviderActivity,
+  EventProviderDelay,
+  EventProviderDiscovered,
+  EventProviderLaunchList,
+  EventProviderLaunchLoaded,
+  EventProviderNodeStarted,
+  EventProviderPathEvent,
+  EventProviderRemoved,
+  EventProviderRosNodes,
+  EventProviderRosPackages,
+  EventProviderRosServices,
+  EventProviderRosTopics,
+  EventProviderScreens,
+  EventProviderState,
+  EventProviderSubscriberEvent,
+  EventProviderTimeDiff,
+  EventProviderWarnings,
+  emitNodeDiagnostic,
+  emitSystemDiagnostics,
+  TEventNodeComposable,
+  TEventNodeLifecycle,
+} from "./events";
 import {
   EVENT_NODE_COMPOSABLE,
   EVENT_NODE_LIFECYCLE,
@@ -90,31 +112,9 @@ import {
   EVENT_PROVIDER_TIME_DIFF,
   EVENT_PROVIDER_WARNINGS,
 } from "./eventTypes";
-import {
-  emitNodeDiagnostic,
-  emitSystemDiagnostics,
-  EventProviderActionEvent,
-  EventProviderActionIntrospection,
-  EventProviderActivity,
-  EventProviderDelay,
-  EventProviderDiscovered,
-  EventProviderLaunchList,
-  EventProviderLaunchLoaded,
-  EventProviderNodeStarted,
-  EventProviderPathEvent,
-  EventProviderRemoved,
-  EventProviderRosNodes,
-  EventProviderRosPackages,
-  EventProviderRosServices,
-  EventProviderRosTopics,
-  EventProviderScreens,
-  EventProviderState,
-  EventProviderSubscriberEvent,
-  EventProviderTimeDiff,
-  EventProviderWarnings,
-  TEventNodeComposable,
-  TEventNodeLifecycle,
-} from "./events";
+import ProviderConnection, { TProviderTimestamp, TResultClearPath, TResultStartNode } from "./ProviderConnection";
+import RosProviderState from "./RosProviderState";
+import { TCmdTerminal } from "./TCmdTerminal";
 import WebsocketConnection from "./websocket/WebsocketConnection";
 
 export function generateProviderId(host: string, port: number, rosVersion: string, domainId: number) {
@@ -550,8 +550,10 @@ export default class Provider implements IProvider {
         if (replyLogPaths.success && replyLogPaths.paths.length > 0) {
           const logPath = replyLogPaths.paths[0];
           // `tail -f ${logPaths[0].screen_log} \r`,
-          const hasLogVar = this.settings().paramLogCommand.includes("{LOG_FILE}")
-          const logCmd = hasLogVar ? this.settings().paramLogCommand.replaceAll("{LOG_FILE}", logPath.screen_log) : this.settings().paramLogCommand + logPath.screen_log
+          const hasLogVar = this.settings().paramLogCommand.includes("{LOG_FILE}");
+          const logCmd = hasLogVar
+            ? this.settings().paramLogCommand.replaceAll("{LOG_FILE}", logPath.screen_log)
+            : this.settings().paramLogCommand + logPath.screen_log;
           result.displayCmd = logCmd.split(";").slice(-1)[0] || "";
           result.cmd = `${logCmd}${KEEP_OPEN}`;
 
@@ -1485,7 +1487,7 @@ export default class Provider implements IProvider {
 
           // determine sigkill_timeout
           if (!launchNode.sigkill_timeout || launchNode.sigkill_timeout <= 0) {
-            let killTime: RosParameterValue | undefined = undefined;
+            let killTime: RosParameterValue | undefined;
             killTime = LaunchNodeInfo.getParam(nodeParameters || [], launchNode.node_name || "", "mas/kill_on_stop");
             if (killTime === undefined) {
               killTime = LaunchNodeInfo.getParam(nodeParameters || [], launchNode.node_name || "", "nm/kill_on_stop");
@@ -1660,7 +1662,6 @@ export default class Provider implements IProvider {
     }
     return Promise.resolve(true);
   };
-
 
   public updateSystemDiagnostics: (msg: DiagnosticArray | null) => Promise<boolean> = async (msg = null) => {
     let diags = msg;
@@ -2186,7 +2187,7 @@ export default class Provider implements IProvider {
   public stopActionIntrospection: (actionName: string) => Promise<Result> = async (actionName) => {
     if (this.activeIntrospections.includes(actionName)) {
       this.activeIntrospections = this.activeIntrospections.filter((a) => a !== actionName);
-      await this.connection.closeSubscription(this.generateIntrospectionUri(actionName)).catch(() => { });
+      await this.connection.closeSubscription(this.generateIntrospectionUri(actionName)).catch(() => {});
     }
     return this.makeCall(URI.ROS_ACTION_STOP_INTROSPECTION, [actionName], false).then((v: TResultData) =>
       v.result ? (v.data as Result) : new Result(false, v.message as string)
@@ -2236,7 +2237,7 @@ export default class Provider implements IProvider {
   };
 
   public stopServiceIntrospection = async (serviceName: string): Promise<Result> => {
-    await this.connection.closeSubscription(this.generateServiceIntrospectionUri(serviceName)).catch(() => { });
+    await this.connection.closeSubscription(this.generateServiceIntrospectionUri(serviceName)).catch(() => {});
     return this.makeCall("ros.service.introspection.stop", [serviceName], false).then((v: TResultData) =>
       v.result ? (v.data as Result) : new Result(false, v.message as string)
     );
@@ -2461,13 +2462,15 @@ export default class Provider implements IProvider {
   };
 
   private getSystemDiagnostics: () => Promise<DiagnosticArray | null> = async () => {
-    const result = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_DIAGNOSTICS, [], false).then((value: TResultData) => {
-      if (value.result) {
-        return value.data as DiagnosticArray;
+    const result = await this.makeCall(URI.ROS_PROVIDER_GET_SYSTEM_DIAGNOSTICS, [], false).then(
+      (value: TResultData) => {
+        if (value.result) {
+          return value.data as DiagnosticArray;
+        }
+        this.log().error(`Provider [${this.id}]: Error at getSystemDiagnostics()`, `${value.message}`);
+        return null;
       }
-      this.log().error(`Provider [${this.id}]: Error at getSystemDiagnostics()`, `${value.message}`);
-      return null;
-    });
+    );
     return Promise.resolve(result);
   };
 
@@ -2946,8 +2949,8 @@ export default class Provider implements IProvider {
   };
 
   /**
- * Update system diagnostics reported in the list of DiagnosticsArray.
- */
+   * Update system diagnostics reported in the list of DiagnosticsArray.
+   */
   private callbackSystemDiagnosticsUpdate: (msg: JSONObject) => void = async (msg) => {
     this.log().debugInterface(URI.ROS_PROVIDER_SYSTEM_DIAGNOSTICS, msg, "", this.id);
     if (!msg) {
@@ -2955,7 +2958,6 @@ export default class Provider implements IProvider {
     }
     this.updateSystemDiagnostics(msg as unknown as DiagnosticArray);
   };
-
 
   /**
    * Update the provider warnings reported in the list of SystemWarningGroup.

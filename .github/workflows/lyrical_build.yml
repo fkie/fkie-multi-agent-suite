@@ -39,4 +39,3 @@ jobs:
         with:
           target-ros2-distro: lyrical
           skip-tests: true
-

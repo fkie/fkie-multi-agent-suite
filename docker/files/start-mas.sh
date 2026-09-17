@@ -6,4 +6,3 @@ ros2 run fkie_mas_daemon mas-remote-node.py --respawn --name=ttyd-7681 --command
 
 cd ${ROS_WS}/src/fkie-multi-agent-suite/fkie_mas_gui
 npm run server
-

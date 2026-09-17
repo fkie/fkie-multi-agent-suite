@@ -1,8 +1,7 @@
-import { JSONValue } from "@/types";
 import { useCallback, useContext, useEffect, useRef } from "react";
-
 import { AppStateContext } from "@/renderer/context/AppStateContext";
 import { MigrationEntry } from "@/renderer/db/persistanceCore";
+import { JSONValue } from "@/types";
 
 /* ======================== Types =========================== */
 
@@ -294,7 +293,6 @@ export function useAppState<T>(
       };
       ctx.registerMigrations([entry]);
     }
-     
   }, [compositeKey]);
 
   /* ================ Read Record ================ */
@@ -384,7 +382,6 @@ export function useAppState<T>(
       ctx.remove(namespace, key);
     }
     // Dependencies use primitives only to avoid reference-change loops
-     
   }, [needsMigration, compositeKey, recordVersion, currentVersion]);
 
   /* ================ Write (supports functional updates) ================ */
@@ -401,7 +398,7 @@ export function useAppState<T>(
         ctx.set(namespace, key, json, currentVersion);
       }
     },
-     
+
     [ctx, compositeKey, options?.debounce, options?.debounceMs, currentVersion]
   );
 
@@ -425,7 +422,6 @@ export function useAppState<T>(
       null,
       2
     );
-     
   }, [value, compositeKey, currentVersion]);
 
   /* ================ Import ================ */
@@ -474,7 +470,7 @@ export function useAppState<T>(
         return false;
       }
     },
-     
+
     [ctx, compositeKey, options?.debounce, options?.debounceMs, currentVersion]
   );
 

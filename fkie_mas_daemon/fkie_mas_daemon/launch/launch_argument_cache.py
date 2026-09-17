@@ -8,20 +8,12 @@
 
 import os
 import re
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import NamedTuple
-from typing import Optional
-from typing import Tuple
-
+from collections.abc import Callable
+from typing import Any, NamedTuple
 
 from fkie_mas_pylib.logging.logging import Log
 
-from .caches import LruTtlCache
-from .caches import MISSING
-from .caches import normalize_path
-from .caches import stat_fingerprint
+from .caches import MISSING, LruTtlCache, normalize_path, stat_fingerprint
 
 
 class _Uncacheable:
@@ -52,9 +44,9 @@ class LaunchArgTemplate(NamedTuple):
     """
 
     name: str
-    default_value: Optional[str]
-    description: Optional[str]
-    choices: Tuple[str, ...]
+    default_value: str | None
+    description: str | None
+    choices: tuple[str, ...]
 
 
 class LaunchArgumentCache:
@@ -78,11 +70,7 @@ class LaunchArgumentCache:
     an additional safety net if included files are not observed reliably.
     """
 
-    def __init__(
-        self,
-        ttl: float = 0.0,
-        max_size: int = 64
-    ) -> None:
+    def __init__(self, ttl: float = 0.0, max_size: int = 64) -> None:
         """
         :param ttl:
             Entry lifetime in seconds. Zero disables expiration.
@@ -103,7 +91,7 @@ class LaunchArgumentCache:
         return stat_fingerprint(path)
 
     @classmethod
-    def _stable_text(cls, value: Any) -> Optional[str]:
+    def _stable_text(cls, value: Any) -> str | None:
         """
         Return a stable textual representation of a launch configuration value.
 
@@ -155,8 +143,7 @@ class LaunchArgumentCache:
         return text
 
     @classmethod
-    def _context_fingerprint(cls, context) -> Optional[
-            Tuple[Tuple[str, str], ...]]:
+    def _context_fingerprint(cls, context) -> tuple[tuple[str, str], ...] | None:
         """
         Return a stable fingerprint for launch configuration values.
 
@@ -172,9 +159,7 @@ class LaunchArgumentCache:
         try:
             configurations = context.launch_configurations.items()
         except Exception as error:
-            Log.debug(
-                f"LaunchArgumentCache: cannot read launch configurations: "
-                f"{error}")
+            Log.debug(f"LaunchArgumentCache: cannot read launch configurations: {error}")
             return None
 
         entries = []
@@ -188,23 +173,18 @@ class LaunchArgumentCache:
                     Log.debug(
                         f"LaunchArgumentCache: launch configuration {key!r} "
                         f"has no stable representation, caching is disabled "
-                        f"for this request")
+                        f"for this request"
+                    )
                     return None
 
                 entries.append((key_text, value_text))
         except Exception as error:
-            Log.debug(
-                f"LaunchArgumentCache: cannot build context fingerprint: "
-                f"{error}")
+            Log.debug(f"LaunchArgumentCache: cannot build context fingerprint: {error}")
             return None
 
         return tuple(sorted(entries))
 
-    def make_key(
-        self,
-        path: str,
-        context
-    ) -> Tuple:
+    def make_key(self, path: str, context) -> tuple:
         """
         Build a cache key for a launch file and launch context.
 
@@ -228,16 +208,13 @@ class LaunchArgumentCache:
         )
 
     @staticmethod
-    def is_cacheable(key: Tuple) -> bool:
+    def is_cacheable(key: tuple) -> bool:
         """
         Return whether a key created by make_key() may be cached.
         """
         return UNCACHEABLE not in key
 
-    def get(
-        self,
-        key: Tuple
-    ) -> Optional[Tuple[LaunchArgTemplate, ...]]:
+    def get(self, key: tuple) -> tuple[LaunchArgTemplate, ...] | None:
         """
         Return cached templates or None on a cache miss.
 
@@ -253,29 +230,21 @@ class LaunchArgumentCache:
 
         return value
 
-    def put(
-        self,
-        key: Tuple,
-        templates: Tuple[LaunchArgTemplate, ...]
-    ) -> None:
+    def put(self, key: tuple, templates: tuple[LaunchArgTemplate, ...]) -> None:
         """
         Store parsed launch argument templates.
 
         Uncacheable keys are silently ignored.
         """
         if not self.is_cacheable(key):
-            Log.debug(
-                "LaunchArgumentCache: key is not cacheable, "
-                "result is not stored")
+            Log.debug("LaunchArgumentCache: key is not cacheable, result is not stored")
             return
 
         self._cache.put(key, templates)
 
     def get_or_load(
-        self,
-        key: Tuple,
-        loader: Callable[[], Tuple[LaunchArgTemplate, ...]]
-    ) -> Tuple[LaunchArgTemplate, ...]:
+        self, key: tuple, loader: Callable[[], tuple[LaunchArgTemplate, ...]]
+    ) -> tuple[LaunchArgTemplate, ...]:
         """
         Return cached templates or load them using loader.
 
@@ -297,12 +266,7 @@ class LaunchArgumentCache:
         normalized_path = normalize_path(path)
         real_path = os.path.realpath(normalized_path)
 
-        return self._cache.invalidate_if(
-            lambda key: (
-                isinstance(key, tuple)
-                and len(key) >= 1
-                and key[0] == real_path
-            ))
+        return self._cache.invalidate_if(lambda key: isinstance(key, tuple) and len(key) >= 1 and key[0] == real_path)
 
     def clear(self) -> None:
         """
@@ -310,7 +274,7 @@ class LaunchArgumentCache:
         """
         self._cache.clear()
 
-    def statistics(self) -> Dict[str, object]:
+    def statistics(self) -> dict[str, object]:
         """
         Return cache statistics using the common cache schema.
         """
@@ -326,9 +290,7 @@ LAUNCH_ARGUMENT_CACHE = LaunchArgumentCache(
 )
 
 
-def invalidate_launch_argument_cache(
-    path: Optional[str] = None
-) -> None:
+def invalidate_launch_argument_cache(path: str | None = None) -> None:
     """
     Invalidate launch argument cache entries.
 

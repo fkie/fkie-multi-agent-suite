@@ -1,7 +1,6 @@
 import os
 
 from ament_index_python.packages import get_package_share_directory
-
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -12,23 +11,22 @@ from launch.actions import (
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
-from launch_ros.actions import PushRosNamespace
+from launch_ros.actions import Node, PushRosNamespace
 
 
 def generate_launch_description():
     # Get the launch directory
-    bringup_dir = get_package_share_directory('fkie_mas_daemon')
-    launch_dir = os.path.join(bringup_dir, 'test', 'launch')
+    bringup_dir = get_package_share_directory("fkie_mas_daemon")
+    launch_dir = os.path.join(bringup_dir, "test", "launch")
 
     # Create the launch configuration variables
-    namespace = LaunchConfiguration('namespace')
-    use_sim_time = LaunchConfiguration('use_sim_time')
-    yaml_file = LaunchConfiguration('yaml_file')
-    autostart = LaunchConfiguration('autostart')
-    use_composition = LaunchConfiguration('use_composition')
-    use_respawn = LaunchConfiguration('use_respawn')
-    log_level = LaunchConfiguration('log_level')
+    namespace = LaunchConfiguration("namespace")
+    use_sim_time = LaunchConfiguration("use_sim_time")
+    yaml_file = LaunchConfiguration("yaml_file")
+    autostart = LaunchConfiguration("autostart")
+    use_composition = LaunchConfiguration("use_composition")
+    use_respawn = LaunchConfiguration("use_respawn")
+    log_level = LaunchConfiguration("log_level")
 
     # Map fully qualified names to relative ones so the node's namespace can be prepended.
     # In case of the transforms (tf), currently, there doesn't seem to be a better alternative
@@ -36,46 +34,42 @@ def generate_launch_description():
     # https://github.com/ros/robot_state_publisher/pull/30
     # TODO(orduno) Substitute with `PushNodeRemapping`
     #              https://github.com/ros2/launch_ros/issues/56
-    remappings = [('/tf', 'tf'), ('/tf_static', 'tf_static')]
+    remappings = [("/tf", "tf"), ("/tf_static", "tf_static")]
 
-    example_envvar = SetEnvironmentVariable(
-        'EXAMPLE_ENV_VAR', '1'
-    )
+    example_envvar = SetEnvironmentVariable("EXAMPLE_ENV_VAR", "1")
 
-    declare_namespace_cmd = DeclareLaunchArgument(
-        'namespace', default_value='', description='Top-level namespace'
-    )
+    declare_namespace_cmd = DeclareLaunchArgument("namespace", default_value="", description="Top-level namespace")
 
     declare_yaml_file = DeclareLaunchArgument(
-        'yaml_file', default_value='', description='Full path to yaml file to load'
+        "yaml_file", default_value="", description="Full path to yaml file to load"
     )
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
-        'use_sim_time',
-        default_value='False',
-        description='Use simulation (Gazebo) clock if true',
+        "use_sim_time",
+        default_value="False",
+        description="Use simulation (Gazebo) clock if true",
     )
 
     declare_autostart_cmd = DeclareLaunchArgument(
-        'autostart',
-        default_value='True',
-        description='Automatically startup the stack',
+        "autostart",
+        default_value="True",
+        description="Automatically startup the stack",
     )
 
     declare_use_composition_cmd = DeclareLaunchArgument(
-        'use_composition',
-        default_value='True',
-        description='Whether to use composed bringup',
+        "use_composition",
+        default_value="True",
+        description="Whether to use composed bringup",
     )
 
     declare_use_respawn_cmd = DeclareLaunchArgument(
-        'use_respawn',
-        default_value='False',
-        description='Whether to respawn if a node crashes. Applied when composition is disabled.',
+        "use_respawn",
+        default_value="False",
+        description="Whether to respawn if a node crashes. Applied when composition is disabled.",
     )
 
     declare_log_level_cmd = DeclareLaunchArgument(
-        'log_level', default_value='info', description='log level', choices=['info', 'debug', 'error']
+        "log_level", default_value="info", description="log level", choices=["info", "debug", "error"]
     )
 
     # Specify the actions
@@ -84,13 +78,13 @@ def generate_launch_description():
             PushRosNamespace(namespace),
             Node(
                 condition=IfCondition(use_composition),
-                name='my_container',
-                package='rclcpp_components',
-                executable='component_container_isolated',
-                parameters=[{'autostart': autostart}],
-                arguments=['--ros-args', '--log-level', log_level],
+                name="my_container",
+                package="rclcpp_components",
+                executable="component_container_isolated",
+                parameters=[{"autostart": autostart}],
+                arguments=["--ros-args", "--log-level", log_level],
                 remappings=remappings,
-                output='screen',
+                output="screen",
             ),
             # IncludeLaunchDescription(
             #     PythonLaunchDescriptionSource(
@@ -122,17 +116,15 @@ def generate_launch_description():
             #     }.items(),
             # ),
             IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(
-                    os.path.join(launch_dir, 'test_included_launch.py')
-                ),
+                PythonLaunchDescriptionSource(os.path.join(launch_dir, "test_included_launch.py")),
                 launch_arguments={
-                    'namespace': namespace,
-                    'use_sim_time': use_sim_time,
-                    'autostart': autostart,
-                    'params_file': yaml_file,
-                    'use_composition': use_composition,
-                    'use_respawn': use_respawn,
-                    'container_name': 'my_container',
+                    "namespace": namespace,
+                    "use_sim_time": use_sim_time,
+                    "autostart": autostart,
+                    "params_file": yaml_file,
+                    "use_composition": use_composition,
+                    "use_respawn": use_respawn,
+                    "container_name": "my_container",
                 }.items(),
             ),
         ]

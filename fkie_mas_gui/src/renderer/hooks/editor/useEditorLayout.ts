@@ -18,12 +18,17 @@ export function useEditorLayout() {
 
   const toolbarRef = useRef<HTMLDivElement>();
   const alertRef = useRef<HTMLDivElement>();
-  const { value: savedSideBarUserWidth, set: setSavedSideBarUserWidth } = useAppState<number>("editor", "sidebar-width", fontSize * 20, {
-    version: 1,
-    migrateFrom: {
-      localStorageKey: "Editor:sideBarWidth",
-    },
-  });
+  const { value: savedSideBarUserWidth, set: setSavedSideBarUserWidth } = useAppState<number>(
+    "editor",
+    "sidebar-width",
+    fontSize * 20,
+    {
+      version: 1,
+      migrateFrom: {
+        localStorageKey: "Editor:sideBarWidth",
+      },
+    }
+  );
 
   useEffect(() => {
     setSideBarMinSize(fontSize * 2 + 2);

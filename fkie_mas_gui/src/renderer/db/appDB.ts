@@ -1,5 +1,5 @@
-import { JSONValue } from "@/types";
 import { DBSchema, IDBPDatabase, openDB } from "idb";
+import { JSONValue } from "@/types";
 
 /* ======================== Types =========================== */
 

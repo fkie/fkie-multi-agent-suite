@@ -13,45 +13,43 @@
 # limitations under the License.
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch.actions import ExecuteProcess
 
 
 def generate_launch_description():
-    capability_group = LaunchConfiguration('capability_group')
+    capability_group = LaunchConfiguration("capability_group")
 
     remappings = []
 
     declare_capability_group_cmd = DeclareLaunchArgument(
-        'capability_group', default_value='2 py', description='Capability group of all nodes'
+        "capability_group", default_value="2 py", description="Capability group of all nodes"
     )
 
     load_nodes = GroupAction(
         actions=[
             Node(
-                package='examples_rclcpp_minimal_publisher',
-                executable='publisher_not_composable',
-                name='talker',
-                output='screen',
-                parameters=[{'capability_group': capability_group}],
-                remappings=remappings + [('topic', 'topic_test')],
+                package="examples_rclcpp_minimal_publisher",
+                executable="publisher_not_composable",
+                name="talker",
+                output="screen",
+                parameters=[{"capability_group": capability_group}],
+                remappings=remappings + [("topic", "topic_test")],
             ),
             Node(
-                package='examples_rclcpp_minimal_subscriber',
-                executable='subscriber_not_composable',
-                name='listener',
-                output='screen',
-                parameters=[{'capability_group': capability_group}],
-                remappings=remappings + [('topic', 'topic_test')],
+                package="examples_rclcpp_minimal_subscriber",
+                executable="subscriber_not_composable",
+                name="listener",
+                output="screen",
+                parameters=[{"capability_group": capability_group}],
+                remappings=remappings + [("topic", "topic_test")],
             ),
             ExecuteProcess(
                 cmd=["printenv", "TEST_DAEMON_ENV"],
                 additional_env={"TEST_DAEMON_ENV": "propagated"},
                 name="TEST_DAEMON_ENV",
             ),
-
         ],
     )
 

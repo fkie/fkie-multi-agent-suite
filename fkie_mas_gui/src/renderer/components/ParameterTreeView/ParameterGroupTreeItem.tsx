@@ -2,8 +2,8 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { Box, CircularProgress, Stack, SvgIconTypeMap, Tooltip, Typography } from "@mui/material";
 import { OverridableComponent } from "@mui/material/OverridableComponent";
 import {
-  treeItemClasses,
   TreeItemSlotProps,
+  treeItemClasses,
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";

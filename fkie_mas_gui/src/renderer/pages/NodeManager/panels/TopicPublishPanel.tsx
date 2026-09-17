@@ -34,7 +34,7 @@ import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { DB_MAX_MSGS, TMsgHistoryEntry, useMsgHistory } from "@/renderer/hooks/useMsgHistory";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
-import { LaunchPublishMessage, rosMessageStructToString, RosQos, TRosMessageStruct } from "@/renderer/models";
+import { LaunchPublishMessage, RosQos, rosMessageStructToString, TRosMessageStruct } from "@/renderer/models";
 import { qosFromJson } from "@/renderer/models/RosQos";
 import { Provider } from "@/renderer/providers";
 import { JSONObject } from "@/types";
@@ -92,7 +92,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   useEffect(() => {
     if (currentProviderId) {
       const provider = rosCtx.getProviderById(currentProviderId, true);
-      if (!provider || !provider.isAvailable()) {
+      if (!provider?.isAvailable()) {
         setProvider(null);
       } else {
         setProvider(provider);
@@ -108,7 +108,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
 
   // Make a request to provider and get known message types
   const getAvailableMessageTypes = useCallback(async (): Promise<void> => {
-    if (!provider || !provider.isAvailable()) return;
+    if (!provider?.isAvailable()) return;
     const result: string[] = await provider.getRosMessageMessageTypes();
     if (result.length === 0) return;
     setMessageTypeOptions(result);
@@ -284,7 +284,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
 
   function findQoSFromSub(): RosQos | undefined {
     // find first available subscriber with QoS
-    let qos: RosQos | undefined = undefined;
+    let qos: RosQos | undefined;
     const topics = provider?.rosTopics || [];
     for (const topic of topics) {
       if (topic.name === currentTopicName) {

@@ -6,27 +6,25 @@
 #
 # ****************************************************************************
 
-import rospy
 import time
 
-from fkie_mas_msgs.srv import ListNodes
-from fkie_mas_msgs.srv import ListNodesResponse
-from fkie_mas_msgs.srv import LoadLaunch
-from fkie_mas_msgs.srv import LoadLaunchResponse
-from fkie_mas_msgs.srv import Task
+import rospy
 from fkie_mas_pylib.launch import xml_ros1
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.settings import Settings
 from fkie_mas_pylib.system.timer import RepeatTimer
 from fkie_mas_pylib.websocket import ws_port
 from fkie_mas_pylib.websocket.server import WebSocketServer
+
 from fkie_mas_daemon.version import detect_version
+from fkie_mas_msgs.srv import ListNodes, ListNodesResponse, LoadLaunch, LoadLaunchResponse, Task
+
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .monitor_servicer import MonitorServicer
+from .parameter_servicer import ParameterServicer
 from .screen_servicer import ScreenServicer
 from .version_servicer import VersionServicer
-from .parameter_servicer import ParameterServicer
 
 
 class MASDaemon:
@@ -44,8 +42,7 @@ class MASDaemon:
         self.file_servicer = None
         self.screen_servicer = None
         self.ws_server = WebSocketServer()
-        rospy.Service("~start_launch", LoadLaunch,
-                      self._rosservice_start_launch)
+        rospy.Service("~start_launch", LoadLaunch, self._rosservice_start_launch)
         rospy.Service("~load_launch", LoadLaunch, self._rosservice_load_launch)
         rospy.Service("~run", Task, self._rosservice_start_node)
         rospy.Service("~list_nodes", ListNodes, self._rosservice_list_nodes)
@@ -96,13 +93,10 @@ class MASDaemon:
 
     def _daemon_send_status(self, status: bool):
         # try to send notification to websocket subscribers
-        self.ws_server.publish("ros.daemon.ready", {
-            "status": status, 'timestamp': time.time() * 1000})
+        self.ws_server.publish("ros.daemon.ready", {"status": status, "timestamp": time.time() * 1000})
         if status:
             if self._timer_daemon_ready is None:
-                self._timer_daemon_ready = RepeatTimer(3.0,
-                                                       self._daemon_send_status, args=(
-                                                           True,))
+                self._timer_daemon_ready = RepeatTimer(3.0, self._daemon_send_status, args=(True,))
                 self._timer_daemon_ready.start()
         else:
             if self._timer_daemon_ready is not None:
@@ -119,19 +113,16 @@ class MASDaemon:
         self.screen_servicer.stop()
 
     def load_launch_file(self, path, autostart=False):
-        self.launch_servicer.load_launch_file(
-            xml_ros1.interpret_path(path), autostart)
+        self.launch_servicer.load_launch_file(xml_ros1.interpret_path(path), autostart)
 
     def _rosservice_start_launch(self, request):
         Log.info(f"Service request to load and start {request.path}")
-        self.launch_servicer.load_launch_file(
-            xml_ros1.interpret_path(request.path), True)
+        self.launch_servicer.load_launch_file(xml_ros1.interpret_path(request.path), True)
         return LoadLaunchResponse()
 
     def _rosservice_load_launch(self, request):
         Log.info(f"Service request to load {request.path}")
-        self.launch_servicer.load_launch_file(
-            xml_ros1.interpret_path(request.path), False)
+        self.launch_servicer.load_launch_file(xml_ros1.interpret_path(request.path), False)
         return LoadLaunchResponse()
 
     def _rosservice_start_node(self, req):

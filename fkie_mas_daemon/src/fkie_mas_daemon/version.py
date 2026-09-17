@@ -6,9 +6,10 @@
 #
 # ****************************************************************************
 
-import roslib
 import sys
 import xml.dom.minidom as dom
+
+import roslib
 
 from fkie_mas_daemon.strings import utf8
 
@@ -34,9 +35,7 @@ def detect_version(package):
             if version_tags:
                 version = version_tags[0].firstChild.data
             else:
-                sys.stderr.write(
-                    "version detection: no version tag in package.xml found!"
-                )
+                sys.stderr.write("version detection: no version tag in package.xml found!")
         else:
             sys.stderr.write("version detection: package.xml not found!")
     except Exception as err:

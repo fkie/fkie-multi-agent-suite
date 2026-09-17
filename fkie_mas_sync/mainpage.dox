@@ -2,11 +2,11 @@
 \mainpage
 \htmlinclude manifest.html
 
-\b fkie_mas_sync synchronizes the local ROS master to the remote masters 
+\b fkie_mas_sync synchronizes the local ROS master to the remote masters
   discovered by fkie_mas_discovery node. The registration
-  of topics and services is only perform by local ROS master. 
+  of topics and services is only perform by local ROS master.
 
-<!-- 
+<!--
 Synchronize the local ROS master to the remote masters discovered by
 fkie_mas_discovery node.
 -->

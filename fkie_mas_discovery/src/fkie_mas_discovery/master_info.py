@@ -7,27 +7,23 @@
 # ****************************************************************************
 
 import socket
+
 try:
     import cStringIO as io  # python 2 compatibility
 except ImportError:
     import io
+
 import roslib
 import rospy
+from fkie_mas_pylib.interface.runtime_interface import EndpointInfo, RosNode, RosService, RosTopic, RosTopicId
+from fkie_mas_pylib.system import screen
 
 from .common import get_hostname
 from .filter_interface import FilterInterface
-from fkie_mas_pylib.interface.runtime_interface import EndpointInfo
-from fkie_mas_pylib.interface.runtime_interface import RosNode
-from fkie_mas_pylib.interface.runtime_interface import RosService
-from fkie_mas_pylib.interface.runtime_interface import RosTopic
-from fkie_mas_pylib.interface.runtime_interface import RosTopicId
-from fkie_mas_pylib.system import screen
-
-from typing import List, Dict
 
 
-class NodeInfo(object):
-    '''
+class NodeInfo:
+    """
     The NodeInfo class stores informations about a ROS node.
 
     :param name: the name of the node
@@ -39,10 +35,10 @@ class NodeInfo(object):
                       node are running on the same machine.
 
     :type masteruri: str
-    '''
+    """
 
     def __init__(self, name, masteruri):
-        '''
+        """
         Creates a new NodeInfo for a node with given name.
 
         :param name: the name of the node
@@ -54,13 +50,13 @@ class NodeInfo(object):
                           node are running on the same machine.
 
         :type masteruri: str
-        '''
+        """
         self.__name = name
         self.__masteruri = masteruri
         self.__org_masteruri = masteruri
         self.__uri = None
         self.pid = None
-        '''the process id of the node. Invalid id has a ``None`` value'''
+        """the process id of the node. Invalid id has a ``None`` value"""
         self.__local = False
         self.__local_master = True
         self._publishedTopics = []
@@ -68,90 +64,95 @@ class NodeInfo(object):
         self._services = []
 
     def __repr__(self):
-        return "<NodeInfo name=%s, uri=%s, masteruri=%s, is_local=%s, pub_topics=%d, sub_topics=%d>" % (self.name, self.uri, self.masteruri, self.isLocal, len(self.publishedTopics), len(self.subscribedTopics))
+        return "<NodeInfo name=%s, uri=%s, masteruri=%s, is_local=%s, pub_topics=%d, sub_topics=%d>" % (
+            self.name,
+            self.uri,
+            self.masteruri,
+            self.isLocal,
+            len(self.publishedTopics),
+            len(self.subscribedTopics),
+        )
 
     @property
     def name(self):
-        '''
+        """
         :return: the name of the node.
 
         :rtype: str
-        '''
+        """
         return self.__name
 
     @property
     def uri(self):
-        '''
+        """
         :return: the URI of the RPC API of the node.
 
         :rtype: str
-        '''
+        """
         return self.__uri
 
     @uri.setter
     def uri(self, uri):
-        '''
+        """
         Sets the URI of the RPC API of the node.
-        '''
+        """
         self.__uri = uri
-        self.__local = NodeInfo.local_(
-            self.__masteruri, self.__org_masteruri, self.__uri)
+        self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
 
     @property
     def masteruri(self):
-        '''
+        """
         :return: the URI of the ROS master where the node is registered.
 
         :rtype: str
-        '''
+        """
         return self.__org_masteruri
 
     @masteruri.setter
     def masteruri(self, uri):
-        '''
+        """
         Sets the ROS master URI.
-        '''
+        """
         self.__org_masteruri = uri
-        self.__local = NodeInfo.local_(
-            self.__masteruri, self.__org_masteruri, self.__uri)
-        self.__local_master = (self.__masteruri == self.__org_masteruri)
+        self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
+        self.__local_master = self.__masteruri == self.__org_masteruri
 
     @property
     def isLocal(self):
-        '''
+        """
         :return: ``True`` if the node and the ROS master are running on the same machine.
 
         :rtype: bool
-        '''
+        """
         return self.__local
 
     @property
     def isLocalMaster(self):
-        '''
+        """
         :return: ``True`` if the node is registered on the local machine.
 
         :rtype: bool
-        '''
+        """
         return self.__local_master
 
     @property
     def publishedTopics(self):
-        '''
+        """
         :return: the list of all published topics by this node.
 
         :rtype: list of strings
-        '''
+        """
         return self._publishedTopics
 
     @publishedTopics.setter
     def publishedTopics(self, name):
-        '''
+        """
         Append a new published topic to this node.
 
         :param name: the name of the topic
 
         :type name: str
-        '''
+        """
         try:
             if isinstance(name, list):
                 del self._publishedTopics
@@ -161,28 +162,28 @@ class NodeInfo(object):
         except ValueError:
             self._publishedTopics.append(name)
 
-#  @publishedTopics.deleter
-#  def publishedTopics(self):
-#    del self._publishedTopics
+    #  @publishedTopics.deleter
+    #  def publishedTopics(self):
+    #    del self._publishedTopics
 
     @property
     def subscribedTopics(self):
-        '''
+        """
         :return: the list of all subscribed topics by this node.
 
         :rtype: list of strings
-        '''
+        """
         return self._subscribedTopics
 
     @subscribedTopics.setter
     def subscribedTopics(self, name):
-        '''
+        """
         Append a new subscribed topic to this node.
 
         :param name: the name of the topic
 
         :type name: str
-        '''
+        """
         try:
             if isinstance(name, list):
                 del self._subscribedTopics
@@ -192,28 +193,28 @@ class NodeInfo(object):
         except ValueError:
             self._subscribedTopics.append(name)
 
-#  @subscribedTopics.deleter
-#  def subscribedTopics(self):
-#    del self._subscribedTopics
+    #  @subscribedTopics.deleter
+    #  def subscribedTopics(self):
+    #    del self._subscribedTopics
 
     @property
     def services(self):
-        '''
+        """
         :return: the list of all services provided by this node.
 
         :rtype: list of strings
-        '''
+        """
         return self._services
 
     @services.setter
     def services(self, name):
-        '''
+        """
         Append a new service to this node.
 
         :param name: the name of the topic
 
         :type name: str
-        '''
+        """
         try:
             if isinstance(name, list):
                 del self._services
@@ -223,17 +224,17 @@ class NodeInfo(object):
         except ValueError:
             self._services.append(name)
 
-#  @services.deleter
-#  def services(self):
-#    del self._services
+    #  @services.deleter
+    #  def services(self):
+    #    del self._services
 
     def copy(self, new_masteruri=None):
-        '''
+        """
         Creates a copy of this object and returns it.
 
         :param new_masteruri: the masteruri of the new masterinfo
         :rtype: :mod:`fkie_mas_discovery.master_info.NodeInfo`
-        '''
+        """
         if new_masteruri is None:
             new_masteruri = self.masteruri
         result = NodeInfo(self.name, new_masteruri)
@@ -247,7 +248,7 @@ class NodeInfo(object):
 
     @staticmethod
     def local_(masteruri, org_masteruri, uri):
-        '''
+        """
         Test the node whether it's run on the same machineas the ROS master and ``masteruri`` and ``org_masteruri`` are equal.
 
         :param masteruri: The URI of the ROS master currently tested.
@@ -263,7 +264,7 @@ class NodeInfo(object):
         :type uri: str
 
         :rtype: bool
-        '''
+        """
         result = False
         try:
             om = get_hostname(masteruri)
@@ -274,52 +275,52 @@ class NodeInfo(object):
         return result
 
 
-class TopicInfo(object):
-    '''
+class TopicInfo:
+    """
     The TopicInfo class stores informations about a ROS topic.
 
     :param name: the name of the topic
 
     :type name: str
-    '''
+    """
 
     def __init__(self, name):
-        '''
+        """
         Creates a new TopicInfo for a topic with given name.
 
         :param name: the name of the topic
 
         :type name: str
-        '''
+        """
         self.__name = name
         self.type = None
-        '''the type of the topic. (Default: ``None``)'''
+        """the type of the topic. (Default: ``None``)"""
         self._publisherNodes = []
         self._subscriberNodes = []
 
     @property
     def name(self):
-        '''
+        """
         :return: the name of the topic.
 
         :rtype: str
-        '''
+        """
         return self.__name
 
     @property
     def publisherNodes(self):
-        '''
+        """
         :return: the list with node names witch are publishing to this topic.
 
         :rtype: list of strings
-        '''
+        """
         return list(self._publisherNodes)
 
     @publisherNodes.setter
     def publisherNodes(self, name):
-        '''
+        """
         Append a new publishing node to this topic.
-        '''
+        """
         try:
             if isinstance(name, list):
                 del self._publisherNodes
@@ -329,24 +330,24 @@ class TopicInfo(object):
         except ValueError:
             self._publisherNodes.append(name)
 
-#  @publisherNodes.deleter
-#  def publisherNodes(self):
-#    del self._publisherNodes
+    #  @publisherNodes.deleter
+    #  def publisherNodes(self):
+    #    del self._publisherNodes
 
     @property
     def subscriberNodes(self):
-        '''
+        """
         :return: the list with node names witch are subscribed to this topic.
 
         :rtype: list of strings
-        '''
+        """
         return list(self._subscriberNodes)
 
     @subscriberNodes.setter
     def subscriberNodes(self, name):
-        '''
+        """
         Append a new subscribing node to this topic.
-        '''
+        """
         try:
             if isinstance(name, list):
                 del self._subscriberNodes
@@ -356,16 +357,16 @@ class TopicInfo(object):
         except ValueError:
             self._subscriberNodes.append(name)
 
-#  @subscriberNodes.deleter
-#  def subscriberNodes(self):
-#    del self._subscriberNodes
+    #  @subscriberNodes.deleter
+    #  def subscriberNodes(self):
+    #    del self._subscriberNodes
 
     def copy(self):
-        '''
+        """
         Creates a copy this object and returns it.
 
         :rtype: :mod:`fkie_mas_discovery.master_info.TopicInfo`
-        '''
+        """
         result = TopicInfo(self.name)
         result.type = self.type
         result._publisherNodes = list(self._publisherNodes)
@@ -373,8 +374,8 @@ class TopicInfo(object):
         return result
 
 
-class ServiceInfo(object):
-    '''
+class ServiceInfo:
+    """
     The ServiceInfo class stores informations about a ROS service.
 
     :param name: the name of the service
@@ -386,10 +387,10 @@ class ServiceInfo(object):
                       service are running on the same machine.
 
     :type masteruri: str
-    '''
+    """
 
     def __init__(self, name, masteruri):
-        '''
+        """
         Creates a new instance of the ServiceInfo.
 
         :param name: the name of the service
@@ -401,7 +402,7 @@ class ServiceInfo(object):
                           service are running on the same machine.
 
         :type masteruri: str
-        '''
+        """
         self.__name = name
         self.__masteruri = masteruri
         self.__org_masteruri = masteruri
@@ -409,104 +410,102 @@ class ServiceInfo(object):
         self.__local = False
         self.__local_master = True
         self.type = None
-        '''the type of the service. (Default: ``None``)'''
+        """the type of the service. (Default: ``None``)"""
         self.__service_class = None
         self.args = None
         self._serviceProvider = []
 
     @property
     def name(self):
-        '''
+        """
         :return: the name of the service.
 
         :rtype: str
-        '''
+        """
         return self.__name
 
     @property
     def uri(self):
-        '''
+        """
         :return: the URI of the RPC API of the service
 
         :rtype: str
-        '''
+        """
         return self.__uri
 
     @uri.setter
     def uri(self, uri):
-        '''
+        """
         Sets the uri of the service RPC interface and determine whether this service
         and the ROS master are running on the same machine.
 
         :param uri: The URI of the service RPC interface
 
         :type uri: str
-        '''
+        """
         self.__uri = uri
-        self.__local = NodeInfo.local_(
-            self.__masteruri, self.__org_masteruri, self.__uri)
+        self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
 
     @property
     def masteruri(self):
-        '''
+        """
         :return: the URI of the ROS master of the service
 
         :rtype: str
-        '''
+        """
         return self.__org_masteruri
 
     @masteruri.setter
     def masteruri(self, uri):
-        '''
+        """
         Sets the uri of the origin ROS master and determine whether this service
         and the ROS master are running on the same machine.
 
         :param uri: The URI of the ROS master
 
         :type uri: str
-        '''
+        """
         self.__org_masteruri = uri
-        self.__local_master = (self.__masteruri == self.__org_masteruri)
-        self.__local = NodeInfo.local_(
-            self.__masteruri, self.__org_masteruri, self.__uri)
+        self.__local_master = self.__masteruri == self.__org_masteruri
+        self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
 
     @property
     def isLocal(self):
-        '''
+        """
         :return: `True`, if this service and the master are on the same machine.
                  This will be determine on setting the uri-parameter.
 
         :rtype: bool
-        '''
+        """
         return self.__local
 
     @property
     def isLocalMaster(self):
-        '''
+        """
         :return: ``True`` if the service is registered on the local machine.
 
         :rtype: bool
-        '''
+        """
         return self.__local_master
 
     @property
     def serviceProvider(self):
-        '''
+        """
         :return: the list of the node names, which provide this service.
 
         :rtype: list of strings
-        '''
+        """
         return self._serviceProvider
 
     @serviceProvider.setter
     def serviceProvider(self, name):
-        '''
+        """
         Adds a new service provider, if no one with given name exists.
 
         :param name: name of the new service provider
 
         :type name: str
-        '''
+        """
         try:
             self._serviceProvider.index(name)
         except ValueError:
@@ -517,7 +516,7 @@ class ServiceInfo(object):
         del self._serviceProvider
 
     def get_service_class(self, allow_get_type=False):
-        '''
+        """
         Get the service class using the type of the service. NOTE: this
         method is from `rosservice` and changed to avoid a probe call to the service.
 
@@ -530,7 +529,7 @@ class ServiceInfo(object):
         :rtype: ServiceDefinition: service class
 
         :raise: ``ROSServiceException``, if service class cannot be retrieved
-        '''
+        """
         if self.__service_class is not None:
             return self.__service_class
 
@@ -548,13 +547,11 @@ class ServiceInfo(object):
                     # connect to service and probe it to get the headers
                     s.settimeout(0.5)
                     s.connect((dest_addr, dest_port))
-                    header = {'probe': '1', 'md5sum': '*',
-                              'callerid': rospy.get_name(), 'service': self.name}
+                    header = {"probe": "1", "md5sum": "*", "callerid": rospy.get_name(), "service": self.name}
                     roslib.network.write_ros_handshake_header(s, header)
-                    srv_type = roslib.network.read_ros_handshake_header(
-                        s, io.StringIO(), 2048)
-                    srv_type = srv_type['type']
-                except socket.error:
+                    srv_type = roslib.network.read_ros_handshake_header(s, io.StringIO(), 2048)
+                    srv_type = srv_type["type"]
+                except OSError:
                     pass
                 except:
                     pass
@@ -563,33 +560,33 @@ class ServiceInfo(object):
                         s.close()
 
         import rosservice
+
         if not srv_type:
-            raise rosservice.ROSServiceException(
-                "Not valid type of service [%s]." % str(srv_type))
+            raise rosservice.ROSServiceException("Not valid type of service [%s]." % str(srv_type))
 
         # get the Service class so we can populate the request
         service_class = roslib.message.get_service_class(srv_type)
 
         # #1083: roscpp services are currently returning the wrong type
-        if service_class and self.type.endswith('Request') and \
-                not hasattr(service_class, "_request_class"):
+        if service_class and self.type.endswith("Request") and not hasattr(service_class, "_request_class"):
             srv_type = srv_type[:-7]
             service_class = roslib.message.get_service_class(srv_type)
 
         if service_class is None:
             pkg = roslib.names.resource_name_package(self.type)
-            raise rosservice.ROSServiceException("Unable to load type [%s].\n" % self.type +
-                                                 "Have you typed 'make' in [%s]?" % pkg)
+            raise rosservice.ROSServiceException(
+                "Unable to load type [%s].\n" % self.type + "Have you typed 'make' in [%s]?" % pkg
+            )
         self.__service_class = service_class
         return service_class
 
     def copy(self, new_masteruri=None):
-        '''
+        """
         Creates a copy of this object and returns it.
 
         :param new_masteruri: the masteruri of the new masterinfo
         :rtype: :mod:`fkie_mas_discovery.master_info.NodeInfo`
-        '''
+        """
         if new_masteruri is None:
             new_masteruri = self.masteruri
         result = ServiceInfo(self.name, new_masteruri)
@@ -601,8 +598,8 @@ class ServiceInfo(object):
         return result
 
 
-class MasterInfo(object):
-    '''
+class MasterInfo:
+    """
     The MasterInfo class stores informations about a ROS master.
     Not thread safe!
 
@@ -614,10 +611,10 @@ class MasterInfo(object):
                        extracted from the masteruri.
 
     :type mastername: str or ``None`` (Default: ``None``)
-    '''
+    """
 
     def __init__(self, masteruri, mastername=None):
-        '''
+        """
         Creates a new instance of the MasterInfo. The mastername will be extracted
         from the masterui, if no name is given.
 
@@ -629,7 +626,7 @@ class MasterInfo(object):
                            extracted from the masteruri.
 
         :type mastername: str or ``None`` (Default: ``None``)
-        '''
+        """
         self.__masteruri = masteruri
         self.__mastername = mastername
         if mastername is None:
@@ -643,13 +640,13 @@ class MasterInfo(object):
         self._topics = {}
         self._services = {}
         self.check_ts = 0
-        '''the last time, when the state of the ROS master retrieved'''
+        """the last time, when the state of the ROS master retrieved"""
         self._for_json_topics = dict()
         self._for_json_services = dict()
 
     @staticmethod
     def from_list(l):
-        '''
+        """
         Creates a new instance of the MasterInfo from given list.
 
         :param l: the list returned by :mod:`fkie_mas_discovery.master_info.MasterInfo.listedState()`
@@ -659,7 +656,7 @@ class MasterInfo(object):
         :return: the new instance of the MasterInfo filled from list.
 
         :rtype: :mod:`fkie_mas_discovery.master_info.MasterInfo`
-        '''
+        """
         if l is None:
             return None
         result = MasterInfo(l[2], l[3])
@@ -712,50 +709,50 @@ class MasterInfo(object):
 
     @property
     def mastername(self):
-        '''
+        """
         :return: the name of the ROS master. In most cases the ROS master name is the
                  name of the host, where the ROS master running. Although it can differ.
 
         :rtype: str
-        '''
+        """
         return self.__mastername
 
     @property
     def masteruri(self):
-        '''
+        """
         :return: the URI of the ROS master.
 
         :rtype: str
-        '''
+        """
         return self.__masteruri
 
     @property
     def timestamp(self):
-        '''
+        """
         :return: The timestamp when this MasterInfo was first time filled with the
                  information. See :mod:`fkie_mas_discovery.master_info.MasterInfo.check_ts()`
                  to get the time, when the information was compared with the data of ROS Master.
 
         :rtype: float
-        '''
+        """
         return self.__timestamp
 
     @timestamp.setter
     def timestamp(self, ts):
-        '''
+        """
         Sets the timestamp of this instance
 
         :param ts: the new timestamp
 
         :type ts: float
-        '''
+        """
         self.__timestamp = ts
         self.check_ts = ts
         self.__timestamp_local = ts
 
     @property
     def timestamp_local(self):
-        '''
+        """
         :return: The timestamp when this MasterInfo was first time filled with the
                  information. See :mod:`fkie_mas_discovery.master_info.MasterInfo.check_ts()`
                  to get the time, when the information was compared with the data of ROS Master.
@@ -763,32 +760,32 @@ class MasterInfo(object):
                  changed.
 
         :rtype: float
-        '''
+        """
         return self.__timestamp_local
 
     @timestamp_local.setter
     def timestamp_local(self, ts):
-        '''
+        """
         Sets the timestamp of this instance
 
         :param ts: the new timestamp
 
         :type ts: float
-        '''
+        """
         self.__timestamp_local = ts
 
     @property
     def nodes(self):
-        '''
+        """
         :return: the dictionary with ``node names`` and corresponding instances of ``NodeInfo``.
 
         :rtype: dict of (str : :mod:`fkie_mas_discovery.master_info.NodeInfo`)
-        '''
+        """
         return self.__nodelist
 
     @nodes.setter
     def nodes(self, name):
-        '''
+        """
         Adds a new :mod:`fkie_mas_discovery.master_info.NodeInfo` with given name.
 
         :note: If the NodeInfo already exists, do nothing.
@@ -796,29 +793,29 @@ class MasterInfo(object):
         :param name: the name of new :mod:`fkie_mas_discovery.master_info.NodeInfo`
 
         :type name: str
-        '''
+        """
         if (name is None) or not name:
             return None
-        if not (name in self.__nodelist):
+        if name not in self.__nodelist:
             self.__nodelist[name] = NodeInfo(name, self.__masteruri)
 
     @property
     def node_names(self):
-        '''
+        """
         :return: the list with node names
 
         :rtype: list of strings
-        '''
-#    @return: the list with node names
+        """
+        #    @return: the list with node names
         return list(self.__nodelist.keys())
 
     @property
     def node_uris(self):
-        '''
+        """
         :return: the list with node URI's.
 
         :rtype: list of strings
-        '''
+        """
         uris = []
         for node in self.__nodelist.values():
             uris.append(node.uri)
@@ -826,84 +823,84 @@ class MasterInfo(object):
 
     @property
     def topics(self):
-        '''
+        """
         :return: the dictionary with ``topic names`` and corresponding ``TopicInfo`` instances.
 
         :rtype: dict of (str : :mod:`fkie_mas_discovery.master_info.TopicInfo`)
-        '''
+        """
         return self.__topiclist
 
     @topics.setter
     def topics(self, name):
-        '''
+        """
         Adds a new TopicInfo with given name. If the ``TopicInfo`` already exists, do
         nothing.
 
         :param name: the name of new :mod:`fkie_mas_discovery.master_info.TopicInfo`
 
         :type name: str
-        '''
+        """
         if (name is None) or not name:
             return None
-        if not (name in self.__topiclist):
+        if name not in self.__topiclist:
             self.__topiclist[name] = TopicInfo(name)
 
     @property
     def topic_names(self):
-        '''
+        """
         :return: the list with topic names.
 
         :rtype: list of strings
-        '''
+        """
         return list(self.__topiclist.keys())
 
     @property
     def services(self):
-        '''
+        """
         :return: the dictionary with ``service names`` and corresponding ``ServiceInfo`` instances.
 
         :rtype: dict of (str : :mod:`fkie_mas_discovery.master_info.ServiceInfo`)
-        '''
+        """
         return self.__servicelist
 
     @services.setter
     def services(self, name):
-        '''
+        """
         Adds a new :mod:`fkie_mas_discovery.master_info.ServiceInfo` with given name. If the ServiceInfo already exists, do
         nothing.
 
         :param name: the name of new :mod:`fkie_mas_discovery.master_info.ServiceInfo`
 
         :type name: str
-        '''
+        """
         if (name is None) or not name:
             return None
-        if not (name in self.__servicelist):
+        if name not in self.__servicelist:
             self.__servicelist[name] = ServiceInfo(name, self.__masteruri)
 
     @property
     def service_names(self):
-        '''
+        """
         :return: the list with service names.
 
         :rtype: list of strings
-        '''
+        """
         return list(self.__servicelist.keys())
 
     @property
     def service_uris(self):
-        '''
+        """
         :return: the list with service URI's.
 
         :rtype: list of strings
-        '''
+        """
         uris = []
         for service in self.__servicelist.values():
             uris.append(service.uri)
         return uris
 
     def getNode(self, name):
-        '''
+        """
         :param name: the name of the node
 
         :type name: str
@@ -911,13 +908,13 @@ class MasterInfo(object):
         :return: the instance of the :mod:`fkie_mas_discovery.master_info.NodeInfo` with given name
 
         :rtype: :mod:`fkie_mas_discovery.master_info.NodeInfo` or ``None``
-        '''
+        """
         if (name is None) or not name:
             return None
         return self.__nodelist.get(name, None)
 
     def getNodeEndsWith(self, suffix):
-        '''
+        """
         Returns the node, which name ends with given suffix. On more then one node, only the fist found will be returned.
 
         :param suffix: the end of the name
@@ -927,7 +924,7 @@ class MasterInfo(object):
         :return: the instance of the :mod:`fkie_mas_discovery.master_info.NodeInfo` with with given suffix
 
         :rtype: :mod:`fkie_mas_discovery.master_info.NodeInfo` or ``None``
-        '''
+        """
         if (suffix is None) or not suffix:
             return None
         for name, node in self.__nodelist.items():
@@ -936,7 +933,7 @@ class MasterInfo(object):
         return None
 
     def getTopic(self, name):
-        '''
+        """
         Returns the topics with given name.
 
         :param name: the name of the topic
@@ -946,13 +943,13 @@ class MasterInfo(object):
         :return: the instance of the :mod:`fkie_mas_discovery.master_info.TopicInfo` with given name.
 
         :rtype: :mod:`fkie_mas_discovery.master_info.TopicInfo` or ``None``
-        '''
+        """
         if (name is None) or not name:
             return None
         return self.__topiclist.get(name, None)
 
     def getService(self, name):
-        '''
+        """
         Returns the service with given name.
 
         :param name: the name of the service
@@ -962,13 +959,13 @@ class MasterInfo(object):
         :return: the instance of the :mod:`fkie_mas_discovery.master_info.ServiceInfo` with given name
 
         :rtype: :mod:`fkie_mas_discovery.master_info.ServiceInfo` or ``None``
-        '''
+        """
         if (name is None) or not name:
             return None
         return self.__servicelist.get(name, None)
 
     def __eq__(self, other):
-        '''
+        """
         Compares the master state with other master state. The timestamp will not be
         compared.
 
@@ -979,24 +976,24 @@ class MasterInfo(object):
         :return: ``True``, if the states are equal.
 
         :rtype: boolean
-        '''
-#    import os                                ###################
-#    cputimes = os.times()                    ###################
-#    cputime_init = cputimes[0] + cputimes[1] ###################
-#    try:
-        if (other is None):
+        """
+        #    import os                                ###################
+        #    cputimes = os.times()                    ###################
+        #    cputime_init = cputimes[0] + cputimes[1] ###################
+        #    try:
+        if other is None:
             return False
-        if (self.masteruri != other.masteruri):
+        if self.masteruri != other.masteruri:
             return False
-        if (set(self.node_uris) ^ set(other.node_uris)):
+        if set(self.node_uris) ^ set(other.node_uris):
             return False
-#    if (set(self.node_names) ^ set(other.node_names)):
-#      return False
-#    if (set(self.service_names) ^ set(other.service_names)):
-#      return False
-        if (set(self.service_uris) ^ set(other.service_uris)):
+        #    if (set(self.node_names) ^ set(other.node_names)):
+        #      return False
+        #    if (set(self.service_names) ^ set(other.service_names)):
+        #      return False
+        if set(self.service_uris) ^ set(other.service_uris):
             return False
-        if (set(self.topic_names) ^ set(other.topic_names)):
+        if set(self.topic_names) ^ set(other.topic_names):
             return False
         # test for changes of each node parameter
         for name in self.node_names:
@@ -1005,8 +1002,8 @@ class MasterInfo(object):
             if n1 is not None and n2 is not None:
                 if n1.pid != n2.pid:
                     return False
-#        if n1.uri != n2.uri:
-#          return False
+                #        if n1.uri != n2.uri:
+                #          return False
                 if set(n1.publishedTopics) ^ set(n2.publishedTopics):
                     return False
                 if set(n1.subscribedTopics) ^ set(n2.subscribedTopics):
@@ -1014,15 +1011,16 @@ class MasterInfo(object):
                 if set(n1.services) ^ set(n2.services):
                     return False
         return True
-#    finally:
-#      cputimes = os.times() ###################
-#      print "EQ:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(self.node_names) ###################
+
+    #    finally:
+    #      cputimes = os.times() ###################
+    #      print "EQ:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(self.node_names) ###################
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def has_local_changes(self, other):
-        '''
+        """
         Compares the master state with other master state. The timestamp will not be
         compared.
 
@@ -1033,17 +1031,17 @@ class MasterInfo(object):
         :return: a tupel with two boolean values (all equal, only local equal)
 
         :rtype: (bool, bool)
-        '''
-#    import os                                ###################
-#    cputimes = os.times()                    ###################
-#    cputime_init = cputimes[0] + cputimes[1] ###################
-#    try:
-        if (other is None):
+        """
+        #    import os                                ###################
+        #    cputimes = os.times()                    ###################
+        #    cputime_init = cputimes[0] + cputimes[1] ###################
+        #    try:
+        if other is None:
             return True
-        if (self.masteruri != other.masteruri):
+        if self.masteruri != other.masteruri:
             return True
         # test for nodes
-        node_names = list((set(self.node_names) | set(other.node_names)))
+        node_names = list(set(self.node_names) | set(other.node_names))
         for name in node_names:
             n1 = self.getNode(name)
             n2 = other.getNode(name)
@@ -1087,12 +1085,13 @@ class MasterInfo(object):
                 if s2.isLocal or s2.isLocalMaster:
                     return True
         return False
-#    finally:
-#      cputimes = os.times() ###################
-#      print "CHANGES:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(self.node_names) ###################
+
+    #    finally:
+    #      cputimes = os.times() ###################
+    #      print "CHANGES:", (cputimes[0] + cputimes[1] - cputime_init), ", count nodes:", len(self.node_names) ###################
 
     def listedState(self, filter_interface=None):
-        '''
+        """
         Returns a extended ROS Master State.
 
         :param filter_interface: The filter used to filter the nodes, topics or serivces out.
@@ -1138,12 +1137,12 @@ class MasterInfo(object):
                  ``[ [str,str] ]``,
                  ``[ [str,str,str,int,str] ]``,
                  ``[ [str,str,str,str,str] ])``
-        '''
+        """
         iffilter = filter_interface
         if iffilter is None:
             iffilter = FilterInterface.from_list()
-        stamp = '%.9f' % self.timestamp
-        stamp_local = '%.9f' % self.timestamp_local
+        stamp = "%.9f" % self.timestamp
+        stamp_local = "%.9f" % self.timestamp_local
         publishers = []
         subscribers = []
         services = []
@@ -1181,22 +1180,39 @@ class MasterInfo(object):
                     nodes_last_check.add(sp)
             if srv_prov:
                 services.append((name, srv_prov))
-                serviceProvider.append((name, service.uri, str(
-                    service.masteruri), service.type if service.type is not None else '', 'local' if service.isLocal else 'remote'))
+                serviceProvider.append(
+                    (
+                        name,
+                        service.uri,
+                        str(service.masteruri),
+                        service.type if service.type is not None else "",
+                        "local" if service.isLocal else "remote",
+                    )
+                )
 
         # creates the nodes list
         for name, node in self.nodes.items():
             if name in nodes_last_check:
-                nodes.append((name, node.uri, str(node.masteruri),
-                              node.pid, 'local' if node.isLocal else 'remote'))
+                nodes.append((name, node.uri, str(node.masteruri), node.pid, "local" if node.isLocal else "remote"))
 
-        return (stamp, stamp_local, self.masteruri, self.mastername, publishers, subscribers, services, topicTypes, nodes, serviceProvider)
+        return (
+            stamp,
+            stamp_local,
+            self.masteruri,
+            self.mastername,
+            publishers,
+            subscribers,
+            services,
+            topicTypes,
+            nodes,
+            serviceProvider,
+        )
 
-#  def __str__(self):
-#    return str(self.listedState())
+    #  def __str__(self):
+    #    return str(self.listedState())
 
     def updateInfo(self, other):
-        '''
+        """
         Updates the information about nodes, topics and services. If the other
         masterinfo is from the same ROS Master all informations are copied. If other
         contains the info from remote ROS Master, only the informations for
@@ -1205,7 +1221,7 @@ class MasterInfo(object):
         :type other: MasterInfo
         :return: The tuple of sets with added, changed and removed nodes, topics and services
         :rtype: (nodes_added, nodes_changed, nodes_removed, topics_added, topics_changed, topics_removed, services_added, services_changed, services_removed)
-        '''
+        """
         if other is None:
             return
 
@@ -1213,7 +1229,7 @@ class MasterInfo(object):
         topics_changed = set()
         topics_removed = set()
 
-        local_info = (self.masteruri == other.masteruri)
+        local_info = self.masteruri == other.masteruri
         if local_info:
             self.timestamp = other.timestamp
             self.timestamp_local = other.timestamp_local
@@ -1266,8 +1282,8 @@ class MasterInfo(object):
                 pass
                 # if the node is in own master_info, but not in remote, replace only the masteruri.
                 # perhaps, if will be removed soon by mas-sync
-#        for n in nodes2remove:
-#          own_remote_nodes[n].masteruri = self.masteruri
+        #        for n in nodes2remove:
+        #          own_remote_nodes[n].masteruri = self.masteruri
         # update nodes
         nodes2update = own_remote_nodes_set & other_local_nodes_set
         if nodes2update:
@@ -1297,10 +1313,9 @@ class MasterInfo(object):
             nodes2add = other_local_nodes_set - own_remote_nodes_set
             if nodes2add:
                 for n in nodes2add:
-                    if not (n in self.__nodelist):
+                    if n not in self.__nodelist:
                         nodes_added.add(n)
-                        self.__nodelist[n] = other_local_nodes[n].copy(
-                            self.masteruri)
+                        self.__nodelist[n] = other_local_nodes[n].copy(self.masteruri)
 
         # UPDATE SERVICES
         own_remote_srvs = dict()
@@ -1350,18 +1365,27 @@ class MasterInfo(object):
             srv2add = other_local_srvs_set - own_remote_srvs_set
             if srv2add:
                 for s in srv2add:
-                    if not (s in self.__servicelist):
+                    if s not in self.__servicelist:
                         srvs_added.add(s)
-                        self.__servicelist[s] = other_local_srvs[s].copy(
-                            self.masteruri)
+                        self.__servicelist[s] = other_local_srvs[s].copy(self.masteruri)
 
-        return (nodes_added, nodes_changed, nodes2remove, topics_added, topics_changed, topics_removed, srvs_added, services_changed, srvs2remove)
+        return (
+            nodes_added,
+            nodes_changed,
+            nodes2remove,
+            topics_added,
+            topics_changed,
+            topics_removed,
+            srvs_added,
+            services_changed,
+            srvs2remove,
+        )
 
-    def toJson(self, filter_interface=FilterInterface.from_list()) -> List[RosNode]:
+    def toJson(self, filter_interface=FilterInterface.from_list()) -> list[RosNode]:
         try:
             iffilter = filter_interface
-            self._for_json_topics: Dict[str, RosTopic] = dict()
-            self._for_json_services: Dict[str, RosService] = dict()
+            self._for_json_topics: dict[str, RosTopic] = dict()
+            self._for_json_services: dict[str, RosService] = dict()
             ros_nodes = dict()
             # filter the topics
             discover_state_publisher = False
@@ -1371,15 +1395,14 @@ class MasterInfo(object):
                 ros_topic_id = RosTopicId(name, topic.type)
                 ros_topic_id_str = str(ros_topic_id)
                 for n in topic.publisherNodes:
-                    discover_state_publisher = topic.type in [
-                        'fkie_mas_msgs/MasterState']
+                    discover_state_publisher = topic.type in ["fkie_mas_msgs/MasterState"]
                     if not iffilter.is_ignored_publisher(n, name, topic.type):
                         ros_topic.publisher.append(EndpointInfo(n, n, None, []))
                         node = ros_nodes.get(n, RosNode(n, n))
                         # node.publishers.append(ros_topic)
                         node.publishers.append(ros_topic_id)
                         # check if it is a nodlet
-                        if name.endswith('/bond'):
+                        if name.endswith("/bond"):
                             parent_id = name[:-5]
                             if n != parent_id:
                                 node.container_name = parent_id
@@ -1395,8 +1418,7 @@ class MasterInfo(object):
                 self._for_json_topics[ros_topic_id_str] = ros_topic
             # filter the services
             for name, service in self.services.items():
-                system_service = service.type in [
-                    'fkie_mas_msgs/LoadLaunch', 'fkie_mas_msgs/GetSyncInfo']
+                system_service = service.type in ["fkie_mas_msgs/LoadLaunch", "fkie_mas_msgs/GetSyncInfo"]
                 ros_service = RosService(name, service.type)
                 ros_topic_id = RosTopicId(name, service.type)
                 ros_topic_id_str = str(ros_topic_id)
@@ -1404,7 +1426,7 @@ class MasterInfo(object):
                     if not iffilter.is_ignored_service(sp, name):
                         ros_service.provider.append(sp)
                         node = ros_nodes.get(sp, RosNode(sp, sp))
-                        if not (ros_topic_id_str in self._for_json_services):
+                        if ros_topic_id_str not in self._for_json_services:
                             self._for_json_services[ros_topic_id_str] = []
                         self._for_json_services[ros_topic_id_str] = ros_service
                         # node.services.append(ros_service)
@@ -1413,7 +1435,7 @@ class MasterInfo(object):
                         ros_nodes[sp] = node
                 ros_service.service_API_URI = service.uri
                 ros_service.masteruri = service.masteruri
-                ros_service.location = 'local' if service.isLocal else 'remote'
+                ros_service.location = "local" if service.isLocal else "remote"
 
             result = []
             # creates the nodes list
@@ -1424,34 +1446,45 @@ class MasterInfo(object):
                 ros_node.pid = node.pid
                 ros_node.location = [get_hostname(node.uri)]
                 ros_node.is_local = node.isLocal
-                status = 'unknown'
+                status = "unknown"
                 if node.pid is not None:
-                    status = 'running'
+                    status = "running"
                 elif node.uri is not None:
-                    status = 'not available'
+                    status = "not available"
                 ros_node.status = status
 
                 # Add active screens for a given node
                 screens = screen.get_active_screens(name)
                 for session_name, _ in screens.items():
                     ros_node.screens.append(session_name)
-                ros_node.system_node |= name in ['/rosout', rospy.get_name(), '/mas_discovery', '/mas_sync', '/mas_daemon',
-                                                 '/master_discovery', '/master_sync', '/node_manager_daemon',
-                                                 '/node_manager', '/zeroconf', '/param_sync']
+                ros_node.system_node |= name in [
+                    "/rosout",
+                    rospy.get_name(),
+                    "/mas_discovery",
+                    "/mas_sync",
+                    "/mas_daemon",
+                    "/master_discovery",
+                    "/master_sync",
+                    "/node_manager_daemon",
+                    "/node_manager",
+                    "/zeroconf",
+                    "/param_sync",
+                ]
                 result.append(ros_node)
         except Exception:
             import traceback
+
             print(traceback.format_exc())
         return result
 
-    def toJsonServices(self, filter: List[RosTopicId]) -> List[RosService]:
+    def toJsonServices(self, filter: list[RosTopicId]) -> list[RosService]:
         result = []
         for id, service in self._for_json_services.items():
             if len(filter) == 0 or str(id) in filter:
                 result.append(service)
         return result
 
-    def toJsonTopics(self, filter: List[RosTopicId]) -> List[RosTopic]:
+    def toJsonTopics(self, filter: list[RosTopicId]) -> list[RosTopic]:
         result = []
         for id, topic in self._for_json_topics.items():
             if len(filter) == 0 or str(id) in filter:

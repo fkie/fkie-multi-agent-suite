@@ -60,7 +60,7 @@ if ( ament_cmake_FOUND )
     else()
         target_compile_options(mas-discovery PRIVATE -Wall -Wextra -Werror=return-type)
     endif()
-    
+
     set( MAS_DISCOVERY_LIB_DESTINATION   lib )
     set( MAS_DISCOVERY_INC_DESTINATION   include )
     set( MAS_DISCOVERY_BIN_DESTINATION   bin )

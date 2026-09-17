@@ -1,6 +1,6 @@
-import { JSONValue } from "@/types";
 import { BrowserWindow, screen } from "electron";
 import settings from "electron-settings";
+import { JSONValue } from "@/types";
 
 export type TWindowState = {
   x: number | undefined;

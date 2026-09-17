@@ -1,6 +1,6 @@
-import { DialogManagerEvents, TDialogManager } from "@/types";
 import { BrowserWindow, dialog, ipcMain } from "electron";
 import log from "electron-log";
+import { DialogManagerEvents, TDialogManager } from "@/types";
 
 /**
  * Class DialogManager: Open files requests

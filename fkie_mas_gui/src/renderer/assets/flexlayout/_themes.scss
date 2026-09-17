@@ -97,8 +97,8 @@
 }
 
 @mixin light_theme_overrides {
-    /* 
-    light theme overrides 
+    /*
+    light theme overrides
 */
 
 }
@@ -201,8 +201,8 @@
 
 @mixin dark_theme_overrides {
 
-    /* 
-    dark theme overrides 
+    /*
+    dark theme overrides
 */
     .flexlayout {
         &__tabset-selected {
@@ -329,8 +329,8 @@
 
 @mixin gray_theme_overrides {
 
-    /* 
-    gray theme overrides 
+    /*
+    gray theme overrides
 */
     .flexlayout {
         &__tabset-selected {
@@ -466,8 +466,8 @@
 
 @mixin underline_theme_overrides {
 
-    /* 
-    underline theme overrides 
+    /*
+    underline theme overrides
 */
     .flexlayout {
 
@@ -611,8 +611,8 @@
 
 @mixin rounded_theme_overrides {
 
-    /* 
-    rounded theme overrides 
+    /*
+    rounded theme overrides
 */
     .flexlayout {
         &__tabset {
@@ -1015,7 +1015,7 @@
             border: 5px solid var(--color-background);
             border-radius: 5px;
         }
-        
+
         &__splitter_border .flexlayout__splitter_handle {
             visibility: visible;
         }
@@ -1082,7 +1082,7 @@
         &__tabset-maximized {
             --tab-divider-bg: var(--color-tabset-background-maximized);
         }
-        
+
         // Grouping by Position (Top vs Bottom)
         &__tabset_tabbar_outer {
             &_top {
@@ -1259,7 +1259,7 @@
             padding: 2px;
             border-radius: 12px;
         }
-        
+
         &__splitter_border .flexlayout__splitter_handle {
             visibility: visible;
         }
@@ -1272,7 +1272,7 @@
             background-color: var(--color-2);
             border-bottom: none;
         }
-        
+
         &__tab_border {
             border-radius: 12px;
         }

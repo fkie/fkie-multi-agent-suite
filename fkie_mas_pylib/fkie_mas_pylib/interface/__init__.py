@@ -6,7 +6,7 @@ class SelfEncoder(json.JSONEncoder):
         result = {}
         try:
             for key, value in vars(obj).items():
-                if key[0] != '_':
+                if key[0] != "_":
                     if hasattr(value, "__len__") and len(value) == 0:
                         continue
                     if value is not None:
@@ -21,7 +21,7 @@ class SelfAllEncoder(json.JSONEncoder):
         result = {}
         try:
             for key, value in vars(obj).items():
-                if key[0] != '_':
+                if key[0] != "_":
                     result[key] = value
         except Exception as err:
             print(f"[SelfAllEncoder] skipped {obj}: {err}")

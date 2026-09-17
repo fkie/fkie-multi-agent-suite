@@ -1,7 +1,6 @@
 import { useContext } from "react";
 import LoggingContext, { ILoggingContext } from "../context/LoggingContext";
 
-
 export function useLoggingContext(): ILoggingContext {
   const context = useContext(LoggingContext);
 

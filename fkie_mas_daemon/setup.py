@@ -1,16 +1,16 @@
 import os
 
-package_name = 'fkie_mas_daemon'
+package_name = "fkie_mas_daemon"
 
-if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == '1':
-    from setuptools import setup
+if "ROS_VERSION" in os.environ and os.environ["ROS_VERSION"] == "1":
     from catkin_pkg.python_setup import generate_distutils_setup
+    from setuptools import setup
 
     d = generate_distutils_setup(
         # don't do this unless you want a globally visible script
         # scripts=['nodes/mas-daemon', 'nodes/mas-subscriber'],
-        packages=[package_name, f'{package_name}.monitor'],
-        package_dir={'': 'src'}
+        packages=[package_name, f"{package_name}.monitor"],
+        package_dir={"": "src"},
     )
 
     setup(**d)
@@ -19,18 +19,19 @@ if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == '1':
 else:
     ### ROS2 ###
     import xml.etree.ElementTree as ET
+
     from setuptools import setup
 
     test_launch_dir = "tests/launch"
     test_launch_files = [
-        'autostart.launch.xml',
-        'capability_included.launch.py',
-        'capability_included.launch.xml',
-        'capability.launch.xml',
-        'included.launch.xml',
-        'params.yaml',
-        'test_composable_launch.py',
-        'test_included_launch.py',
+        "autostart.launch.xml",
+        "capability_included.launch.py",
+        "capability_included.launch.xml",
+        "capability.launch.xml",
+        "included.launch.xml",
+        "params.yaml",
+        "test_composable_launch.py",
+        "test_included_launch.py",
     ]
 
     # resource_files = [
@@ -43,50 +44,51 @@ else:
     version = "0.0.0"
 
     def get_version():
-        tree = ET.parse('package.xml')
+        tree = ET.parse("package.xml")
         root = tree.getroot()
-        for vers in root.findall('version'):
+        for vers in root.findall("version"):
             return vers.text
         return version
 
     def strip_dirty_vers(vers):
-        parts = vers.lstrip('v').split('-', 2)
+        parts = vers.lstrip("v").split("-", 2)
         return parts[0]
 
     setup(
         name=package_name,
         version=strip_dirty_vers(get_version()[0]),
-        packages=[package_name, f'{package_name}.launch', f'{package_name}.monitor'],
+        packages=[package_name, f"{package_name}.launch", f"{package_name}.monitor"],
         data_files=[
-            ('share/ament_index/resource_index/packages',
-             ['resource/' + package_name]),
-            (f'share/{package_name}', ['package.xml']),
-            (f'share/{package_name}/test/launch',
-             [f'{test_launch_dir}/{lf}' for lf in test_launch_files]),
+            ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
+            (f"share/{package_name}", ["package.xml"]),
+            (f"share/{package_name}/test/launch", [f"{test_launch_dir}/{lf}" for lf in test_launch_files]),
             # (f'share/{package_name}/tests/resources', resource_files),
-            (f'lib/{package_name}',
-             ['scripts/mas-remote-node.py',
-              'scripts/mas-respawn',
-              'scripts/mas-restart.py',
-              'scripts/mas-rosout-to-diag.py'
-              ])
+            (
+                f"lib/{package_name}",
+                [
+                    "scripts/mas-remote-node.py",
+                    "scripts/mas-respawn",
+                    "scripts/mas-restart.py",
+                    "scripts/mas-rosout-to-diag.py",
+                ],
+            ),
         ],
-        install_requires=['setuptools', 'ruamel.yaml', 'launch-xml'],
+        install_requires=["setuptools", "ruamel.yaml", "launch-xml"],
         zip_safe=True,
-        maintainer='Alexander Tiderko',
-        maintainer_email='Alexander.Tiderko@fkie.fraunhofer.de',
-        description='A daemon node to manage ROS launch files and launch nodes from loaded files.',
-        license='MIT',
-        url='https://github.com/fkie/ros_node_manager',
-        tests_require=['pytest'],
+        maintainer="Alexander Tiderko",
+        maintainer_email="Alexander.Tiderko@fkie.fraunhofer.de",
+        description="A daemon node to manage ROS launch files and launch nodes from loaded files.",
+        license="MIT",
+        url="https://github.com/fkie/ros_node_manager",
+        tests_require=["pytest"],
         test_suite="tests",
         entry_points={
-            'console_scripts': [
-                'mas-daemon = fkie_mas_daemon:main',
-                'mas-subscriber = fkie_mas_daemon:subscriber',
-                'mas-action-client = fkie_mas_daemon:action_client',
-                'mas-action-introspection = fkie_mas_daemon:action_introspection',
-                'mas-service-introspection = fkie_mas_daemon:service_introspection',
+            "console_scripts": [
+                "mas-daemon = fkie_mas_daemon:main",
+                "mas-subscriber = fkie_mas_daemon:subscriber",
+                "mas-action-client = fkie_mas_daemon:action_client",
+                "mas-action-introspection = fkie_mas_daemon:action_introspection",
+                "mas-service-introspection = fkie_mas_daemon:service_introspection",
             ],
         },
     )

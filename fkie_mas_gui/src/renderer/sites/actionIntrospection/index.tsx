@@ -1,13 +1,13 @@
 // Add polyfills for backward compatibility with older browsers
 import "react-app-polyfill/ie11";
 import "react-app-polyfill/stable";
-// imports
-import ProviderStack from "@/renderer/ProviderStack";
+import { createRoot } from "react-dom/client";
 import { LoadingScreen } from "@/renderer/components/loading/LoadingScreen";
 import { PersistenceGate } from "@/renderer/components/loading/PersistenceGate";
 import { AppStateProvider } from "@/renderer/context/AppStateContext";
 import { SettingsProvider } from "@/renderer/context/SettingsContext";
-import { createRoot } from "react-dom/client";
+// imports
+import ProviderStack from "@/renderer/ProviderStack";
 import ActionIntrospectionApp from "./App";
 
 const container = document.getElementById("root");

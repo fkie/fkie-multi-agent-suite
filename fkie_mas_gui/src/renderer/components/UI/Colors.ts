@@ -211,9 +211,7 @@ export function averageColor(colors: string[], isDarkMode: boolean): string {
   let validCount = 0;
 
   for (const color of colors) {
-    const rgbaMatch = color.match(
-      /rgba?\s*\(\s*([0-9.]+)[,\s]+([0-9.]+)[,\s]+([0-9.]+)(?:[,\s/]+([0-9.]+))?\s*\)/
-    );
+    const rgbaMatch = color.match(/rgba?\s*\(\s*([0-9.]+)[,\s]+([0-9.]+)[,\s]+([0-9.]+)(?:[,\s/]+([0-9.]+))?\s*\)/);
 
     const hexMatch = color.match(/^#([0-9a-fA-F]{6})$/);
 

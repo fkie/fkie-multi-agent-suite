@@ -1,6 +1,3 @@
-import { ButtonGroup, Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
-import React from "react";
-
 import AddToQueueIcon from "@mui/icons-material/AddToQueue";
 import BorderColorIcon from "@mui/icons-material/BorderColor";
 import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
@@ -16,6 +13,8 @@ import StopIcon from "@mui/icons-material/Stop";
 import TerminalIcon from "@mui/icons-material/Terminal";
 import TuneIcon from "@mui/icons-material/Tune";
 import WysiwygIcon from "@mui/icons-material/Wysiwyg";
+import { ButtonGroup, Divider, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import React from "react";
 import LongPressIconButton from "../UI/LongPressIconButton";
 
 export interface HostTreeViewActionsProps {

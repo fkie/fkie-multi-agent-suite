@@ -8,11 +8,10 @@ import traceback
 import rospy
 from fkie_mas_pylib.logging.logging import Log
 
-
 rospy.init_node("launch_test_node", log_level=rospy.DEBUG)
 try:
     print("os.environ:", os.environ)
-    if 'ROS_NAMESPACE' not in os.environ:
+    if "ROS_NAMESPACE" not in os.environ:
         raise Exception("'ROS_NAMESPACE' not in environment of the node")
 except Exception:
     # on load error the process will be killed to notify user in node_manager

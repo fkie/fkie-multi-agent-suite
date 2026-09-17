@@ -7,11 +7,13 @@
 # ****************************************************************************
 
 import json
+
 from fkie_mas_pylib.interface import SelfEncoder
 from fkie_mas_pylib.interface.runtime_interface import DaemonVersion
-from fkie_mas_daemon.version import detect_version
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.websocket.server import WebSocketServer
+
+from fkie_mas_daemon.version import detect_version
 
 
 class VersionServicer:

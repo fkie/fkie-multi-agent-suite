@@ -23,7 +23,7 @@ import { usePersistentLayout } from "@/renderer/hooks/usePersistentLayout";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { DOMAIN_LAYOUT_COMPONENTS, LAYOUT_TABS } from "./LayoutDefines";
 import { hasJsonNode, TJsonNode } from "./LayoutPersistance";
-import { isMovableTab, takeOutTab, TMovableTab } from "./LayoutTabMove";
+import { isMovableTab, TMovableTab, takeOutTab } from "./LayoutTabMove";
 import {
   collapseBorderOnLastTab,
   deleteTabAndSelectNodes,

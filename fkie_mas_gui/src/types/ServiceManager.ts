@@ -14,7 +14,7 @@ export type TServiceConfig = {
   port: number;
   serviceName: string;
   serviceType: string;
-  htmlName: "serviceCaller" | "serviceIntrospection" | "actionSendGoal" | "actionIntrospection"
+  htmlName: "serviceCaller" | "serviceIntrospection" | "actionSendGoal" | "actionIntrospection";
 };
 
 export type TServiceManager = {

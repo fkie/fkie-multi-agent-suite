@@ -7,6 +7,7 @@
 # ****************************************************************************
 
 from rclpy.time import Time
+
 try:
     from rclpy.constants import S_TO_NS
 except:
@@ -14,7 +15,7 @@ except:
 
 
 def rostime2float(rcltime: Time):
-    return float('.'.join(str(ele) for ele in rcltime.seconds_nanoseconds()))
+    return float(".".join(str(ele) for ele in rcltime.seconds_nanoseconds()))
 
 
 def float2rostime(value: float):

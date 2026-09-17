@@ -1,5 +1,6 @@
-import os
 import json
+import os
+
 from .generic_logger import GenericLogger, LoggingLevel
 from .ros1_logger import ROS1Logger
 from .ros2_logger import ROS2Logger
@@ -11,20 +12,18 @@ class LoggingEncoder(json.JSONEncoder):
 
 
 def get_ros_version() -> int:
-    '''
+    """
     Returns the current ROS version, returns -1 if not valid ROS found
-    '''
-    if 'ROS_VERSION' in os.environ:
-        return int(os.environ['ROS_VERSION'])
+    """
+    if "ROS_VERSION" in os.environ:
+        return int(os.environ["ROS_VERSION"])
 
     # try to get ROS1
     try:
-        import rospy
         return 1  # found ROS 1
     except:
         # try to get ROS 2
         try:
-            import rclpy
             return 2  # found ROS 2
         except:
             pass
@@ -45,9 +44,9 @@ else:
 
 
 class Log:
-    '''
+    """
     Wrapper class for logging events in ROS 1 and 2
-    '''
+    """
 
     @staticmethod
     def debug(*args) -> None:
@@ -71,7 +70,7 @@ class Log:
 
     @staticmethod
     def set_ros2_logging_node(node) -> None:
-        if (hasattr(logger, "setNode")):
+        if hasattr(logger, "setNode"):
             logger.setNode(node)
 
     @staticmethod
@@ -82,8 +81,7 @@ class Log:
         if not isinstance(text, str):
             try:
                 # try to get a JSON representation of the object
-                text = json.dumps(
-                    text, cls=LoggingEncoder, ensure_ascii=False)
+                text = json.dumps(text, cls=LoggingEncoder, ensure_ascii=False)
             except:
                 # if fails, use standard python string conversion
                 text = str(text)
@@ -100,6 +98,6 @@ class Log:
         details = ""
         for arg in args:
             for a in arg:
-                details += f' {Log._clear_text(a)} '
+                details += f" {Log._clear_text(a)} "
 
         return details

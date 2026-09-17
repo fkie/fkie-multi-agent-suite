@@ -17,16 +17,12 @@
 import asyncio
 import collections
 import os
-from typing import Any
-from typing import Dict
-from typing import Iterable
-from typing import List  # noqa: F401
-from typing import Mapping
-from typing import Optional
-from typing import Text
+from collections.abc import Iterable, Mapping
+from typing import (
+    Any,
+)
 
 import launch.logging
-
 from launch.event import Event
 from launch.event_handler import BaseEventHandler
 from launch.substitution import Substitution
@@ -35,12 +31,7 @@ from launch.substitution import Substitution
 class LaunchContext:
     """Runtime context used by various launch entities when being visited or executed."""
 
-    def __init__(
-        self,
-        *,
-        argv: Optional[Iterable[Text]] = None,
-        noninteractive: bool = False
-    ) -> None:
+    def __init__(self, *, argv: Iterable[str] | None = None, noninteractive: bool = False) -> None:
         """
         Create a LaunchContext.
 
@@ -107,11 +98,11 @@ class LaunchContext:
 
     def _pop_locals(self):
         if not self.__locals_stack:
-            raise RuntimeError('locals stack unexpectedly empty')
+            raise RuntimeError("locals stack unexpectedly empty")
         self.__locals = self.__locals_stack.pop()
         self._clear_combined_locals_cache()
 
-    def extend_globals(self, extensions: Dict[Text, Any]) -> None:
+    def extend_globals(self, extensions: dict[str, Any]) -> None:
         """
         Extend the context.locals object permanently with new members.
 
@@ -121,7 +112,7 @@ class LaunchContext:
         self.__globals.update(extensions)
         self._clear_combined_locals_cache()
 
-    def extend_locals(self, extensions: Dict[Text, Any]) -> None:
+    def extend_locals(self, extensions: dict[str, Any]) -> None:
         """Extend the context.locals object with new members until popped."""
         self.__locals.update(extensions)
         self._clear_combined_locals_cache()
@@ -135,31 +126,30 @@ class LaunchContext:
             self.__combined_locals_cache.update(self.__locals)
         return self.__combined_locals_cache
 
-    def get_locals_as_dict(self) -> Dict[Text, Any]:
+    def get_locals_as_dict(self) -> dict[str, Any]:
         """Access the context locals as a dictionary."""
         return self._get_combined_locals()
 
     @property  # noqa: A003
     def locals(self):  # noqa: A003
         """Getter for the locals."""
-        class AttributeDict:
 
+        class AttributeDict:
             def __init__(self, dict_in):
-                self.__dict__['__dict'] = dict_in
+                self.__dict__["__dict"] = dict_in
 
             def __getattr__(self, key):
-                _dict = self.__dict__['__dict']
+                _dict = self.__dict__["__dict"]
                 if key not in _dict:
                     raise AttributeError(
                         "context.locals does not contain attribute '{}', it contains: [{}]".format(
-                            key,
-                            ', '.join(_dict.keys())
+                            key, ", ".join(_dict.keys())
                         )
                     )
                 return _dict[key]
 
             def __setattr__(self, key, value):
-                raise AttributeError("can't set attribute '{}', locals are read-only".format(key))
+                raise AttributeError(f"can't set attribute '{key}', locals are read-only")
 
         return AttributeDict(self._get_combined_locals())
 
@@ -168,11 +158,11 @@ class LaunchContext:
 
     def _pop_launch_configurations(self):
         if not self.__launch_configurations_stack:
-            raise RuntimeError('launch_configurations stack unexpectedly empty')
+            raise RuntimeError("launch_configurations stack unexpectedly empty")
         self.__launch_configurations = self.__launch_configurations_stack.pop()
 
     @property
-    def launch_configurations(self) -> Dict[Text, Text]:
+    def launch_configurations(self) -> dict[str, str]:
         """Getter for launch_configurations dictionary."""
         return self.__launch_configurations
 
@@ -198,20 +188,20 @@ class LaunchContext:
 
     def emit_event_sync(self, event: Event) -> None:
         """Emit an event synchronously."""
-        self.__logger.debug("emitting event synchronously: '{}'".format(event.name))
+        self.__logger.debug(f"emitting event synchronously: '{event.name}'")
         # self._event_queue.put_nowait(event)
 
     async def emit_event(self, event: Event) -> None:
         """Emit an event."""
-        self.__logger.debug("emitting event: '{}'".format(event.name))
+        self.__logger.debug(f"emitting event: '{event.name}'")
         # await self._event_queue.put(event)
 
-    def perform_substitution(self, substitution: Substitution) -> Text:
+    def perform_substitution(self, substitution: Substitution) -> str:
         """Perform substitution on given Substitution."""
         return substitution.perform(self)
 
     @property
-    def environment(self) -> Mapping[Text, Text]:
+    def environment(self) -> Mapping[str, str]:
         """Getter for environment variables dictionary."""
         return os.environ
 
@@ -220,7 +210,7 @@ class LaunchContext:
 
     def _pop_environment(self):
         if not self.__environment_stack:
-            raise RuntimeError('environment stack unexpectedly empty')
+            raise RuntimeError("environment stack unexpectedly empty")
 
         # Note that we cannot just assign os.environ to the copy of the
         # environment that we saved during _push_environment() above.

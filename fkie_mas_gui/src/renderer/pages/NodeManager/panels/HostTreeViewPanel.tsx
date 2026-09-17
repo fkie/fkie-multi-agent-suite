@@ -24,10 +24,10 @@ import HostTreeView from "@/renderer/components/HostTreeView/HostTreeView";
 import HostTreeViewActions from "@/renderer/components/HostTreeView/HostTreeViewActions";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/components/layout";
 import {
-  emitOpenComponent,
   EVENT_FILTER_NODES,
   EVENT_KILL_NODES,
   EVENT_SHOW_SCREENS,
+  emitOpenComponent,
   TEventId,
   TEventKillNodes,
   TEventShowScreens,
@@ -44,7 +44,7 @@ import useQueue from "@/renderer/hooks/useQueue";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { Result, RosNode, RosNodeStatus } from "@/renderer/models";
-import { ConnectionState, emitNodeCmdState, EventProviderRestartNodes } from "@/renderer/providers/events";
+import { ConnectionState, EventProviderRestartNodes, emitNodeCmdState } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_RESTART_NODES } from "@/renderer/providers/eventTypes";
 import { TResultClearPath } from "@/renderer/providers/ProviderConnection";
 import { findIn } from "@/renderer/utils/index";
@@ -472,7 +472,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     const provider = rosCtx.getProviderById(node.providerId);
     logCtx.debug(`start: ${node.name}`);
 
-    if (!provider || !provider.isAvailable()) {
+    if (!provider?.isAvailable()) {
       queue.addStatus("START", node.name, false, `Provider ${node.providerName} not available`);
       return;
     }
@@ -650,7 +650,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     logCtx.debug(`stop: ${node.name}`, "");
     const provider = rosCtx.getProviderById(node.providerId);
 
-    if (!provider || !provider.isAvailable()) {
+    if (!provider?.isAvailable()) {
       queue.addStatus("STOP", node.name, false, `Provider ${node.providerName} not available`);
       return;
     }
@@ -963,7 +963,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
     const provider = rosCtx.getProviderById(node.providerId);
 
-    if (!provider || !provider.isAvailable()) {
+    if (!provider?.isAvailable()) {
       queue.addStatus("KILL", node.name, false, `Provider ${node.providerName} not available`);
       return;
     }
@@ -1010,7 +1010,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
     const provider = rosCtx.getProviderById(node.providerId);
 
-    if (!provider || !provider.isAvailable()) {
+    if (!provider?.isAvailable()) {
       queue.addStatus("UNREGISTER", node.name, false, `Provider ${node.providerName} not available`);
       return;
     }
@@ -1064,7 +1064,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
       const promises: Promise<void>[] = [];
       for (const providerId of providers) {
         const provider = rosCtx.getProviderById(providerId);
-        if (!provider || !provider.isAvailable()) continue;
+        if (!provider?.isAvailable()) continue;
 
         const promise = provider
           .rosCleanPurge()
@@ -1119,7 +1119,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
     const provider = rosCtx.getProviderById(node.providerId);
 
-    if (!provider || !provider.isAvailable()) {
+    if (!provider?.isAvailable()) {
       queue.addStatus("CLEAR_LOG", node.name, false, `Provider ${node.providerName} not available`);
       return;
     }

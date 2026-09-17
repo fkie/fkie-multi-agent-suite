@@ -15,7 +15,7 @@ export class MonacoWorkspace {
 
   constructor(
     monaco: MonacoReact.Monaco,
-    private rosCtxRef: React.MutableRefObject<IRosContext>,
+    private rosCtxRef: React.MutableRefObject<IRosContext>
   ) {
     const fs = new MasFileProvider(this.rosCtxRef);
 

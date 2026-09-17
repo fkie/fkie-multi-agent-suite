@@ -1,8 +1,8 @@
-import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
-import { fileFromUriPath } from "@/renderer/monaco/utils";
 import { Alert, Stack } from "@mui/material";
 import { editor } from "monaco-editor";
 import { ForwardedRef } from "react";
+import { useMonacoContext } from "@/renderer/hooks/useMonacoContext";
+import { fileFromUriPath } from "@/renderer/monaco/utils";
 
 interface Props {
   refEl: ForwardedRef<HTMLDivElement>;

@@ -1,5 +1,5 @@
-import { JSONObject } from "@/types";
 import { emitCustomEvent } from "react-custom-events";
+import { JSONObject } from "@/types";
 import { ILoggingContext } from "../context/LoggingContext";
 import { ISettingsContext } from "../context/SettingsContext";
 import { URI } from "../models";

@@ -10,26 +10,23 @@
 import json
 import threading
 import traceback
+from collections.abc import Callable
 from types import SimpleNamespace
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import Optional
-from typing import Union
 
 import websockets
 import websockets.sync
 import websockets.sync.client
 
-from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.interface import SelfAllEncoder
-from fkie_mas_pylib.websocket.queue import QueueItem, PQueue
+from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket.queue import PQueue, QueueItem
 
 
 class WebSocketClient:
-    '''
+    """
     Helper class to communicate with daemon's websocket server.
-    '''
+    """
 
     # limits for the reconnect backoff
     MIN_RETRY_DELAY = 1.0
@@ -41,16 +38,14 @@ class WebSocketClient:
         self._lock = threading.RLock()
         self._shutdown_event = threading.Event()
         self.queue = PQueue(100)
-        self.subscriptions: Dict[str, Callable[[Any], None]] = {}
-        self.registrations: Dict[str, Callable[..., Any]] = {}
+        self.subscriptions: dict[str, Callable[[Any], None]] = {}
+        self.registrations: dict[str, Callable[..., Any]] = {}
         self.connection = None
         self._conn_try = 0
         self._msg_id = 0
-        self._recv_thread = threading.Thread(
-            target=self.recv_handler, daemon=True, name="mas-ws-client-recv")
+        self._recv_thread = threading.Thread(target=self.recv_handler, daemon=True, name="mas-ws-client-recv")
         self._recv_thread.start()
-        self._send_thread = threading.Thread(
-            target=self._send_handler, daemon=True, name="mas-ws-client-send")
+        self._send_thread = threading.Thread(target=self._send_handler, daemon=True, name="mas-ws-client-send")
         self._send_thread.start()
 
     # ------------------------------------------------------------------ #
@@ -58,9 +53,9 @@ class WebSocketClient:
     # ------------------------------------------------------------------ #
 
     def shutdown(self) -> None:
-        '''
+        """
         Closes the connection and stops the receive and send threads.
-        '''
+        """
         self._shutdown_event.set()
         with self._lock:
             connection, self.connection = self.connection, None
@@ -90,13 +85,12 @@ class WebSocketClient:
             return self._msg_id
 
     def _send_request(self, uri: str, param: str) -> None:
-        '''
+        """
         Sends a request to the server. The request is enqueued as is, it must
         not be wrapped into a publish message.
-        '''
+        """
         request = {"uri": uri, "id": self._next_msg_id(), "params": [param]}
-        self.queue.put(QueueItem(json.dumps(
-            request, cls=SelfAllEncoder), priority=0))
+        self.queue.put(QueueItem(json.dumps(request, cls=SelfAllEncoder), priority=0))
 
     def subscribe(self, uri: str, callback: Callable[[Any], None]) -> None:
         with self._lock:
@@ -119,9 +113,9 @@ class WebSocketClient:
             self._send_request("reg", uri)
 
     def _send_initial_requests(self) -> None:
-        '''
+        """
         Sends all subscriptions and registrations after a (re)connect.
-        '''
+        """
         with self._lock:
             # copy the keys to avoid a RuntimeError if another thread subscribes
             subscriptions = list(self.subscriptions.keys())
@@ -139,24 +133,21 @@ class WebSocketClient:
 
     # blocking call
     def recv_handler(self) -> None:
-        '''
+        """
         Connects to the server and receives messages until :meth:`shutdown`
         is called. Reconnects with an exponential backoff.
-        '''
+        """
         retry_delay = self.MIN_RETRY_DELAY
         while not self._shutdown_event.is_set():
             # use 127.0.0.1: the server binds ipv4 only, "localhost" may resolve to ::1
             uri = f"ws://127.0.0.1:{self.port}"
             try:
-                with websockets.sync.client.connect(
-                        uri, max_size=2**22,
-                        open_timeout=self.OPEN_TIMEOUT) as connection:
+                with websockets.sync.client.connect(uri, max_size=2**22, open_timeout=self.OPEN_TIMEOUT) as connection:
                     with self._lock:
                         self.connection = connection
                     self._conn_try = 0
                     retry_delay = self.MIN_RETRY_DELAY
-                    Log.info(
-                        f"connected to {uri}, own address: {connection.local_address}")
+                    Log.info(f"connected to {uri}, own address: {connection.local_address}")
                     self._send_initial_requests()
                     for message in connection:
                         self._handle_message(message)
@@ -165,16 +156,14 @@ class WebSocketClient:
             except websockets.exceptions.ConnectionClosedOK:
                 Log.debug(f"connection to {uri} closed")
             except websockets.exceptions.ConnectionClosedError as recv_error:
-                Log.warn(
-                    f"connection to {uri} closed while recv: {recv_error}")
+                Log.warn(f"connection to {uri} closed while recv: {recv_error}")
             except (ConnectionRefusedError, ConnectionResetError, TimeoutError, OSError) as cr_error:
                 # log only the first attempt to avoid flooding the log
                 if self._conn_try == 0:
                     Log.warn(f"{cr_error}")
             except Exception:
                 if self._conn_try == 0:
-                    Log.error(
-                        f"error in recv handler: {traceback.format_exc()}")
+                    Log.error(f"error in recv handler: {traceback.format_exc()}")
             finally:
                 with self._lock:
                     was_connected = self.connection is not None
@@ -187,18 +176,16 @@ class WebSocketClient:
                 break
             retry_delay = min(retry_delay * 2, self.MAX_RETRY_DELAY)
 
-    def _handle_message(self, message: Union[str, bytes]) -> None:
-        '''
+    def _handle_message(self, message: str | bytes) -> None:
+        """
         Parses one received message and dispatches it to a subscription
         callback or to a registered rpc callback.
-        '''
+        """
         try:
-            msg = json.loads(
-                message, object_hook=lambda d: SimpleNamespace(**d))
+            msg = json.loads(message, object_hook=lambda d: SimpleNamespace(**d))
             if not hasattr(msg, "uri"):
                 if not hasattr(msg, "id"):
-                    Log.warn(
-                        f"received malformed message (no uri, no id): {message}")
+                    Log.warn(f"received malformed message (no uri, no id): {message}")
                 # replies to own requests are not handled here
                 return
             if hasattr(msg, "message"):
@@ -214,43 +201,39 @@ class WebSocketClient:
                 if callback is None:
                     Log.warn(f"no callback registered for {msg.uri}")
                     return
-                self.handle_callback(
-                    getattr(msg, "id", -1), callback, msg.params)
+                self.handle_callback(getattr(msg, "id", -1), callback, msg.params)
         except Exception as error:
             Log.warn(f"error while handling message: {error}")
 
     def handle_callback(self, msg_id: int, callback: Callable[..., Any], args=None) -> None:
-        '''
+        """
         Calls a registered callback and enqueues the reply.
-        '''
+        """
         if args is None:
             args = []
         Log.debug(f"handle callback {msg_id}: {args}")
         try:
             result = callback(*args)
             # a str result is expected to contain valid json already
-            result_json = result if isinstance(result, str) else json.dumps(
-                result, cls=SelfAllEncoder)
+            result_json = result if isinstance(result, str) else json.dumps(result, cls=SelfAllEncoder)
             reply = f'{{"id": {json.dumps(msg_id)}, "result": {result_json}}}'
         except Exception:
             # use json.dumps to escape quotes and newlines of the traceback
-            reply = json.dumps(
-                {"id": msg_id, "error": traceback.format_exc()})
+            reply = json.dumps({"id": msg_id, "error": traceback.format_exc()})
         self.queue.put(QueueItem(reply, priority=0))
 
     # ------------------------------------------------------------------ #
     # publishing
     # ------------------------------------------------------------------ #
 
-    def publish(self, uri: str, message: Union[str, object], latched: bool = False) -> None:
-        '''
+    def publish(self, uri: str, message: str | object, latched: bool = False) -> None:
+        """
         Enqueues a message for all subscribers of the given uri.
 
         :param message: a str is forwarded as is and must contain valid json.
-        '''
+        """
         # TODO: add resend_after_connect?
-        msg = message if isinstance(message, str) else json.dumps(
-            message, cls=SelfAllEncoder)
+        msg = message if isinstance(message, str) else json.dumps(message, cls=SelfAllEncoder)
         item = {"uri": uri, "latched": latched}
         # insert the already serialized message without a second json round
         prefix = json.dumps(item, cls=SelfAllEncoder)[:-1]
@@ -258,9 +241,9 @@ class WebSocketClient:
 
     # blocking call
     def _send_handler(self) -> None:
-        '''
+        """
         Sends the queued messages until :meth:`shutdown` is called.
-        '''
+        """
         while not self._shutdown_event.is_set():
             try:
                 item = self.queue.get()
@@ -275,10 +258,13 @@ class WebSocketClient:
                 connection.send(item.data)
             except websockets.exceptions.ConnectionClosedOK:
                 pass
-            except (websockets.exceptions.ConnectionClosedError,
-                    ConnectionRefusedError, ConnectionResetError, OSError) as send_error:
-                Log.warn(
-                    f"websocket connection to port {self.port} lost while send: {send_error}")
+            except (
+                websockets.exceptions.ConnectionClosedError,
+                ConnectionRefusedError,
+                ConnectionResetError,
+                OSError,
+            ) as send_error:
+                Log.warn(f"websocket connection to port {self.port} lost while send: {send_error}")
                 with self._lock:
                     self.connection = None
             except Exception:

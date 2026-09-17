@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import rclpy
-from rclpy.node import Node
-from rclpy.duration import Duration
-from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
-
-from rcl_interfaces.msg import Log
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
+from rcl_interfaces.msg import Log
+from rclpy.duration import Duration
+from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 
 
 class ResetItem:
@@ -17,32 +16,31 @@ class ResetItem:
 
 
 class RosoutToDiag(Node):
-
     def __init__(self):
-        super().__init__('rosout_to_diag', namespace="mas")
+        super().__init__("rosout_to_diag", namespace="mas")
 
         # Parameter
-        self.declare_parameter('duration_reset', 1.0)
-        duration_reset = self.get_parameter('duration_reset').value
+        self.declare_parameter("duration_reset", 1.0)
+        duration_reset = self.get_parameter("duration_reset").value
         self.get_logger().info(f"param duration_reset: {duration_reset}")
 
-        self.declare_parameter('whitelist_nodes', [])
-        wl_nodes = self.get_parameter('whitelist_nodes').get_parameter_value().string_array_value
+        self.declare_parameter("whitelist_nodes", [])
+        wl_nodes = self.get_parameter("whitelist_nodes").get_parameter_value().string_array_value
         self.whitelist_nodes = set(wl_nodes)
         self.get_logger().info(f"param whitelist_nodes: {self.whitelist_nodes}")
 
-        self.declare_parameter('blacklist_nodes', [])
-        bl_nodes = self.get_parameter('blacklist_nodes').get_parameter_value().string_array_value
+        self.declare_parameter("blacklist_nodes", [])
+        bl_nodes = self.get_parameter("blacklist_nodes").get_parameter_value().string_array_value
         self.blacklist_nodes = set(bl_nodes)
         self.get_logger().info(f"param blacklist_nodes: {self.blacklist_nodes}")
 
-        self.declare_parameter('whitelist_words', [])
-        wl_words = self.get_parameter('whitelist_words').get_parameter_value().string_array_value
+        self.declare_parameter("whitelist_words", [])
+        wl_words = self.get_parameter("whitelist_words").get_parameter_value().string_array_value
         self.whitelist_words = set(wl_words)
         self.get_logger().info(f"param whitelist_words: {self.whitelist_words}")
 
-        self.declare_parameter('blacklist_words', [])
-        bl_words = self.get_parameter('blacklist_words').get_parameter_value().string_array_value
+        self.declare_parameter("blacklist_words", [])
+        bl_words = self.get_parameter("blacklist_words").get_parameter_value().string_array_value
         self.blacklist_words = set(bl_words)
         self.get_logger().info(f"param blacklist_words: {self.blacklist_words}")
 
@@ -52,19 +50,15 @@ class RosoutToDiag(Node):
 
         # QoS Profile
         qos_transient = QoSProfile(
-            depth=100,
-            reliability=ReliabilityPolicy.RELIABLE,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL
+            depth=100, reliability=ReliabilityPolicy.RELIABLE, durability=DurabilityPolicy.TRANSIENT_LOCAL
         )
         qos_volatile = QoSProfile(
-            depth=10,
-            reliability=ReliabilityPolicy.RELIABLE,
-            durability=DurabilityPolicy.VOLATILE
+            depth=10, reliability=ReliabilityPolicy.RELIABLE, durability=DurabilityPolicy.VOLATILE
         )
 
         # Publisher & Subscriber
-        self.pub_diag = self.create_publisher(DiagnosticArray, '/mas/diagnostics', qos_volatile)
-        self.sub_rosout = self.create_subscription(Log, '/rosout', self.callback_log, qos_profile=qos_transient)
+        self.pub_diag = self.create_publisher(DiagnosticArray, "/mas/diagnostics", qos_volatile)
+        self.sub_rosout = self.create_subscription(Log, "/rosout", self.callback_log, qos_profile=qos_transient)
 
         # Timer für Reset
         self.create_timer(0.1, self.timer_reset)
@@ -93,8 +87,8 @@ class RosoutToDiag(Node):
         da = DiagnosticArray()
         da.header.stamp = msg.stamp
         status = DiagnosticStatus()
-        status.values.append(KeyValue(key='color', value=''))
-        status.name = '/' + msg.name
+        status.values.append(KeyValue(key="color", value=""))
+        status.name = "/" + msg.name
         status.message = msg.msg
 
         if msg.level == Log.WARN:
@@ -115,10 +109,7 @@ class RosoutToDiag(Node):
 
         # Reset-Eintrag
         reset_time = self.get_clock().now() + self.reset_duration
-        self.reset_queue[status.name] = ResetItem(reset_time,
-                                                  status.message,
-                                                  future_color,
-                                                  status.level)
+        self.reset_queue[status.name] = ResetItem(reset_time, status.message, future_color, status.level)
 
         self.get_logger().debug(f"{msg.name}: {status.values[0].value} '{msg.msg}'")
 
@@ -133,7 +124,7 @@ class RosoutToDiag(Node):
                 status.name = name
                 status.message = item.msg
                 status.level = item.level
-                status.values.append(KeyValue(key='color', value=item.color))
+                status.values.append(KeyValue(key="color", value=item.color))
                 da.status.append(status)
                 self.pub_diag.publish(da)
                 to_delete.append(name)
@@ -151,5 +142,5 @@ def main(args=None):
         rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

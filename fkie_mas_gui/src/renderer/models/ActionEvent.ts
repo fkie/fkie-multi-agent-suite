@@ -8,5 +8,5 @@ export interface ActionEvent {
   status: string; // e.g. "accepted", "executing", "succeeded", "canceled", "aborted"
   data: JSONObject | null;
   timestamp: number;
-  message: string
+  message: string;
 }

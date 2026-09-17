@@ -1,9 +1,9 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
+import { alpha, Box, Stack } from "@mui/material";
 import { SimpleTreeView } from "@mui/x-tree-view";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
-
 import { LAYOUT_TABS } from "@/renderer/components/layout";
 import { emitOpenComponent } from "@/renderer/components/layout/events";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
@@ -13,11 +13,10 @@ import { useSetting } from "@/renderer/hooks/useSetting";
 import { getFileName, LaunchContent, LaunchFile, RosNode, RosNodeStatus } from "@/renderer/models";
 import InfoNoRunningDaemons from "@/renderer/pages/NodeManager/panels/InfoNoRunningDaemons";
 import { Provider } from "@/renderer/providers";
-import { EVENT_PROVIDER_LAUNCH_LOADED } from "@/renderer/providers/eventTypes";
 import { EventProviderLaunchLoaded } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_LAUNCH_LOADED } from "@/renderer/providers/eventTypes";
 import { generateUniqueId, idFromDDSLocations, nodeNameWithoutNamespace, removeDDSuid } from "@/renderer/utils";
 import { CmdTypes } from "@/types";
-import { alpha, Box, Stack } from "@mui/material";
 import GroupItem, { GroupIcon, MultiScreenIcon, NodesCount } from "./GroupItem";
 import HostItem from "./HostItem";
 import LaunchFileList from "./LaunchFileList";

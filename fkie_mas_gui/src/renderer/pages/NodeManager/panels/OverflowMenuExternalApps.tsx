@@ -2,9 +2,8 @@ import AppsIcon from "@mui/icons-material/Apps";
 import { useCallback, useMemo } from "react";
 
 import OverflowMenu, { OverflowMenuItem } from "@/renderer/components/UI/OverflowMenu";
-import { generateUniqueId } from "@/renderer/utils";
 import { Provider } from "@/renderer/providers";
-
+import { generateUniqueId } from "@/renderer/utils";
 
 type RowType = {
   id: string;
@@ -75,7 +74,6 @@ const applicationRows: RowType[] = [
   },
 ];
 
-
 interface OverflowMenuExternalAppsProps {
   provider: Provider;
 }
@@ -97,7 +95,6 @@ export default function OverflowMenuExternalApps(props: OverflowMenuExternalApps
       } else {
         window.commandExecutor?.exec(null, command.commandROS1);
       }
-
     },
     [window.commandExecutor]
   );
@@ -107,9 +104,8 @@ export default function OverflowMenuExternalApps(props: OverflowMenuExternalApps
       const errorResult: OverflowMenuItem = {
         name: "No Provider available",
         key: "not-available",
-        onClick: (): void => {
-        },
-      }
+        onClick: (): void => {},
+      };
       return [errorResult];
     }
 
@@ -117,35 +113,33 @@ export default function OverflowMenuExternalApps(props: OverflowMenuExternalApps
       const errorResult: OverflowMenuItem = {
         name: "No executer to start local nodes available",
         key: "not-executor",
-        onClick: (): void => {
-        },
-      }
+        onClick: (): void => {},
+      };
       return [errorResult];
     }
 
     const rosVersion = provider.rosVersion;
 
-    return applicationRows.filter((row) => {
-      if (rosVersion === "1" && row.commandROS1) return true;
-      if (rosVersion === "2" && row.package) return true;
-      return false;
-    }).map((row) => {
-      let command: RowType | null = null;
-      if (rosVersion === "1" && row.commandROS1) command = row;
-      if (rosVersion === "2" && row.package) command = row;
-      const result: OverflowMenuItem = {
-        name: row.application || row.name,
-        key: `${row.application.replaceAll(" ", "-")}-${row.name}`,
-        onClick: (): void => {
-          if (command)
-            runApp(command);
-        }
-      }
-      return result;
-    })
-
-
-  }, [window.commandExecutor])
+    return applicationRows
+      .filter((row) => {
+        if (rosVersion === "1" && row.commandROS1) return true;
+        if (rosVersion === "2" && row.package) return true;
+        return false;
+      })
+      .map((row) => {
+        let command: RowType | null = null;
+        if (rosVersion === "1" && row.commandROS1) command = row;
+        if (rosVersion === "2" && row.package) command = row;
+        const result: OverflowMenuItem = {
+          name: row.application || row.name,
+          key: `${row.application.replaceAll(" ", "-")}-${row.name}`,
+          onClick: (): void => {
+            if (command) runApp(command);
+          },
+        };
+        return result;
+      });
+  }, [window.commandExecutor]);
 
   const createMenu = useMemo(() => {
     return (

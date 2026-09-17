@@ -1,5 +1,5 @@
 // load default style for flexlayout-react. Dark/Light theme changes are in ./themes
-import { createTheme, CssBaseline } from "@mui/material";
+import { CssBaseline, createTheme } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import { SnackbarProvider } from "notistack";
 import React, { useEffect, useState } from "react";

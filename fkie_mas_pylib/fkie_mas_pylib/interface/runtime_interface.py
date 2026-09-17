@@ -2,12 +2,13 @@ import csv
 import json
 import os
 import platform
-import psutil
-from typing import List, Dict, Union, Tuple
 import re
 import time
-from fkie_mas_pylib.logging.logging import Log
+
+import psutil
+
 from fkie_mas_pylib import names
+from fkie_mas_pylib.logging.logging import Log
 
 SEP = "/"
 if "ROS_VERSION" in os.environ and os.environ["ROS_VERSION"] == "1":
@@ -25,9 +26,11 @@ def get_node_name(name):
     result = os.path.basename(name).strip(SEP)
     return result
 
+
 class DelayRosUpdateState:
     def __init__(self, sec: float = 0) -> None:
         self.sec = sec
+
 
 class RosDuration:
     def __init__(self, sec: int = 0, nanosec: int = 0) -> None:
@@ -168,7 +171,7 @@ class IncompatibleQos:
 
 
 class EndpointInfo:
-    def __init__(self, gid: str, node_id: str, qos: Union[RosQos, None], incompatible_qos: List[IncompatibleQos]) -> None:
+    def __init__(self, gid: str, node_id: str, qos: RosQos | None, incompatible_qos: list[IncompatibleQos]) -> None:
         self.gid = gid
         self.node_id = node_id
         self.qos = qos
@@ -180,8 +183,8 @@ class RosTopic:
         self.id = str(RosTopicId(name, msg_type))
         self.name = name
         self.msg_type = msg_type
-        self.publisher: List[EndpointInfo] = []
-        self.subscriber: List[EndpointInfo] = []
+        self.publisher: list[EndpointInfo] = []
+        self.subscriber: list[EndpointInfo] = []
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
@@ -221,8 +224,8 @@ class RosService:
         self.srv_type = srv_type
         self.masteruri = ""
         self.service_API_URI = ""
-        self.provider: List[str] = []
-        self.requester: List[str] = []
+        self.provider: list[str] = []
+        self.requester: list[str] = []
         self.location = "unknown"
         self.is_request = False
 
@@ -234,13 +237,11 @@ class RosService:
 
 
 class RosParameterRange:
-    from_value: Union[int, float, None]
-    to_value: Union[int, float, None]
-    step: Union[int, float, None]
+    from_value: int | float | None
+    to_value: int | float | None
+    step: int | float | None
 
-    def __init__(
-        self, from_value: Union[int, float, None], to_value: Union[int, float, None], step: Union[int, float, None]
-    ) -> None:
+    def __init__(self, from_value: int | float | None, to_value: int | float | None, step: int | float | None) -> None:
         self.from_value = from_value
         self.to_value = to_value
         self.step = step
@@ -251,18 +252,16 @@ class RosParameter:
     Models a ROS parameter object
     """
 
-    def __init__(
-        self, node: str, name: str, value: Union[int, float, bool, str, List, Dict], type: str = None
-    ) -> None:
+    def __init__(self, node: str, name: str, value: int | float | bool | str | list | dict, type: str = None) -> None:
         self.node = node
         self.name = name
         self.value = value
         self.type = type
         self.readonly: bool = False
-        self.description: Union[str, None] = None
-        self.additional_constraints: Union[str, None] = None
-        self.floating_point_range: List[RosParameterRange] = []
-        self.integer_range: List[RosParameterRange] = []
+        self.description: str | None = None
+        self.additional_constraints: str | None = None
+        self.floating_point_range: list[RosParameterRange] = []
+        self.integer_range: list[RosParameterRange] = []
 
         if self.type is None:
             self.type = self.get_type()
@@ -278,30 +277,29 @@ class RosParameter:
         return re.findall("'(.*)'", str(type(self.value)))[0]
 
     def typed_value(self):
-        if self.type == 'str':
+        if self.type == "str":
             return self.value
-        elif self.type == 'int':
+        elif self.type == "int":
             return int(self.value)
-        elif self.type == 'float':
+        elif self.type == "float":
             return float(self.value)
-        elif self.type == 'bool':
+        elif self.type == "bool":
             if isinstance(self.value, str):
-                return self.value.lower() in ['true', '1']
+                return self.value.lower() in ["true", "1"]
             else:
                 return self.value
-        elif self.type == 'list':
+        elif self.type == "list":
             return [a.strip() for a in self.value.split(",")]
-        elif self.type == 'str[]':
+        elif self.type == "str[]":
             return [a.strip() for a in list(csv.reader([self.value.replace(', "', ',"')]))[0]]
-        elif self.type == 'int[]':
+        elif self.type == "int[]":
             return [int(a.strip()) for a in self.value.split(",")]
-        elif self.type == 'float[]':
+        elif self.type == "float[]":
             return [float(a.strip()) for a in self.value.split(",")]
-        elif self.type == 'bool[]':
-            return [a.strip().lower() in ['true', '1'] for a in self.value.split(",")]
+        elif self.type == "bool[]":
+            return [a.strip().lower() in ["true", "1"] for a in self.value.split(",")]
         if self.type is not None:
-            print(
-                f"not changed parameter type: {self.type}, value type: {type(self.value)}, value: {self.value}")
+            print(f"not changed parameter type: {self.type}, value type: {type(self.value)}, value: {self.value}")
         return self.value
 
     def __str__(self) -> str:
@@ -327,11 +325,11 @@ class RosNode:
         self.masteruri = None
         self.location = "unknown"
         self.is_local = False
-        self.publishers: List[RosTopicId] = []
-        self.subscribers: List[RosTopicId] = []
-        self.services: List[RosTopicId] = []
-        self.screens: List[str] = []
-        self.parameters: List[RosParameter] = []
+        self.publishers: list[RosTopicId] = []
+        self.subscribers: list[RosTopicId] = []
+        self.services: list[RosTopicId] = []
+        self.screens: list[str] = []
+        self.parameters: list[RosParameter] = []
         self.system_node = False
         self.enclave = ""
 
@@ -340,12 +338,11 @@ class RosNode:
 
 
 class RosComposable:
-
-    def __init__(self, container_name: str, node_id: str, nodes: List[str] = None) -> None:
+    def __init__(self, container_name: str, node_id: str, nodes: list[str] = None) -> None:
         self.containerName = container_name
         self.nodeId = node_id
-        self.nodes: List[str] = [] if nodes is None else nodes
-        self.composableIds: List[Tuple[str, int]] = []
+        self.nodes: list[str] = [] if nodes is None else nodes
+        self.composableIds: list[tuple[str, int]] = []
 
 
 class LifecycleTransition:
@@ -355,13 +352,15 @@ class LifecycleTransition:
 
 
 class RosLifecycleState:
-
-    def __init__(self, id: str, name: str, state: str = "unknown", available_transitions: List[LifecycleTransition] = None) -> None:
+    def __init__(
+        self, id: str, name: str, state: str = "unknown", available_transitions: list[LifecycleTransition] = None
+    ) -> None:
         self.id = id
         self.name = name
         self.state = state
-        self.available_transitions: List[LifecycleTransition] = [
-        ] if available_transitions is None else available_transitions
+        self.available_transitions: list[LifecycleTransition] = (
+            [] if available_transitions is None else available_transitions
+        )
 
 
 class RosProvider:
@@ -381,25 +380,17 @@ class RosProvider:
         port: int,
         masteruri: str = "",
         origin: bool = False,
-        hostnames: List[str] = None,
+        hostnames: list[str] = None,
     ) -> None:
         # Add ROS and system information
         try:
-            self.ros_version = (
-                os.environ["ROS_VERSION"] if "ROS_VERSION" in os.environ else ""
-            )
-            self.ros_distro = (
-                os.environ["ROS_DISTRO"] if "ROS_DISTRO" in os.environ else ""
-            )
-            self.ros_domain_id = (
-                os.environ["ROS_DOMAIN_ID"] if "ROS_DOMAIN_ID" in os.environ else ""
-            )
+            self.ros_version = os.environ["ROS_VERSION"] if "ROS_VERSION" in os.environ else ""
+            self.ros_distro = os.environ["ROS_DISTRO"] if "ROS_DISTRO" in os.environ else ""
+            self.ros_domain_id = os.environ["ROS_DOMAIN_ID"] if "ROS_DOMAIN_ID" in os.environ else ""
         except:
             import traceback
 
-            Log.error(
-                f"Error when initializing new provider [{name}]: {traceback.format_exc()}"
-            )
+            Log.error(f"Error when initializing new provider [{name}]: {traceback.format_exc()}")
 
         # add distro to name, to prevent collisions when ROS1 and ROS2
         # run simultaneously on the same host
@@ -417,8 +408,7 @@ class RosProvider:
 
 
 class SystemInformation:
-    """
-    """
+    """ """
 
     def getSystemInfo(self):
         systemInfo = {}
@@ -441,7 +431,7 @@ class SystemInformation:
         try:
             systemInfo["cpuCores"] = psutil.cpu_count(logical=False)
             systemInfo["cpuThreads"] = psutil.cpu_count(logical=True)
-        except Exception as err:
+        except Exception:
             pass
 
         # RAM Informationen
@@ -452,7 +442,7 @@ class SystemInformation:
             systemInfo["ramUsed"] = (ram.total - ram.available) / 1024**3
             systemInfo["ramAvailable"] = ram.available / 1024**3
             systemInfo["ramPercent"] = ram.percent
-        except Exception as err:
+        except Exception:
             pass
 
         # Disk Informationen
@@ -462,7 +452,7 @@ class SystemInformation:
             systemInfo["diskUsed"] = (disk.total - disk.free) / 1024**3
             systemInfo["diskFree"] = disk.free / 1024**3
             systemInfo["diskPercent"] = disk.percent
-        except Exception as err:
+        except Exception:
             pass
 
         return systemInfo
@@ -476,8 +466,7 @@ class SystemInformation:
         except:
             import traceback
 
-            Log.error(
-                f"Error when create system information: {traceback.format_exc()}")
+            Log.error(f"Error when create system information: {traceback.format_exc()}")
             self.system_info = {}
 
     def __str__(self):
@@ -485,8 +474,7 @@ class SystemInformation:
 
 
 class SystemEnvironment:
-    """
-    """
+    """ """
 
     def __init__(self) -> None:
         try:
@@ -494,9 +482,7 @@ class SystemEnvironment:
         except:
             import traceback
 
-            Log.error(
-                f"Error when create environment information: {traceback.format_exc()}"
-            )
+            Log.error(f"Error when create environment information: {traceback.format_exc()}")
             self.environment = {}
 
     def __str__(self):
@@ -509,7 +495,7 @@ class ScreensMapping:
     :param [str] screens: list the screen names associated with given node.
     """
 
-    def __init__(self, name: str, screens: List[str]) -> None:
+    def __init__(self, name: str, screens: list[str]) -> None:
         self.name = name
         self.screens = screens
 
@@ -544,7 +530,7 @@ class SystemWarningGroup:
     :param list[SystemWarning] warnings: list of warnings.
     """
 
-    def __init__(self, id: str, warnings: List[SystemWarning] = None) -> None:
+    def __init__(self, id: str, warnings: list[SystemWarning] = None) -> None:
         self.id = id
         self.warnings = [] if warnings is None else warnings
 
@@ -590,7 +576,7 @@ class SubscriberFilter:
         hz: float = 1,
         window: int = 0,
         arrayItemsCount: int = 15,
-        resetStats: bool = False
+        resetStats: bool = False,
     ) -> None:
         self.no_data = no_data
         self.no_arr = no_arr
@@ -641,7 +627,7 @@ class SubscriberEvent:
         topic: str,
         message_type: str = "",
         latched: bool = False,
-        data: Dict = {},
+        data: dict = {},
         count: int = 0,
         rate: float = -1,
         bw: float = -1,
@@ -676,8 +662,16 @@ class SubscriberEvent:
 class ActionEvent:
     """Event published via websocket for action feedback/result."""
 
-    def __init__(self, action_name: str, action_type: str, event_type: str,
-                 goal_id: str, status: str, data=None, timestamp: float = 0):
+    def __init__(
+        self,
+        action_name: str,
+        action_type: str,
+        event_type: str,
+        goal_id: str,
+        status: str,
+        data=None,
+        timestamp: float = 0,
+    ):
         self.action_name = action_name
         self.action_type = action_type
         self.type = event_type  # "feedback" or "result"
@@ -705,13 +699,13 @@ class DaemonVersion:
 
 class DiagnosticStatus:
     """
- This message holds the status of an individual component of the host.
-  :param level: level of operation enumerated above
-  :param name: a description of the test/component reporting
-  :param message: a description of the status
-  :param hardware_id: a hardware unique string
-  :param values: an array of values associated with the status
-     """
+    This message holds the status of an individual component of the host.
+     :param level: level of operation enumerated above
+     :param name: a description of the test/component reporting
+     :param message: a description of the status
+     :param hardware_id: a hardware unique string
+     :param values: an array of values associated with the status
+    """
 
     # Possible levels of operations
     class LevelType:
@@ -725,7 +719,7 @@ class DiagnosticStatus:
             self.key = key
             self.value = value
 
-    def __init__(self, level: LevelType, name: str, message: str, hardware_id: str, values: List[KeyValue]) -> None:
+    def __init__(self, level: LevelType, name: str, message: str, hardware_id: str, values: list[KeyValue]) -> None:
         self.level = level
         self.name = name
         self.message = message
@@ -735,13 +729,13 @@ class DiagnosticStatus:
 
 class DiagnosticArray:
     """
-    This message is used to send diagnostic information about the state of the host.
-:param timestamp:
-:param status: an array of components being reported on.
+        This message is used to send diagnostic information about the state of the host.
+    :param timestamp:
+    :param status: an array of components being reported on.
 
     """
 
-    def __init__(self, timestamp: float, status: List[DiagnosticStatus]) -> None:
+    def __init__(self, timestamp: float, status: list[DiagnosticStatus]) -> None:
         self.timestamp = timestamp
         self.status = status
 
@@ -751,7 +745,7 @@ class LoggerConfig:
     Logger configuration for one of the ros node logger.
     :param level: level of logging
     :param name: name of the logger
-     """
+    """
 
     # Possible levels of logging
     class LogLevelType:

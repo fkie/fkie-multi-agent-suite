@@ -6,42 +6,57 @@
 #
 # ****************************************************************************
 
-from typing import Any
-from typing import Callable
-from typing import Union
-from typing import Tuple
-
 import argparse
 import json
 import time
+from collections.abc import Callable
+from typing import Any
 
 import rospy
-from roslib import message
 from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.interface.runtime_interface import SubscriberEvent
-from fkie_mas_pylib.interface.runtime_interface import SubscriberFilter
+from fkie_mas_pylib.interface.runtime_interface import SubscriberEvent, SubscriberFilter
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.websocket.client import WebSocketClient
+from roslib import message
 
 
 def str2bool(v):
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+    if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+    elif v.lower() in ("no", "false", "f", "n", "0"):
         return False
     else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 class MsgEncoder(json.JSONEncoder):
-    def __init__(self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True, allow_nan: bool = True, sort_keys: bool = False, indent: Union[int, str, None] = None, separators: Union[Tuple[str, str], None] = None, default: Union[Callable[..., Any], None] = None,
-                 no_arr: bool = True,
-                 no_str: bool = True,
-                 array_items_count: int = 15) -> None:
-        super().__init__(skipkeys=skipkeys, ensure_ascii=ensure_ascii, check_circular=check_circular,
-                         allow_nan=allow_nan, sort_keys=sort_keys, indent=indent, separators=separators, default=default)
+    def __init__(
+        self,
+        *,
+        skipkeys: bool = False,
+        ensure_ascii: bool = True,
+        check_circular: bool = True,
+        allow_nan: bool = True,
+        sort_keys: bool = False,
+        indent: int | str | None = None,
+        separators: tuple[str, str] | None = None,
+        default: Callable[..., Any] | None = None,
+        no_arr: bool = True,
+        no_str: bool = True,
+        array_items_count: int = 15,
+    ) -> None:
+        super().__init__(
+            skipkeys=skipkeys,
+            ensure_ascii=ensure_ascii,
+            check_circular=check_circular,
+            allow_nan=allow_nan,
+            sort_keys=sort_keys,
+            indent=indent,
+            separators=separators,
+            default=default,
+        )
         self.no_arr = no_arr
         self.no_str = no_str
         self.array_items_count = array_items_count
@@ -53,7 +68,7 @@ class MsgEncoder(json.JSONEncoder):
             obj_bytes = []
             for byte in obj:
                 if len(obj_bytes) >= self.array_items_count:
-                    obj_bytes.append(f'another {len(obj) - len(obj_bytes)} discarded by MAS')
+                    obj_bytes.append(f"another {len(obj) - len(obj_bytes)} discarded by MAS")
                     break
                 obj_bytes.append(str(byte))
             result = obj_bytes
@@ -72,7 +87,6 @@ class MsgEncoder(json.JSONEncoder):
 
 
 class SubscriberNode:
-
     DEFAULT_WINDOWS_SIZE = 100
 
     def __init__(self, node_name: str, log_level: int = rospy.INFO, test_env: bool = False):
@@ -100,7 +114,7 @@ class SubscriberNode:
         self._latched_messages = []
         # stats parameter
         self._last_received_ts = 0
-        self._msg_t0 = -1.
+        self._msg_t0 = -1.0
         self._msg_tn = 0
         self._times = []
         self._bytes = []
@@ -110,43 +124,56 @@ class SubscriberNode:
         self.__msg_class = message.get_message_class(self._message_type)
         if self.__msg_class:
             self.wsClient = WebSocketClient(self._ws_port)
-            self.wsClient.subscribe(
-                f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
-            self.sub = rospy.Subscriber(
-                self._topic, self.__msg_class, self._msg_handle)
+            self.wsClient.subscribe(f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
+            self.sub = rospy.Subscriber(self._topic, self.__msg_class, self._msg_handle)
         else:
-            raise Exception(
-                f"Cannot load message class for [{self._message_type}]. Did you build messages?")
+            raise Exception(f"Cannot load message class for [{self._message_type}]. Did you build messages?")
 
     def __del__(self):
         self.stop()
 
     def stop(self):
-        if hasattr(self, 'wsClient'):
+        if hasattr(self, "wsClient"):
             self.wsClient.shutdown()
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--ws_port', nargs='?', type=int,
-                            required=True,  help='port for websocket server')
-        parser.add_argument('-t', '--topic', nargs='?', required=True,
-                            help="Name of the ROS topic to listen to (e.g. '/chatter')")
-        parser.add_argument("-m", "--message_type", nargs='?', required=True,
-                            help="Type of the ROS message (e.g. 'std_msgs/msg/String')")
-        parser.add_argument('--no_data', action='store_true',
-                            help='Report only statistics without message content.')
-        parser.add_argument('--no_arr', action='store_true',
-                            help='Exclude arrays.')
-        parser.add_argument('--no_str', action='store_true',
-                            help='Exclude string fields.')
-        parser.add_argument('--hz', nargs='?', type=int, default=1,
-                            help='Rate to forward messages. Ignored on latched topics. Disabled by 0.')
-        parser.add_argument('--window', nargs='?', type=int, default=1,
-                            help='window size, in # of messages, for calculating rate.')
-        parser.add_argument('--array_items_count', nargs='?', type=int, default=15,
-                            help='Maximum array length in messages reported to the gui')
-        parser.add_argument('--tcp_no_delay', action='store_true',
-                            help='use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1).')
+        parser.add_argument("--ws_port", nargs="?", type=int, required=True, help="port for websocket server")
+        parser.add_argument(
+            "-t", "--topic", nargs="?", required=True, help="Name of the ROS topic to listen to (e.g. '/chatter')"
+        )
+        parser.add_argument(
+            "-m",
+            "--message_type",
+            nargs="?",
+            required=True,
+            help="Type of the ROS message (e.g. 'std_msgs/msg/String')",
+        )
+        parser.add_argument("--no_data", action="store_true", help="Report only statistics without message content.")
+        parser.add_argument("--no_arr", action="store_true", help="Exclude arrays.")
+        parser.add_argument("--no_str", action="store_true", help="Exclude string fields.")
+        parser.add_argument(
+            "--hz",
+            nargs="?",
+            type=int,
+            default=1,
+            help="Rate to forward messages. Ignored on latched topics. Disabled by 0.",
+        )
+        parser.add_argument(
+            "--window", nargs="?", type=int, default=1, help="window size, in # of messages, for calculating rate."
+        )
+        parser.add_argument(
+            "--array_items_count",
+            nargs="?",
+            type=int,
+            default=15,
+            help="Maximum array length in messages reported to the gui",
+        )
+        parser.add_argument(
+            "--tcp_no_delay",
+            action="store_true",
+            help="use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1).",
+        )
         # parser.add_argument('--use_sim_time', type=str2bool, nargs='?', const=True, default=False, help='Enable ROS simulation time (Only ROS2).')
         parser.set_defaults(no_data=False)
         parser.set_defaults(no_arr=False)
@@ -157,7 +184,7 @@ class SubscriberNode:
 
     def _msg_handle(self, data):
         self._count_received += 1
-        self._latched = data._connection_header['latching'] != '0'
+        self._latched = data._connection_header["latching"] != "0"
         if self._first_msg_ts == 0:
             self._first_msg_ts = time.time()
         # print(data._connection_header)
@@ -167,8 +194,13 @@ class SubscriberNode:
         event = SubscriberEvent(self._topic, self._message_type)
         event.latched = self._latched
         if not self._no_data:
-            event.data = json.loads(json.dumps(
-                data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str, "array_items_count": self._array_items_count}))
+            event.data = json.loads(
+                json.dumps(
+                    data,
+                    cls=MsgEncoder,
+                    **{"no_arr": self._no_arr, "no_str": self._no_str, "array_items_count": self._array_items_count},
+                )
+            )
         event.count = self._count_received
         self._calc_stats(data, event)
         timeouted = self._hz == 0
@@ -179,11 +211,15 @@ class SubscriberNode:
                 timeouted = True
         if (event.latched and time.time() - self._first_msg_ts < 2.0) or timeouted:
             self.wsClient.publish(
-                f"ros.subscriber.event.{self._topic.replace('/', '_')}", json.dumps(event, cls=SelfEncoder), latched=self._latched)
+                f"ros.subscriber.event.{self._topic.replace('/', '_')}",
+                json.dumps(event, cls=SelfEncoder),
+                latched=self._latched,
+            )
 
     def _get_message_size(self, msg):
         buff = None
         from io import BytesIO  # Python 3.x
+
         buff = BytesIO()
         msg.serialize(buff)
         return buff.getbuffer().nbytes
@@ -231,7 +267,7 @@ class SubscriberNode:
         n = len(self._times)
         if n > 1:
             avg = sum_times / n
-            event.rate = 1. / avg if avg > 0. else 0
+            event.rate = 1.0 / avg if avg > 0.0 else 0
 
         # # min and max
         # if self.SHOW_JITTER or self.show_only_rate:

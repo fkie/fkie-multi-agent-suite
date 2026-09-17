@@ -1,9 +1,9 @@
-import { SubscriberCloseCallback, SubscriberManagerEvents, TSubscriberConfig, TSubscriberManager } from "@/types";
+import { join } from "node:path";
 import subIcon from "@public/google_chat_bubble.png?asset";
 import { BrowserWindow, ipcMain } from "electron";
-import { join } from "node:path";
-import { openUrl } from ".";
+import { SubscriberCloseCallback, SubscriberManagerEvents, TSubscriberConfig, TSubscriberManager } from "@/types";
 import windowStateKeeper from "../windowStateKeeper";
+import { openUrl } from ".";
 
 type TSubscriber = {
   window: BrowserWindow;

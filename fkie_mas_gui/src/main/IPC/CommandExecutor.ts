@@ -1,11 +1,11 @@
-import { CommandExecutorEvents, TCommandExecutor, TSystemInfo } from "@/types";
-import { ipcMain } from "electron";
-import log from "electron-log";
-import { spawn, spawnSync, StdioOptions } from "node:child_process";
+import { StdioOptions, spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { ipcMain } from "electron";
+import log from "electron-log";
 import { Client, ClientChannel, ClientErrorExtensions, ConnectConfig } from "ssh2";
+import { CommandExecutorEvents, TCommandExecutor, TSystemInfo } from "@/types";
 import CommandLine from "./CommandLine";
 import { SystemInfo } from "./SystemInfo";
 
@@ -163,11 +163,11 @@ export default class CommandExecutor implements TCommandExecutor {
     noClose: string;
     title: string;
   } = {
-      terminals: ["/usr/bin/x-terminal-emulator", "/usr/bin/xterm", "/opt/x11/bin/xterm"],
-      exec: "-e /bin/bash -c",
-      noClose: "",
-      title: "",
-    };
+    terminals: ["/usr/bin/x-terminal-emulator", "/usr/bin/xterm", "/opt/x11/bin/xterm"],
+    exec: "-e /bin/bash -c",
+    noClose: "",
+    title: "",
+  };
 
   constructor(commandLine: CommandLine) {
     this.commandLine = commandLine;
@@ -275,97 +275,97 @@ export default class CommandExecutor implements TCommandExecutor {
     credential: ConnectConfig | null,
     command: string
   ) => {
-      let c = credential;
+    let c = credential;
 
-      // if no credential is given, assumes local host
-      if (!c) c = this.localCredential;
+    // if no credential is given, assumes local host
+    if (!c) c = this.localCredential;
 
-      // Set the STDIO config: Ignore or redirect STDOUT/STDERR to current console
-      let stdioOptions: StdioOptions | undefined = ["ignore", "pipe", "pipe"];
-      const parentOut = !this.commandLine?.getArg("hide-output-from-background-processes");
-      if (parentOut) {
-        stdioOptions = ["inherit", "pipe", "pipe"];
+    // Set the STDIO config: Ignore or redirect STDOUT/STDERR to current console
+    let stdioOptions: StdioOptions | undefined = ["ignore", "pipe", "pipe"];
+    const parentOut = !this.commandLine?.getArg("hide-output-from-background-processes");
+    if (parentOut) {
+      stdioOptions = ["inherit", "pipe", "pipe"];
+    }
+
+    const localIps = ["localhost", "127.0.0.1", os.hostname()];
+
+    if (this.systemInfo) {
+      for (const ni of this.systemInfo.networkInterfaces || []) {
+        localIps.push(ni.ip4);
       }
+    }
 
-      const localIps = ["localhost", "127.0.0.1", os.hostname()];
+    if (c.host === undefined || localIps.includes(c.host)) {
+      // local command: do not use SSH but child process instead
+      return new Promise((resolve) => {
+        try {
+          let errorString = "";
+          let resultString = "";
+          log.info(`<cmd>${command}`);
+          const child = spawn(command, [], {
+            shell: true,
+            stdio: stdioOptions,
+            detached: false,
+          });
 
-      if (this.systemInfo) {
-        for (const ni of this.systemInfo.networkInterfaces || []) {
-          localIps.push(ni.ip4);
-        }
-      }
+          child.on("close", (code) => {
+            if (code !== 0) {
+              resolve({
+                result: false,
+                message: errorString,
+                command,
+              });
+            } else {
+              resolve({
+                result: true,
+                message: resultString,
+                command,
+              });
+            }
+          });
 
-      if (c.host === undefined || localIps.includes(c.host)) {
-        // local command: do not use SSH but child process instead
-        return new Promise((resolve) => {
-          try {
-            let errorString = "";
-            let resultString = "";
-            log.info(`<cmd>${command}`);
-            const child = spawn(command, [], {
-              shell: true,
-              stdio: stdioOptions,
-              detached: false,
-            });
-
-            child.on("close", (code) => {
-              if (code !== 0) {
-                resolve({
-                  result: false,
-                  message: errorString,
-                  command,
-                });
-              } else {
-                resolve({
-                  result: true,
-                  message: resultString,
-                  command,
-                });
-              }
-            });
-
-            child.stdout?.on("data", (data) => {
-              if (parentOut) {
-                console.log(`${data}`);
-                resultString += `${data}`;
-                for (const item of `${data}`.split("\n")) {
-                  if (
-                    item.includes("[rosrun] Couldn't find executable") ||
-                    item.includes("[ERROR]") ||
-                    item.includes("[error]")
-                  ) {
-                    errorString += item;
-                  }
+          child.stdout?.on("data", (data) => {
+            if (parentOut) {
+              console.log(`${data}`);
+              resultString += `${data}`;
+              for (const item of `${data}`.split("\n")) {
+                if (
+                  item.includes("[rosrun] Couldn't find executable") ||
+                  item.includes("[ERROR]") ||
+                  item.includes("[error]")
+                ) {
+                  errorString += item;
                 }
               }
-            });
+            }
+          });
 
-            child.stderr?.on("data", (data) => {
-              if (parentOut) {
-                console.error(`${data}`);
-              }
-              errorString += data;
-            });
+          child.stderr?.on("data", (data) => {
+            if (parentOut) {
+              console.error(`${data}`);
+            }
+            errorString += data;
+          });
 
-            child.on("error", (error) => {
-              if (parentOut) {
-                console.error(`${error}`);
-              }
-              errorString += error;
-            });
-          } catch (error) {
-            resolve({
-              result: false,
-              message: `Catch error ${error}`,
-              command,
-            });
-          }
-        });
-      }
+          child.on("error", (error) => {
+            if (parentOut) {
+              console.error(`${error}`);
+            }
+            errorString += error;
+          });
+        } catch (error) {
+          resolve({
+            result: false,
+            message: `Catch error ${error}`,
+            command,
+          });
+        }
+      });
+    }
 
-      // command must be executed remotely
-      return this.execRemote(c, command, 0);
-    };
+    // command must be executed remotely
+    return this.execRemote(c, command, 0);
+  };
 
   /**
    * Executes a command on a remote host via SSH.
@@ -380,120 +380,120 @@ export default class CommandExecutor implements TCommandExecutor {
     command,
     keyIndex = 0
   ) => {
-      console.log(`exec on ${credential.host}: ${command}`);
-      const parentOut = !this.commandLine?.getArg("hide-output-from-background-processes");
-      const connectionConfig = this.generateConfig(credential, keyIndex);
+    console.log(`exec on ${credential.host}: ${command}`);
+    const parentOut = !this.commandLine?.getArg("hide-output-from-background-processes");
+    const connectionConfig = this.generateConfig(credential, keyIndex);
 
-      return new Promise((resolve) => {
-        if (!command) {
-          resolve({
-            result: false,
-            message: "Invalid empty command",
-            command,
-            connectConfig: connectionConfig,
-          });
-          return;
-        }
+    return new Promise((resolve) => {
+      if (!command) {
+        resolve({
+          result: false,
+          message: "Invalid empty command",
+          command,
+          connectConfig: connectionConfig,
+        });
+        return;
+      }
 
-        const conn: Client = new Client();
-        try {
-          conn
-            .on("ready", () => {
-              conn.exec(command, (err: Error | undefined, sshStream: ClientChannel) => {
-                if (credential) {
-                  log.info(`<ssh:${credential.username}@${credential.host}:${credential.port}>${command}`);
-                }
-                if (err) {
-                  resolve({
-                    result: false,
-                    message: err?.message,
-                    command,
-                  });
-                  return;
-                }
-                let errorString = "";
-
-                sshStream
-                  .on("close", (code: number) => {
-                    // TODO: Check code/signal to validate response or errors
-                    if (code !== 0) {
-                      resolve({
-                        result: false,
-                        message: errorString,
-                        command,
-                      });
-                    } else {
-                      resolve({
-                        result: true,
-                        message: "",
-                        command,
-                      });
-                    }
-                    conn.end();
-                  })
-                  .stdout.on("data", (data: Buffer) => {
-                    if (parentOut) {
-                      console.log(`${textDecoder.decode(data)}`);
-                    }
-                    resolve({
-                      result: true,
-                      message: textDecoder.decode(data),
-                      command,
-                    });
-                  })
-                  .stderr.on("data", (data: Buffer) => {
-                    if (parentOut) {
-                      console.error(`${textDecoder.decode(data)}`);
-                    }
-                    errorString += textDecoder.decode(data);
-                    resolve({
-                      result: false,
-                      message: textDecoder.decode(data),
-                      command,
-                    });
-                  });
-              });
-            })
-            .connect(connectionConfig);
-
-          conn.on("error", async (error: Error & ClientErrorExtensions) => {
-            log.warn("CommandExecutor - connect error: ", JSON.stringify(error));
-            connectionConfig.password = undefined;
-            connectionConfig.privateKey = undefined;
-            if (error.level === "client-authentication") {
-              if (keyIndex + 1 < this.privateSshKeys.length) {
-                const result = await this.execRemote(connectionConfig, command, keyIndex + 1);
-                resolve(result);
-              } else {
+      const conn: Client = new Client();
+      try {
+        conn
+          .on("ready", () => {
+            conn.exec(command, (err: Error | undefined, sshStream: ClientChannel) => {
+              if (credential) {
+                log.info(`<ssh:${credential.username}@${credential.host}:${credential.port}>${command}`);
+              }
+              if (err) {
                 resolve({
                   result: false,
-                  message: error.message,
+                  message: err?.message,
                   command,
-                  connectConfig: connectionConfig,
                 });
+                return;
               }
+              let errorString = "";
+
+              sshStream
+                .on("close", (code: number) => {
+                  // TODO: Check code/signal to validate response or errors
+                  if (code !== 0) {
+                    resolve({
+                      result: false,
+                      message: errorString,
+                      command,
+                    });
+                  } else {
+                    resolve({
+                      result: true,
+                      message: "",
+                      command,
+                    });
+                  }
+                  conn.end();
+                })
+                .stdout.on("data", (data: Buffer) => {
+                  if (parentOut) {
+                    console.log(`${textDecoder.decode(data)}`);
+                  }
+                  resolve({
+                    result: true,
+                    message: textDecoder.decode(data),
+                    command,
+                  });
+                })
+                .stderr.on("data", (data: Buffer) => {
+                  if (parentOut) {
+                    console.error(`${textDecoder.decode(data)}`);
+                  }
+                  errorString += textDecoder.decode(data);
+                  resolve({
+                    result: false,
+                    message: textDecoder.decode(data),
+                    command,
+                  });
+                });
+            });
+          })
+          .connect(connectionConfig);
+
+        conn.on("error", async (error: Error & ClientErrorExtensions) => {
+          log.warn("CommandExecutor - connect error: ", JSON.stringify(error));
+          connectionConfig.password = undefined;
+          connectionConfig.privateKey = undefined;
+          if (error.level === "client-authentication") {
+            if (keyIndex + 1 < this.privateSshKeys.length) {
+              const result = await this.execRemote(connectionConfig, command, keyIndex + 1);
+              resolve(result);
             } else {
               resolve({
                 result: false,
                 message: error.message,
                 command,
+                connectConfig: connectionConfig,
               });
             }
-          });
-        } catch (error) {
-          let errorMessage = "Failed to execute remote command";
-          if (error instanceof Error) {
-            errorMessage = error.message;
+          } else {
+            resolve({
+              result: false,
+              message: error.message,
+              command,
+            });
           }
-          log.info("CommandExecutor - exec error: ", error);
-          resolve({
-            result: false,
-            message: errorMessage,
-            command,
-          });
+        });
+      } catch (error) {
+        let errorMessage = "Failed to execute remote command";
+        if (error instanceof Error) {
+          errorMessage = error.message;
         }
-      });
-    };
+        log.info("CommandExecutor - exec error: ", error);
+        resolve({
+          result: false,
+          message: errorMessage,
+          command,
+        });
+      }
+    });
+  };
 
   /**
    * Executes a command in an external Terminal (using a SSH connection on remote hosts)

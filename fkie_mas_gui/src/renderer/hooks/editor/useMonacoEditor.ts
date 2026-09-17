@@ -13,7 +13,6 @@ type UseMonacoEditorOptions = {
 export function useMonacoEditor({ editorId, editorRef, saveModel = () => {} }: UseMonacoEditorOptions) {
   const monacoCtx = useMonacoContext();
 
-
   // read the manager as a value - the effect below must re-run once it exists
   const dirtyManager = monacoCtx.dirtyManager();
 

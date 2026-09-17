@@ -16,9 +16,10 @@ import StopIcon from "@mui/icons-material/Stop";
 import WarningIcon from "@mui/icons-material/Warning";
 import { Badge, Box, IconButton, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import { blue, green, grey, orange, red, yellow } from "@mui/material/colors";
+import { treeItemClasses } from "@mui/x-tree-view";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCustomEventListener } from "react-custom-events";
 import { FileIcon } from "react-file-icon";
-
 import { emitFilterNodes, emitKillNodes, emitShowScreens } from "@/renderer/components/layout/events";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
@@ -38,8 +39,6 @@ import { EVENT_NODE_CMD_STATE, EVENT_NODE_DIAGNOSTIC, EVENT_NODE_LIFECYCLE } fro
 import { nodeNameWithoutNamespace } from "@/renderer/utils";
 import { InfoStateLevel, TTag } from "@/types";
 import { TRosMessageStruct } from "@/types/TRosMessageStruct";
-import { treeItemClasses } from "@mui/x-tree-view";
-import { useCustomEventListener } from "react-custom-events";
 import { OverflowMenu } from "../UI";
 import { colorFromHostname, getDiagnosticColor, getInfoStateColor, getTagColor } from "../UI/Colors";
 import Tag from "../UI/Tag";

@@ -13,7 +13,6 @@ export function getDir(path: string): string {
   return path.substring(0, path.lastIndexOf("/"));
 }
 
-
 /**
  * Return the filename without extension from a given path
  */

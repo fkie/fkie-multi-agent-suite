@@ -1,7 +1,6 @@
-import { CommandLineEvents, TCommandLine } from "@/types";
 import { app, ipcMain } from "electron";
-
 import log from "electron-log";
+import { CommandLineEvents, TCommandLine } from "@/types";
 import CliArgs from "../../renderer/assets/cliArgs.json";
 
 type CliArgType = "boolean" | "string" | "int";

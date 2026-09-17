@@ -2,22 +2,20 @@
 
 import json
 import os
-import psutil
 import shlex
 import subprocess
 import time
 from types import SimpleNamespace
+
+import psutil
 import websockets
 import websockets.sync
 import websockets.sync.client
-
 from fkie_mas_pylib.defines import SETTINGS_PATH
 from fkie_mas_pylib.interface import SelfAllEncoder
 from fkie_mas_pylib.websocket import ws_port
 
-
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     launch_files = []
 
     # get loaded launch files
@@ -33,7 +31,7 @@ if __name__ == '__main__':
             reply = connection.recv(3)
             print("reply received")
             msg = json.loads(reply, object_hook=lambda d: SimpleNamespace(**d))
-            has_id = hasattr(msg, 'id')
+            has_id = hasattr(msg, "id")
             if has_id and msg.id == -1:
                 print("store loaded launch files")
                 launch_files = msg.result
@@ -44,7 +42,7 @@ if __name__ == '__main__':
                 print("  but the reply is not for me")
     except Exception as error:
         print(f"Daemon not reachable: {error}")
-        print(f"❌ Restart of the daemon is canceled!")
+        print("❌ Restart of the daemon is canceled!")
         exit(1)
     # stop running mas nodes
     cmd_daemon_str = ""
@@ -53,16 +51,16 @@ if __name__ == '__main__':
     try:
         for ps_it in psutil.process_iter():
             try:
-                cmd_str = ' '.join(ps_it.cmdline())
+                cmd_str = " ".join(ps_it.cmdline())
                 if cmd_str.find(SETTINGS_PATH) > -1:
                     # is it mas-daemon?
-                    if (cmd_str.find('mas-daemon') > 0):
+                    if cmd_str.find("mas-daemon") > 0:
                         print(f"stop mas daemon with pid: {ps_it.pid}")
                         cmd_daemon_str = cmd_str
                         mas_processes.append(ps_it)
                         ps_it.terminate()
                     # is it mas-discovery?
-                    if (cmd_str.find('mas-discovery') > 0):
+                    if cmd_str.find("mas-discovery") > 0:
                         print(f"stop mas discovery with pid: {ps_it.pid}")
                         cmd_discovery_str = cmd_str
                         mas_processes.append(ps_it)
@@ -70,14 +68,16 @@ if __name__ == '__main__':
             except (psutil.ZombieProcess, psutil.NoSuchProcess):
                 # ignore errors because of zombie processes or non-existent (terminated child?) processes
                 pass
-            except Exception as error:
+            except Exception:
                 import traceback
+
                 print(traceback.format_exc())
         gone, alive = psutil.wait_procs(mas_processes, timeout=3)
         for p in alive:
             p.kill()
-    except Exception as error:
+    except Exception:
         import traceback
+
         print(traceback.format_exc())
 
     # start nodes
@@ -108,7 +108,7 @@ if __name__ == '__main__':
                             "host": "",
                             "request_args": [],
                         }
-                    ]
+                    ],
                 }
                 message_str = json.dumps(message, cls=SelfAllEncoder)
                 print(f"MESSAGE: {message_str}")
@@ -121,8 +121,8 @@ if __name__ == '__main__':
         try:
             load_launch_files(launch_files)
             tries = 10
-            print(f"load successfully")
-        except (EOFError, ConnectionRefusedError) as e:
-            print(f"... retry")
+            print("load successfully")
+        except (EOFError, ConnectionRefusedError):
+            print("... retry")
             time.sleep(1)
             tries += 1

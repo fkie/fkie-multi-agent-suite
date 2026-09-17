@@ -1,7 +1,5 @@
-import { JSONObject, JSONValue } from "@/types";
 import { IDBPDatabase } from "idb";
 import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
-
 import {
   AppDBSchema,
   dbDelete,
@@ -10,9 +8,9 @@ import {
   dbGetAll,
   dbPut,
   dbPutMany,
+  ITransformer,
   identityTransformer,
   initDB,
-  ITransformer,
   requestPersistentStorage,
   STORE,
   StoreRecord,
@@ -27,6 +25,7 @@ import {
   importToStore,
 } from "@/renderer/db/persistanceCore";
 import URI from "@/renderer/models/uris";
+import { JSONObject, JSONValue } from "@/types";
 import CliArgs from "../assets/cliArgs.json";
 
 /* ======================== Constants =========================== */
@@ -210,7 +209,7 @@ export const SETTINGS_DEF: Record<string, ISettingsParam> = {
   openAsPopout: {
     label: "Open external tabs as popout",
     default: false,
-    type: window.commandExecutor ? "undefined": "boolean",
+    type: window.commandExecutor ? "undefined" : "boolean",
     description: "",
     group: "Window behavior",
   },

@@ -19,9 +19,9 @@ import { useCustomEventListener } from "react-custom-events";
 
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { PATH_EVENT_TYPE } from "@/renderer/models";
-import Provider from "@/renderer/providers/Provider";
-import { EVENT_PROVIDER_LAUNCH_LOADED } from "@/renderer/providers/eventTypes";
 import { EventProviderLaunchLoaded } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_LAUNCH_LOADED } from "@/renderer/providers/eventTypes";
+import Provider from "@/renderer/providers/Provider";
 
 interface ReloadFileComponentProps {
   id: SnackbarKey | undefined;

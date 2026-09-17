@@ -6,67 +6,63 @@
 #
 # ****************************************************************************
 
+import json
 import os
 import re
-import rospy
+import threading
+import time
+import traceback
+
+import genpy
 import roslib.message
 import roslib.msgs
 import roslib.names
 import roslib.packages
 import rospkg
-import threading
-import time
-import traceback
-
-import json
-
-from typing import List
-from watchdog.observers import Observer
-from watchdog.events import LoggingEventHandler
-from watchdog.events import FileSystemEvent
-
-import genpy
+import rospy
 import std_msgs
-from rosmsg import iterate_packages
-from rosmsg import _list_types
-
-from . import launcher
-from fkie_mas_daemon.strings import utf8
-from .subscriber_node import MsgEncoder
-from .launch_config import LaunchConfig
-from .startcfg import StartConfig
-from fkie_mas_pylib.interface.runtime_interface import RosParameter
-from fkie_mas_pylib.interface.runtime_interface import SubscriberNode
-from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.interface.launch_interface import LaunchArgument
-from fkie_mas_pylib.interface.launch_interface import LaunchCallService
-from fkie_mas_pylib.interface.launch_interface import LaunchFile
-from fkie_mas_pylib.interface.launch_interface import LaunchLoadRequest
-from fkie_mas_pylib.interface.launch_interface import LaunchLoadReply
-from fkie_mas_pylib.interface.launch_interface import LaunchContent
-from fkie_mas_pylib.interface.launch_interface import LaunchAssociations
-from fkie_mas_pylib.interface.launch_interface import LaunchNode
-from fkie_mas_pylib.interface.launch_interface import LaunchNodeInfo
-from fkie_mas_pylib.interface.launch_interface import LaunchNodeReply
-from fkie_mas_pylib.interface.launch_interface import LaunchInterpretPathRequest
-from fkie_mas_pylib.interface.launch_interface import LaunchInterpretPathReply
-from fkie_mas_pylib.interface.launch_interface import LaunchIncludedFilesRequest
-from fkie_mas_pylib.interface.launch_interface import LaunchIncludedFile
-from fkie_mas_pylib.interface.launch_interface import LaunchMessageStruct
-from fkie_mas_pylib.interface.launch_interface import LaunchPublishMessage
 from fkie_mas_pylib.defines import SEARCH_IN_EXT
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.launch_interface import (
+    LaunchArgument,
+    LaunchAssociations,
+    LaunchCallService,
+    LaunchContent,
+    LaunchFile,
+    LaunchIncludedFile,
+    LaunchIncludedFilesRequest,
+    LaunchInterpretPathReply,
+    LaunchInterpretPathRequest,
+    LaunchLoadReply,
+    LaunchLoadRequest,
+    LaunchMessageStruct,
+    LaunchNode,
+    LaunchNodeInfo,
+    LaunchNodeReply,
+    LaunchPublishMessage,
+)
+from fkie_mas_pylib.interface.runtime_interface import RosParameter, SubscriberNode
 from fkie_mas_pylib.launch import xml_ros1
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.names import ns_join
-from fkie_mas_pylib.system import exceptions
-from fkie_mas_pylib.system import ros1_masteruri
+from fkie_mas_pylib.system import exceptions, ros1_masteruri
 from fkie_mas_pylib.system.url import equal_uri
 from fkie_mas_pylib.websocket.server import WebSocketServer
+from rosmsg import _list_types, iterate_packages
+from watchdog.events import FileSystemEvent, LoggingEventHandler
+from watchdog.observers import Observer
+
+from fkie_mas_daemon.strings import utf8
+
+from . import launcher
+from .launch_config import LaunchConfig
+from .startcfg import StartConfig
+from .subscriber_node import MsgEncoder
 
 IS_RUNNING = True
 
 
-class CfgId(object):
+class CfgId:
     """
     Identification object for a loaded launch file. You can load the same launch file for different ROS-Master!
     """
@@ -117,8 +113,7 @@ class CfgId(object):
 
 
 class LaunchServicer(LoggingEventHandler):
-    """
-    """
+    """ """
 
     def __init__(
         self,
@@ -147,8 +142,7 @@ class LaunchServicer(LoggingEventHandler):
         websocket.register("ros.launch.get_list", self.get_list)
         websocket.register("ros.launch.start_node", self.start_node)
         websocket.register("ros.launch.start_nodes", self.start_nodes)
-        websocket.register("ros.launch.get_included_files",
-                           self.get_included_files)
+        websocket.register("ros.launch.get_included_files", self.get_included_files)
         websocket.register("ros.launch.interpret_path", self.interpret_path)
         websocket.register("ros.launch.get_msg_struct", self.get_msg_struct)
         websocket.register("ros.launch.publish_message", self.publish_message)
@@ -175,7 +169,7 @@ class LaunchServicer(LoggingEventHandler):
         self._watchdog_observer.stop()
 
     def on_any_event(self, event: FileSystemEvent):
-        if event.event_type in ['opened', 'closed']:
+        if event.event_type in ["opened", "closed"]:
             return
         path = event.src_path
         if event.src_path in self._real_paths:
@@ -202,9 +196,8 @@ class LaunchServicer(LoggingEventHandler):
                 "srcPath": path,
                 "affected": affected_launch_files,
             }
-            Log.debug("observed change %s on %s, reported path: %s" %
-                      (event.event_type, event.src_path, path))
-            self.websocket.publish('ros.path.changed', change_event)
+            Log.debug("observed change %s on %s, reported path: %s" % (event.event_type, event.src_path, path))
+            self.websocket.publish("ros.path.changed", change_event)
 
     def load_launch_file(self, path, autostart=False):
         """
@@ -217,17 +210,13 @@ class LaunchServicer(LoggingEventHandler):
         :param str path: the absolute path of the launch file
         :param bool autostart: True to start all nodes after the launch file was loaded.
         """
-        launch_config = LaunchConfig(
-            path, monitor_servicer=self._monitor_servicer)
+        launch_config = LaunchConfig(path, monitor_servicer=self._monitor_servicer)
         loaded, res_argv = launch_config.load([])
         if loaded:
             Log.debug("loaded %s\n  used args: %s" % (path, utf8(res_argv)))
             self._loaded_files[CfgId(path, "")] = launch_config
             if autostart:
-                start_thread = threading.Thread(
-                    target=self._autostart_nodes_threaded, args=(
-                        launch_config,)
-                )
+                start_thread = threading.Thread(target=self._autostart_nodes_threaded, args=(launch_config,))
                 start_thread.start()
         else:
             Log.warn("load %s failed!" % (path))
@@ -260,8 +249,7 @@ class LaunchServicer(LoggingEventHandler):
             try:
                 if self._get_start_exclude(cfg, node_fullname):
                     # skip autostart
-                    Log.debug(
-                        "%s is in exclude list, skip autostart", node_fullname)
+                    Log.debug("%s is in exclude list, skip autostart", node_fullname)
                     continue
                 self._autostart_node(node_fullname, cfg)
             except Exception as err:
@@ -284,9 +272,7 @@ class LaunchServicer(LoggingEventHandler):
                     break
             if not start_now:
                 # Start the timer for waiting for the topic
-                start_timer = threading.Timer(
-                    3.0, self._autostart_node, args=(node_name, cfg)
-                )
+                start_timer = threading.Timer(3.0, self._autostart_node, args=(node_name, cfg))
                 start_timer.start()
         else:
             start_now = True
@@ -297,9 +283,7 @@ class LaunchServicer(LoggingEventHandler):
             start_delay = self._get_start_delay(cfg, node_name)
             if start_delay > 0:
                 # start timer for delayed start
-                start_timer = threading.Timer(
-                    start_delay, launcher.run_node, args=(startcfg,)
-                )
+                start_timer = threading.Timer(start_delay, launcher.run_node, args=(startcfg,))
                 start_timer.setDaemon(True)
                 start_timer.start()
             else:
@@ -330,13 +314,10 @@ class LaunchServicer(LoggingEventHandler):
                 import rosgraph
 
                 if rosgraph.names.is_private(topic):
-                    Log.warn(
-                        "Private for autostart required topic `%s` is ignored!" % topic
-                    )
+                    Log.warn("Private for autostart required topic `%s` is ignored!" % topic)
                     topic = ""
                 elif not rosgraph.names.is_global(topic):
-                    topic = rospy.names.ns_join(
-                        rosgraph.names.namespace(node), topic)
+                    topic = rospy.names.ns_join(rosgraph.names.namespace(node), topic)
         except Exception:
             pass
         return topic
@@ -369,8 +350,7 @@ class LaunchServicer(LoggingEventHandler):
             if directory not in self._included_dirs:
                 if directory in self._observed_dirs:
                     Log.debug("remove directory from observer: %s" % directory)
-                    self._watchdog_observer.unschedule(
-                        self._observed_dirs[directory])
+                    self._watchdog_observer.unschedule(self._observed_dirs[directory])
                     del self._observed_dirs[directory]
         except ValueError:
             pass
@@ -386,9 +366,7 @@ class LaunchServicer(LoggingEventHandler):
                     resolve_args.update(cfg.resolve_dict)
                     break
             # replay each file
-            for inc_file in xml_ros1.find_included_files(
-                path, True, True, search_in_ext, resolve_args
-            ):
+            for inc_file in xml_ros1.find_included_files(path, True, True, search_in_ext, resolve_args):
                 if inc_file.exists:
                     self._add_file_to_observe(inc_file.inc_path, path)
         except Exception as e:
@@ -405,15 +383,15 @@ class LaunchServicer(LoggingEventHandler):
                     resolve_args.update(cfg.resolve_dict)
                     break
             # replay each file
-            for inc_file in xml_ros1.find_included_files(
-                path, True, True, search_in_ext, resolve_args
-            ):
+            for inc_file in xml_ros1.find_included_files(path, True, True, search_in_ext, resolve_args):
                 self._remove_file_from_observe(inc_file.inc_path)
             del self._launch_includes[path]
         except Exception as e:
             Log.error("_add_launch_to_observer %s:\n%s" % (str(path), e))
 
-    def load_launch(self, request_json: LaunchLoadRequest, *, requester: str = "", return_as_json=True) -> LaunchLoadReply:
+    def load_launch(
+        self, request_json: LaunchLoadRequest, *, requester: str = "", return_as_json=True
+    ) -> LaunchLoadReply:
         """
         Loads launch file by request
         """
@@ -439,14 +417,11 @@ class LaunchServicer(LoggingEventHandler):
         if not launchfile:
             # determine path from package name and launch name
             try:
-                paths = roslib.packages.find_resource(
-                    request.ros_package, request.launch
-                )
+                paths = roslib.packages.find_resource(request.ros_package, request.launch)
                 if not paths:
                     result.status.code = "FILE_NOT_FOUND"
                     result.status.msg = utf8(
-                        "Launch files %s in package %s found!"
-                        % (request.launch, request.ros_package)
+                        "Launch files %s in package %s found!" % (request.launch, request.ros_package)
                     )
                     return json.dumps(result, cls=SelfEncoder) if return_as_json else result
                 elif len(paths) > 1:
@@ -466,9 +441,7 @@ class LaunchServicer(LoggingEventHandler):
                     launchfile = paths[0]
             except rospkg.ResourceNotFound as rnf:
                 result.status.code = "FILE_NOT_FOUND"
-                result.status.msg = utf8(
-                    "Package %s not found: %s" % (request.ros_package, rnf)
-                )
+                result.status.msg = utf8("Package %s not found: %s" % (request.ros_package, rnf))
                 Log.debug("..load aborted, FILE_NOT_FOUND")
                 return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         result.paths.append(launchfile)
@@ -476,8 +449,7 @@ class LaunchServicer(LoggingEventHandler):
         # it is already loaded?
         if (launchfile, request.masteruri) in list(self._loaded_files.keys()):
             result.status.code = "ALREADY_OPEN"
-            result.status.msg = utf8(
-                "Launch file %s already loaded!" % (launchfile))
+            result.status.msg = utf8("Launch file %s already loaded!" % (launchfile))
             Log.debug("..load aborted, ALREADY_OPEN")
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
@@ -508,11 +480,7 @@ class LaunchServicer(LoggingEventHandler):
                             default_value = value
                         else:
                             default_value = provided_args_dict[arg]
-                        result.args.append(
-                            LaunchArgument(
-                                name=arg, value=la_value, default_value=default_value
-                            )
-                        )
+                        result.args.append(LaunchArgument(name=arg, value=la_value, default_value=default_value))
 
                 if len(result.args) > 0:
                     result.status.code = "PARAMS_REQUIRED"
@@ -528,23 +496,16 @@ class LaunchServicer(LoggingEventHandler):
             # parse result args for reply
             for name, value in launch_config.resolve_dict.items():
                 if name in req_args_dict:
-                    result.args.append(
-                        LaunchArgument(
-                            name=name, value=value, default_value=req_args_dict[name]
-                        )
-                    )
+                    result.args.append(LaunchArgument(name=name, value=value, default_value=req_args_dict[name]))
                 else:
-                    result.args.append(
-                        LaunchArgument(name=name, value=None,
-                                       default_value=value)
-                    )
-            self._loaded_files[CfgId(
-                launchfile, request.masteruri)] = launch_config
+                    result.args.append(LaunchArgument(name=name, value=None, default_value=value))
+            self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
             Log.debug("..load complete!")
 
             self._add_launch_to_observer(launchfile)
         except Exception as e:
             import traceback
+
             print(traceback.format_exc())
             err_text = "%s loading failed!" % launchfile
             err_details = "%s: %s" % (err_text, utf8(e))
@@ -557,9 +518,9 @@ class LaunchServicer(LoggingEventHandler):
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         finally:
             # inform other subscribers about reloaded launch file
-            self.websocket.publish('ros.launch.changed', {
-                                   'path': launchfile, 'action': 'loaded', 'requester': requester})
-
+            self.websocket.publish(
+                "ros.launch.changed", {"path": launchfile, "action": "loaded", "requester": requester}
+            )
 
     def reload_launch(self, request_json: LaunchLoadRequest, *, requester: str = "") -> LaunchLoadReply:
         """
@@ -585,9 +546,7 @@ class LaunchServicer(LoggingEventHandler):
 
         result.paths.append(request.path)
         cfgid = CfgId(request.path, request.masteruri)
-        Log.debug(
-            "reload launch file: %s, masteruri: %s", request.path, request.masteruri
-        )
+        Log.debug("reload launch file: %s, masteruri: %s", request.path, request.masteruri)
         if cfgid in self._loaded_files:
             try:
                 self._remove_launch_from_observer(request.path)
@@ -599,34 +558,17 @@ class LaunchServicer(LoggingEventHandler):
                 result.status.code = "OK"
                 # detect files changes
                 if stored_roscfg and cfg.roscfg:
-                    stored_values = [
-                        (name, utf8(p.value))
-                        for name, p in stored_roscfg.params.items()
-                    ]
-                    new_values = [
-                        (name, utf8(p.value)) for name, p in cfg.roscfg.params.items()
-                    ]
+                    stored_values = [(name, utf8(p.value)) for name, p in stored_roscfg.params.items()]
+                    new_values = [(name, utf8(p.value)) for name, p in cfg.roscfg.params.items()]
                     # detect changes parameter
-                    paramset = set(
-                        name for name, _ in (set(new_values) - set(stored_values))
-                    )  # _:=value
+                    paramset = set(name for name, _ in (set(new_values) - set(stored_values)))  # _:=value
                     # detect new parameter
-                    paramset |= set(cfg.roscfg.params.keys()) - set(
-                        stored_roscfg.params.keys()
-                    )
+                    paramset |= set(cfg.roscfg.params.keys()) - set(stored_roscfg.params.keys())
                     # detect removed parameter
-                    paramset |= set(stored_roscfg.params.keys()) - set(
-                        cfg.roscfg.params.keys()
-                    )
+                    paramset |= set(stored_roscfg.params.keys()) - set(cfg.roscfg.params.keys())
                     # detect new nodes
-                    stored_nodes = [
-                        roslib.names.ns_join(item.namespace, item.name)
-                        for item in stored_roscfg.nodes
-                    ]
-                    new_nodes = [
-                        roslib.names.ns_join(item.namespace, item.name)
-                        for item in cfg.roscfg.nodes
-                    ]
+                    stored_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in stored_roscfg.nodes]
+                    new_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in cfg.roscfg.nodes]
                     nodes2start = set(new_nodes) - set(stored_nodes)
                     # determine the nodes of the changed parameter
                     for p in paramset:
@@ -637,14 +579,8 @@ class LaunchServicer(LoggingEventHandler):
                     for n in stored_roscfg.nodes:
                         for new_n in cfg.roscfg.nodes:
                             if n.name == new_n.name and n.namespace == new_n.namespace:
-                                if (
-                                    n.args != new_n.args
-                                    or n.remap_args != new_n.remap_args
-                                ):
-                                    nodes2start.add(
-                                        roslib.names.ns_join(
-                                            n.namespace, n.name)
-                                    )
+                                if n.args != new_n.args or n.remap_args != new_n.remap_args:
+                                    nodes2start.add(roslib.names.ns_join(n.namespace, n.name))
                     # filter out anonymous nodes
                     for n in nodes2start:
                         if not re.search(r"\d{3,6}_\d{10,}", n):
@@ -667,9 +603,9 @@ class LaunchServicer(LoggingEventHandler):
             return json.dumps(result, cls=SelfEncoder)
         finally:
             # inform other subscribers about reloaded launch file
-            self.websocket.publish('ros.launch.changed', {
-                                    'path': request.path, 'action': 'reloaded', 'requester': requester})
-
+            self.websocket.publish(
+                "ros.launch.changed", {"path": request.path, "action": "reloaded", "requester": requester}
+            )
 
     def unload_launch(self, request_json: LaunchFile, *, requester: str = "") -> LaunchLoadReply:
         Log.debug("Request to [ros.launch.unload]")
@@ -699,10 +635,11 @@ class LaunchServicer(LoggingEventHandler):
             return json.dumps(result, cls=SelfEncoder)
         finally:
             # inform other subscribers about reloaded launch file
-            self.websocket.publish('ros.launch.changed', {
-                                    'path': request.path, 'action': 'unloaded', 'requester': requester})
+            self.websocket.publish(
+                "ros.launch.changed", {"path": request.path, "action": "unloaded", "requester": requester}
+            )
 
-    def get_list(self) -> List[LaunchContent]:
+    def get_list(self) -> list[LaunchContent]:
         Log.debug("Request to [ros.launch.get_list]")
         requested_files = list(self._loaded_files.keys())
         reply = []
@@ -732,11 +669,10 @@ class LaunchServicer(LoggingEventHandler):
 
                 #  Search the line number of a given node in launch file
                 lines_with_node_name = []
-                with open(item.filename, "r") as launch_file:
+                with open(item.filename) as launch_file:
                     for line_number, line_text in enumerate(launch_file):
                         if f'name="{item.launch_name}"' in line_text:
-                            lines_with_node_name.append(
-                                [line_number + 1, line_text])
+                            lines_with_node_name.append([line_number + 1, line_text])
 
                 line_number = -1
                 start_column = 0
@@ -751,16 +687,11 @@ class LaunchServicer(LoggingEventHandler):
                 elif len(lines_with_node_name) > node_occurrence[item.launch_name]:
                     # More than one occurrence, but Node are loaded from top to bottom
                     # try to find the correct match
-                    line_number = lines_with_node_name[
-                        node_occurrence[item.launch_name]
-                    ][0]
-                    line_text = lines_with_node_name[node_occurrence[item.launch_name]][
-                        1
-                    ]
+                    line_number = lines_with_node_name[node_occurrence[item.launch_name]][0]
+                    line_text = lines_with_node_name[node_occurrence[item.launch_name]][1]
 
                 if len(line_text) > 0:
-                    start_column = line_text.index(
-                        f'name="{item.launch_name}"') + 7
+                    start_column = line_text.index(f'name="{item.launch_name}"') + 7
                     end_column = start_column + len(item.launch_name)
 
                 # range in text where the node appears
@@ -775,9 +706,7 @@ class LaunchServicer(LoggingEventHandler):
                 if item.package == "nodelet" and item.type == "nodelet":
                     args = item.args.split(" ")
                     if len(args) >= 3 and args[0] == "load":
-                        composable_container = roslib.names.ns_join(
-                            item.namespace, args[2]
-                        )
+                        composable_container = roslib.names.ns_join(item.namespace, args[2])
 
                 reply_lc.nodes.append(
                     LaunchNodeInfo(
@@ -812,27 +741,22 @@ class LaunchServicer(LoggingEventHandler):
             associations = {}
             for n in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(n.namespace, n.name)
-                associations_param = roslib.names.ns_join(
-                    node_fullname, "mas/associations"
-                )
+                associations_param = roslib.names.ns_join(node_fullname, "mas/associations")
                 if associations_param in lc.roscfg.params:
                     line = lc.roscfg.params[associations_param].value
                     splits = re.split(r"[;,\s]\s*", line)
                     values = []
                     for split in splits:
-                        values.append(roslib.names.ns_join(
-                            item.namespace, split))
+                        values.append(roslib.names.ns_join(item.namespace, split))
                     associations[node_fullname] = values
                 # DEPRECATED 'nm/associations'
-                associations_param = roslib.names.ns_join(
-                    node_fullname, "nm/associations")
+                associations_param = roslib.names.ns_join(node_fullname, "nm/associations")
                 if associations_param in lc.roscfg.params:
                     line = lc.roscfg.params[associations_param].value
                     splits = re.split(r"[;,\s]\s*", line)
                     values = []
                     for split in splits:
-                        values.append(roslib.names.ns_join(
-                            item.namespace, split))
+                        values.append(roslib.names.ns_join(item.namespace, split))
                     associations[node_fullname] = values
             for node, ass in associations.items():
                 assmsg = LaunchAssociations(node=node, nodes=ass)
@@ -869,11 +793,8 @@ class LaunchServicer(LoggingEventHandler):
                 return json.dumps(result, cls=SelfEncoder)
             if len(launch_configs) > 1:
                 result.status.code = "MULTIPLE_LAUNCHES"
-                result.status.msg = (
-                    "Node '%s' found in multiple launch files" % request.name
-                )
-                result.launch_files.extend(
-                    [lcfg.filename for lcfg in launch_configs])
+                result.status.msg = "Node '%s' found in multiple launch files" % request.name
+                result.launch_files.extend([lcfg.filename for lcfg in launch_configs])
                 return json.dumps(result, cls=SelfEncoder)
             try:
                 result.launch_files.append(launch_configs[0].filename)
@@ -916,9 +837,7 @@ class LaunchServicer(LoggingEventHandler):
         finally:
             return json.dumps(result, cls=SelfEncoder)
 
-    def start_nodes(
-        self, request_json: List[LaunchNode], continue_on_error: bool = True
-    ) -> List[LaunchNodeReply]:
+    def start_nodes(self, request_json: list[LaunchNode], continue_on_error: bool = True) -> list[LaunchNodeReply]:
         Log.debug("Request to [ros.launch.start_nodes]")
 
         result = []
@@ -931,13 +850,10 @@ class LaunchServicer(LoggingEventHandler):
 
         return json.dumps(result, cls=SelfEncoder)
 
-    def get_included_files(
-        self, request_json: LaunchIncludedFilesRequest
-    ) -> List[LaunchIncludedFile]:
+    def get_included_files(self, request_json: LaunchIncludedFilesRequest) -> list[LaunchIncludedFile]:
         # Convert input dictionary into a proper python object
         request = request_json
-        Log.debug(
-            f"Request to [ros.launch.get_included_files]: Path [{request.path}], args: {request.args}")
+        Log.debug(f"Request to [ros.launch.get_included_files]: Path [{request.path}], args: {request.args}")
         result = []
         try:
             search_in_ext = SEARCH_IN_EXT
@@ -968,22 +884,13 @@ class LaunchServicer(LoggingEventHandler):
                     exists=inc_file.exists,
                     raw_inc_path=inc_file.raw_inc_path,
                     rec_depth=inc_file.rec_depth,
-                    args=[
-                        LaunchArgument(name=name, value=value)
-                        for name, value in inc_file.args.items()
-                    ],
-                    default_inc_args=[
-                        LaunchArgument(name=name, value=value)
-                        for name, value in inc_file.args.items()
-                    ],
+                    args=[LaunchArgument(name=name, value=value) for name, value in inc_file.args.items()],
+                    default_inc_args=[LaunchArgument(name=name, value=value) for name, value in inc_file.args.items()],
                     size=file_size,
                 )
                 result.append(lincf)
         except Exception:
-            Log.warn(
-                "Can't get include files for %s: %s"
-                % (request.path, traceback.format_exc())
-            )
+            Log.warn("Can't get include files for %s: %s" % (request.path, traceback.format_exc()))
         return json.dumps(result, cls=SelfEncoder)
 
     def get_msg_struct(self, msg_type: str) -> LaunchMessageStruct:
@@ -1039,14 +946,12 @@ class LaunchServicer(LoggingEventHandler):
     def _dict_from_slots(cls, slots, types, values={}):
         result = []
         for slot, msg_type in zip(slots, types):
-            base_type, is_array, _array_length = roslib.msgs.parse_type(
-                msg_type)
+            base_type, is_array, _array_length = roslib.msgs.parse_type(msg_type)
             if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in [
                 "time",
                 "duration",
             ]:
-                default_value = "now" if base_type in [
-                    "time", "duration"] else ""
+                default_value = "now" if base_type in ["time", "duration"] else ""
                 if slot in values and values[slot]:
                     default_value = values[slot]
                 result.append(
@@ -1060,8 +965,7 @@ class LaunchServicer(LoggingEventHandler):
                 )
             else:
                 try:
-                    list_msg_class = roslib.message.get_message_class(
-                        base_type)
+                    list_msg_class = roslib.message.get_message_class(base_type)
                     if is_array and slot in values:
                         subresult = []
                         for slot_value in values[slot]:
@@ -1097,11 +1001,8 @@ class LaunchServicer(LoggingEventHandler):
                         )
                 except ValueError as e:
                     print(traceback.format_exc())
-                    Log.warn(
-                        f"Error while parse message type '{msg_type}': {e}")
-                    raise ValueError(
-                        f"Error while parse message type '{msg_type}': {e}"
-                    )
+                    Log.warn(f"Error while parse message type '{msg_type}': {e}")
+                    raise ValueError(f"Error while parse message type '{msg_type}': {e}")
         return result
 
     def str2typedValue(self, value, value_type):
@@ -1119,8 +1020,7 @@ class LaunchServicer(LoggingEventHandler):
 
     def _pubstr_from_dict(self, param_dict):
         result = dict()
-        fields = param_dict if isinstance(
-            param_dict, list) else param_dict["def"]
+        fields = param_dict if isinstance(param_dict, list) else param_dict["def"]
         for field in fields:
             if not field["def"]:
                 # simple types
@@ -1129,20 +1029,15 @@ class LaunchServicer(LoggingEventHandler):
                     if field["is_array"]:
                         # parse to array
                         listvals = field["value"].split(",")
-                        result[field["name"]] = [
-                            self.str2typedValue(n, base_type) for n in listvals
-                        ]
+                        result[field["name"]] = [self.str2typedValue(n, base_type) for n in listvals]
                     else:
-                        result[field["name"]] = self.str2typedValue(
-                            field["value"], base_type
-                        )
+                        result[field["name"]] = self.str2typedValue(field["value"], base_type)
             elif field["is_array"]:
                 result_array = []
                 # it is a complex field type
                 if "value" in field:
                     for array_element in field["value"]:
-                        result_array.append(
-                            self._pubstr_from_dict(array_element))
+                        result_array.append(self._pubstr_from_dict(array_element))
                 # append created array
                 if result_array:
                     result[field["name"]] = result_array
@@ -1156,9 +1051,7 @@ class LaunchServicer(LoggingEventHandler):
         try:
             # Convert input dictionary into a proper python object
             request = request_json
-            Log.debug(
-                f"Request to [ros.launch.publish_message]: msg [{request.msg_type}]"
-            )
+            Log.debug(f"Request to [ros.launch.publish_message]: msg [{request.msg_type}]")
             opt_str = ""
             opt_name_suf = "__latch_"
             if request.once:
@@ -1189,8 +1082,7 @@ class LaunchServicer(LoggingEventHandler):
 
     def call_service(self, request_json: LaunchCallService) -> str:
         # Convert input dictionary into a proper python object
-        Log.info(
-            f"Request to [ros.launch.call_service]: msg [{request_json}]")
+        Log.info(f"Request to [ros.launch.call_service]: msg [{request_json}]")
         request = request_json
         result = LaunchMessageStruct(request.srv_type)
         try:
@@ -1201,25 +1093,23 @@ class LaunchServicer(LoggingEventHandler):
 
             request_class = service_class._request_class()
             now = rospy.get_rostime()
-            keys = {'now': now, 'auto': std_msgs.msg.Header(stamp=now)}
+            keys = {"now": now, "auto": std_msgs.msg.Header(stamp=now)}
             data = json.loads(request.data)
             srv_params = self._pubstr_from_dict(data)
             # Workaround for a bug in genpy.message.fill_message_args when a dictionary of length 1 is passed
             if len(srv_params) == 1:
                 srv_params = [srv_params]
-            genpy.message.fill_message_args(
-                request_class, srv_params, keys=keys)
-            call_result = rospy.ServiceProxy(
-                request.service_name, service_class)(request_class)
-            result.data = json.loads(json.dumps(
-                call_result, cls=MsgEncoder, **{"no_arr": False, "no_str": False}))
+            genpy.message.fill_message_args(request_class, srv_params, keys=keys)
+            call_result = rospy.ServiceProxy(request.service_name, service_class)(request_class)
+            result.data = json.loads(json.dumps(call_result, cls=MsgEncoder, **{"no_arr": False, "no_str": False}))
             result.valid = True
         except genpy.MessageException as e:
+
             def argsummary(args):
                 if type(args) in [tuple, list]:
-                    return '\n'.join([' * %s (type %s)' % (a, type(a).__name__) for a in args])
+                    return "\n".join([" * %s (type %s)" % (a, type(a).__name__) for a in args])
                 else:
-                    return ' * %s (type %s)' % (args, type(args).__name__)
+                    return " * %s (type %s)" % (args, type(args).__name__)
 
             result.messsage = f"Incompatible arguments to call service:\n{e}\nProvided arguments are:\n{argsummary(request.data)}\n\nService arguments are: [{genpy.message.get_printable_message_args(request)}]"
             return json.dumps(result, cls=SelfEncoder)
@@ -1231,29 +1121,28 @@ class LaunchServicer(LoggingEventHandler):
             return json.dumps(result, cls=SelfEncoder)
         except Exception as err:
             import traceback
+
             print(traceback.format_exc())
             result.message = repr(err)
         return json.dumps(result, cls=SelfEncoder)
 
     def get_message_types(self, mode: str = "message") -> str:
         # Convert input dictionary into a proper python object
-        Log.info(f"Request to [ros.launch.get_message_types]")
+        Log.info("Request to [ros.launch.get_message_types]")
         result = []
         _mode = ".msg"
         subdir = "msg"
-        if (mode == "service"):
+        if mode == "service":
             _mode = ".srv"
             subdir = "srv"
         rospack = rospkg.RosPack()
         packs = sorted([x for x in iterate_packages(rospack, _mode)])
-        for (p, direc) in packs:
+        for p, direc in packs:
             for file in _list_types(direc, subdir, _mode):
                 result.append(f"{p}/{file}")
         return json.dumps(result, cls=SelfEncoder)
 
-    def interpret_path(
-        self, request_json: LaunchInterpretPathRequest
-    ) -> List[LaunchInterpretPathReply]:
+    def interpret_path(self, request_json: LaunchInterpretPathRequest) -> list[LaunchInterpretPathReply]:
         # Covert input dictionary into a proper python object
         request = request_json
         text = request.text
@@ -1262,9 +1151,7 @@ class LaunchServicer(LoggingEventHandler):
         result = []
         if text:
             try:
-                for inc_file in xml_ros1.find_included_files(
-                    text, False, False, search_in_ext=[]
-                ):
+                for inc_file in xml_ros1.find_included_files(text, False, False, search_in_ext=[]):
                     aval = inc_file.raw_inc_path
                     aitems = aval.split("'")
                     for search_for in aitems:
@@ -1274,22 +1161,17 @@ class LaunchServicer(LoggingEventHandler):
                         args_in_name = xml_ros1.get_arg_names(search_for)
                         request_args = False
                         for arg_name in args_in_name:
-                            if not arg_name in args:
+                            if arg_name not in args:
                                 request_args = True
                                 break
                         if request_args:
                             req_args = []
                             for arg_name in args_in_name:
                                 if arg_name in args:
-                                    req_args.append(
-                                        LaunchArgument(
-                                            arg_name, args[arg_name])
-                                    )
+                                    req_args.append(LaunchArgument(arg_name, args[arg_name]))
                                 else:
                                     req_args.append(LaunchArgument(arg_name, ""))
-                            reply = LaunchInterpretPathReply(
-                                text=search_for, status="PARAMS_REQUIRED", args=req_args
-                            )
+                            reply = LaunchInterpretPathReply(text=search_for, status="PARAMS_REQUIRED", args=req_args)
                             reply.status.code = "PARAMS_REQUIRED"
                             result.append(reply)
                         else:
@@ -1303,15 +1185,11 @@ class LaunchServicer(LoggingEventHandler):
                             )
                             result.append(reply)
             except Exception as err:
-                reply = LaunchInterpretPathReply(
-                    text=text, status="ERROR", args=request.args
-                )
+                reply = LaunchInterpretPathReply(text=text, status="ERROR", args=request.args)
                 reply.status.msg = utf8(err)
                 result.append(reply)
         else:
-            reply = LaunchInterpretPathReply(
-                text=text, status="ERROR", args=request.args
-            )
+            reply = LaunchInterpretPathReply(text=text, status="ERROR", args=request.args)
             reply.status.msg = utf8("empty request")
             result.append(reply)
         return json.dumps(result, cls=SelfEncoder)
@@ -1324,7 +1202,9 @@ class LaunchServicer(LoggingEventHandler):
         startcfg = StartConfig("fkie_mas_daemon", "mas-subscriber")
         startcfg.fullname = f"/mas_subscriber/{topic.strip('/')}"
         startcfg.args = [
-            f"__ns:={os.path.dirname(startcfg.fullname)}", f"__name:={os.path.basename(startcfg.fullname)}"]
+            f"__ns:={os.path.dirname(startcfg.fullname)}",
+            f"__name:={os.path.basename(startcfg.fullname)}",
+        ]
         startcfg.args.append(f"--ws_port={self.websocket.port}")
         startcfg.args.append(f"--topic={topic}")
         startcfg.args.append(f"--message_type={request.message_type}")
@@ -1337,7 +1217,7 @@ class LaunchServicer(LoggingEventHandler):
         startcfg.args.append(f"--hz={request.filter.hz}")
         startcfg.args.append(f"--window={request.filter.window}")
         if hasattr(request.filter, "arrayItemsCount"):
-            startcfg.args.append(f'--array_items_count={request.filter.arrayItemsCount}')
+            startcfg.args.append(f"--array_items_count={request.filter.arrayItemsCount}")
         if request.filter.no_str:
             startcfg.args.append("--no_str")
         if request.tcp_no_delay:

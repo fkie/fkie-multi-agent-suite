@@ -43,15 +43,15 @@ import { useCustomEventListener } from "react-custom-events";
 import { LAYOUT_TAB_LIST, LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/components/layout";
 import { DomainFlexLayout } from "@/renderer/components/layout/DomainFlexLayout";
 import {
-  emitCloseComponent,
-  emitOpenComponent,
-  emitSelectTab,
-  emitToggleComponent,
   EVENT_CLOSE_COMPONENT,
   EVENT_INFO_STATE,
   EVENT_OPEN_COMPONENT,
   EVENT_SELECT_TAB,
   EVENT_TOGGLE_COMPONENT,
+  emitCloseComponent,
+  emitOpenComponent,
+  emitSelectTab,
+  emitToggleComponent,
   TEventId,
   TEventInfoState,
   TEventOpenComponent,
@@ -71,7 +71,7 @@ import {
   TExtTerminalConfig,
   TLayoutTabConfig,
 } from "@/renderer/components/layout/LayoutTabConfig";
-import { isMovableTab, originContentId, takeOutTab, TMovableTab } from "@/renderer/components/layout/LayoutTabMove";
+import { isMovableTab, originContentId, TMovableTab, takeOutTab } from "@/renderer/components/layout/LayoutTabMove";
 import {
   collapseBorderOnLastTab,
   ensureBorderTabVisible,

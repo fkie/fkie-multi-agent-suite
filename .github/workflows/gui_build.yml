@@ -24,4 +24,3 @@ jobs:
         working-directory: fkie-multi-agent-suite/fkie_mas_gui
       - run: npm run build --if-present
         working-directory: fkie-multi-agent-suite/fkie_mas_gui
-

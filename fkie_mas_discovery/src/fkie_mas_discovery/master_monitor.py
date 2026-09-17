@@ -7,54 +7,55 @@
 # ****************************************************************************
 
 try:
-    from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
-    from SocketServer import ThreadingMixIn
     import cStringIO as io  # python 2 compatibility
+    from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler, SimpleXMLRPCServer
+    from SocketServer import ThreadingMixIn
 except ImportError:
-    from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
-    from socketserver import ThreadingMixIn
     import io
+    from socketserver import ThreadingMixIn
+    from xmlrpc.server import SimpleXMLRPCRequestHandler, SimpleXMLRPCServer
 try:
     from urlparse import urlparse  # python 2 compatibility
 except ImportError:
     from urllib.parse import urlparse
-from datetime import datetime
 import getpass
-import roslib.network
-import roslib.message
-import rospy
 import socket
 import subprocess
 import sys
 import threading
 import time
 import traceback
+from datetime import datetime
+
+import roslib.message
+import roslib.network
+import rospy
+
 try:
     import xmlrpclib as xmlrpcclient  # python 2 compatibility
 except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 import json
-from typing import List, Dict
 
-from .common import get_hostname
-from .common import gen_pattern
-from .filter_interface import FilterInterface
-from .master_info import MasterInfo
-from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.interface.runtime_interface import RosNode
-from fkie_mas_pylib.interface.runtime_interface import RosService
-from fkie_mas_pylib.interface.runtime_interface import RosTopic
-from fkie_mas_pylib.interface.runtime_interface import RosTopicId
-from fkie_mas_pylib.interface.runtime_interface import ScreensMapping
-from fkie_mas_pylib.interface.runtime_interface import SystemWarning
-from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
-from fkie_mas_pylib.system import screen
-from fkie_mas_pylib.system import ros1_masteruri
+from fkie_mas_pylib.interface.runtime_interface import (
+    RosNode,
+    RosService,
+    RosTopic,
+    RosTopicId,
+    ScreensMapping,
+    SystemWarning,
+    SystemWarningGroup,
+)
+from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.system import ros1_masteruri, screen
 from fkie_mas_pylib.websocket import ws_port
 from fkie_mas_pylib.websocket.client import WebSocketClient
 
+from .common import gen_pattern, get_hostname
+from .filter_interface import FilterInterface
+from .master_info import MasterInfo
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
     from fkie_mas_msgs.srv import GetSyncInfo
@@ -63,9 +64,10 @@ except:
 
 
 class MasterConnectionException(Exception):
-    '''
+    """
     The exception class to handle the connection problems with ROS Master.
-    '''
+    """
+
     pass
 
 
@@ -85,10 +87,24 @@ class RPCThreading(ThreadingMixIn, SimpleXMLRPCServer):
     # threads created by ThreadingMixIn have exited.
     daemon_threads = True
 
-    def __init__(self, addr, requestHandler=SimpleXMLRPCRequestHandler,
-                 logRequests=True, allow_none=False, encoding=None, bind_and_activate=True):
-        SimpleXMLRPCServer.__init__(self, addr, requestHandler=requestHandler,
-                                    logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
+    def __init__(
+        self,
+        addr,
+        requestHandler=SimpleXMLRPCRequestHandler,
+        logRequests=True,
+        allow_none=False,
+        encoding=None,
+        bind_and_activate=True,
+    ):
+        SimpleXMLRPCServer.__init__(
+            self,
+            addr,
+            requestHandler=requestHandler,
+            logRequests=logRequests,
+            allow_none=allow_none,
+            encoding=encoding,
+            bind_and_activate=bind_and_activate,
+        )
 
 
 class RPCThreadingV6(ThreadingMixIn, SimpleXMLRPCServer):
@@ -101,14 +117,28 @@ class RPCThreadingV6(ThreadingMixIn, SimpleXMLRPCServer):
     # threads created by ThreadingMixIn have exited.
     daemon_threads = True
 
-    def __init__(self, addr, requestHandler=SimpleXMLRPCRequestHandler,
-                 logRequests=True, allow_none=False, encoding=None, bind_and_activate=True):
-        SimpleXMLRPCServer.__init__(self, addr, requestHandler=requestHandler,
-                                    logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
+    def __init__(
+        self,
+        addr,
+        requestHandler=SimpleXMLRPCRequestHandler,
+        logRequests=True,
+        allow_none=False,
+        encoding=None,
+        bind_and_activate=True,
+    ):
+        SimpleXMLRPCServer.__init__(
+            self,
+            addr,
+            requestHandler=requestHandler,
+            logRequests=logRequests,
+            allow_none=allow_none,
+            encoding=encoding,
+            bind_and_activate=bind_and_activate,
+        )
 
 
 class MasterMonitor:
-    '''
+    """
     This class provides methods to get the state from the ROS master using his
     RPC API and test for changes. Furthermore an XML-RPC server will be created
     to offer the complete current state of the ROS master by one method call.
@@ -128,15 +158,15 @@ class MasterMonitor:
         :mod:`fkie_mas_discovery.master_monitor.MasterMonitor.getListedMasterInfo()` or
         :mod:`fkie_mas_discovery.master_monitor.MasterMonitor.getMasterContacts()` as RPC:
         ``masterInfo()`` and ``masterContacts()``
-    '''
+    """
 
     MAX_PING_SEC = 10.0
-    ''' The time to update the node URI, ID or service URI (Default: ``10.0``)'''
+    """ The time to update the node URI, ID or service URI (Default: ``10.0``)"""
 
     INTERVAL_UPDATE_LAUNCH_URIS = 15.0
 
-    def __init__(self, rpc_port=1161, do_retry=True, ipv6=False, rpc_addr='', connect_server=False, ws_port=ws_port()):
-        '''
+    def __init__(self, rpc_port=1161, do_retry=True, ipv6=False, rpc_addr="", connect_server=False, ws_port=ws_port()):
+        """
         Initialize method. Creates an XML-RPC server on given port and starts this
         in its own thread.
 
@@ -151,7 +181,7 @@ class MasterMonitor:
         :param ipv6: Use ipv6
 
         :type ipv6: bool
-        '''
+        """
         self._state_access_lock = threading.RLock()
         self._create_access_lock = threading.RLock()
         self._lock = threading.RLock()
@@ -165,22 +195,22 @@ class MasterMonitor:
         self._screen_check_force_after = 10
         self._screen_json_msg = []
         self.ros_node_name = str(rospy.get_name())
-        if rospy.has_param('~name'):
-            self.__mastername = rospy.get_param('~name')
+        if rospy.has_param("~name"):
+            self.__mastername = rospy.get_param("~name")
         self.__mastername = self.getMastername()
-        rospy.set_param('/mastername', self.__mastername)
+        rospy.set_param("/mastername", self.__mastername)
 
         self.__master_state = None
-        '''the current state of the ROS master'''
+        """the current state of the ROS master"""
         self.rpc_port = rpc_port
-        '''the port number of the RPC server'''
+        """the port number of the RPC server"""
 
         self._printed_errors = dict()
         self._last_clearup_ts = time.time()
         self._json_warning_groups = {}
         self._screens_set = set()
         self._screen_nodes_set = set()
-        self._sceen_json_msg: List[ScreensMapping] = []
+        self._sceen_json_msg: list[ScreensMapping] = []
 
         self.ts_updated = 0
         self._master_errors = list()
@@ -191,36 +221,28 @@ class MasterMonitor:
                 RPCClass = RPCThreading
                 if ipv6:
                     RPCClass = RPCThreadingV6
-                self.rpcServer = RPCClass(
-                    (rpc_addr, rpc_port), logRequests=False, allow_none=True)
-                Log.info("Start RPC-XML Server at %s",
-                         self.rpcServer.server_address)
+                self.rpcServer = RPCClass((rpc_addr, rpc_port), logRequests=False, allow_none=True)
+                Log.info("Start RPC-XML Server at %s", self.rpcServer.server_address)
                 self.rpcServer.register_introspection_functions()
-                self.rpcServer.register_function(
-                    self.getListedMasterInfo, 'masterInfo')
-                self.rpcServer.register_function(
-                    self.getListedMasterInfoFiltered, 'masterInfoFiltered')
-                self.rpcServer.register_function(
-                    self.getMasterContacts, 'masterContacts')
-                self.rpcServer.register_function(
-                    self.getMasterErrors, 'masterErrors')
-                self.rpcServer.register_function(
-                    self.getCurrentTime, 'getCurrentTime')
-                self.rpcServer.register_function(self.setTime, 'setTime')
-                self.rpcServer.register_function(
-                    self.getTopicsMd5sum, 'getTopicsMd5sum')
-                self.rpcServer.register_function(self.getUser, 'getUser')
-                self._rpcThread = threading.Thread(
-                    target=self.rpcServer.serve_forever)
+                self.rpcServer.register_function(self.getListedMasterInfo, "masterInfo")
+                self.rpcServer.register_function(self.getListedMasterInfoFiltered, "masterInfoFiltered")
+                self.rpcServer.register_function(self.getMasterContacts, "masterContacts")
+                self.rpcServer.register_function(self.getMasterErrors, "masterErrors")
+                self.rpcServer.register_function(self.getCurrentTime, "getCurrentTime")
+                self.rpcServer.register_function(self.setTime, "setTime")
+                self.rpcServer.register_function(self.getTopicsMd5sum, "getTopicsMd5sum")
+                self.rpcServer.register_function(self.getUser, "getUser")
+                self._rpcThread = threading.Thread(target=self.rpcServer.serve_forever)
                 self._rpcThread.setDaemon(True)
                 self._rpcThread.start()
                 self.ready = True
-            except socket.error as e:
+            except OSError as e:
                 if not do_retry:
                     raise Exception(
-                        "Error while start RPC-XML server on port %d: %s\nIs a Node Manager already running?" % (rpc_port, e))
-                Log.warn(
-                    "Error while start RPC-XML server on port %d: %s\nTry again..." % (rpc_port, e))
+                        "Error while start RPC-XML server on port %d: %s\nIs a Node Manager already running?"
+                        % (rpc_port, e)
+                    )
+                Log.warn("Error while start RPC-XML server on port %d: %s\nTry again..." % (rpc_port, e))
                 time.sleep(1)
             except:
                 print(traceback.format_exc())
@@ -229,12 +251,9 @@ class MasterMonitor:
 
         self._master = xmlrpcclient.ServerProxy(self.getMasteruri())
         # Hide parameter
-        self._re_hide_nodes = gen_pattern(
-            rospy.get_param('~hide_nodes', []), 'hide_nodes')
-        self._re_hide_topics = gen_pattern(
-            rospy.get_param('~hide_topics', []), 'hide_topics')
-        self._re_hide_services = gen_pattern(
-            rospy.get_param('~hide_services', []), 'hide_services')
+        self._re_hide_nodes = gen_pattern(rospy.get_param("~hide_nodes", []), "hide_nodes")
+        self._re_hide_topics = gen_pattern(rospy.get_param("~hide_topics", []), "hide_topics")
+        self._re_hide_services = gen_pattern(rospy.get_param("~hide_services", []), "hide_services")
 
         self.provider_list = []
         self.ws_port = ws_port
@@ -265,22 +284,19 @@ class MasterMonitor:
         # first access, make call to parameter server
         self._update_launch_uris_lock = threading.RLock()
         self.__launch_uris = {}
-        code, msg, value = self._master.subscribeParam(
-            self.ros_node_name, rospy.get_node_uri(), '/roslaunch/uris')
+        code, msg, value = self._master.subscribeParam(self.ros_node_name, rospy.get_node_uri(), "/roslaunch/uris")
         # the new timer will be created in self._update_launch_uris()
         self._timer_update_launch_uris = None
         if code == 1:
             for k, v in value.items():
-                self.__launch_uris[roslib.names.ns_join(
-                    '/roslaunch/uris', k)] = v
+                self.__launch_uris[roslib.names.ns_join("/roslaunch/uris", k)] = v
         self._update_launch_uris()
         # === END: UPDATE THE LAUNCH URIS Section ===
         self._screen_do_check = False
         if self.connect_server:
-            self._screen_thread = threading.Thread(
-                target=self.checkScreens, daemon=True)
+            self._screen_thread = threading.Thread(target=self.checkScreens, daemon=True)
             self._screen_thread.start()
-            self.wsClient.publish('ros.discovery.ready', {'status': True})
+            self.wsClient.publish("ros.discovery.ready", {"status": True})
 
     def __update_param(self, key, value):
         # updates the /roslaunch/uris parameter list
@@ -294,9 +310,9 @@ class MasterMonitor:
                 pass
 
     def shutdown(self):
-        '''
+        """
         Shutdown the RPC Server.
-        '''
+        """
         self._on_shutdown = True
         if self._timer_update_launch_uris is not None:
             try:
@@ -305,22 +321,20 @@ class MasterMonitor:
                 pass
         if self.connect_server:
             self.wsClient.shutdown()
-        if hasattr(self, 'rpcServer'):
+        if hasattr(self, "rpcServer"):
             if self._master is not None:
                 Log.info("Unsubscribe from parameter `/roslaunch/uris`")
                 try:
-                    self._master.unsubscribeParam(
-                        self.ros_node_name, rospy.get_node_uri(), '/roslaunch/uris')
+                    self._master.unsubscribeParam(self.ros_node_name, rospy.get_node_uri(), "/roslaunch/uris")
                 except Exception as e:
-                    Log.warn(
-                        "Error while unsubscribe from `/roslaunch/uris`: %s" % e)
+                    Log.warn("Error while unsubscribe from `/roslaunch/uris`: %s" % e)
             Log.info("shutdown own RPC server")
             self.rpcServer.shutdown()
             del self.rpcServer.socket
             del self.rpcServer
 
     def is_running(self):
-        return hasattr(self, 'rpcServer')
+        return hasattr(self, "rpcServer")
 
     def _update_launch_uris(self, params={}):
         with self._update_launch_uris_lock:
@@ -336,8 +350,7 @@ class MasterMonitor:
                     except:
                         try:
                             # remove the parameter from parameter server on error
-                            master = xmlrpcclient.ServerProxy(
-                                self.getMasteruri())
+                            master = xmlrpcclient.ServerProxy(self.getMasteruri())
                             master.deleteParam(self.ros_node_name, key)
                         except:
                             pass
@@ -346,11 +359,12 @@ class MasterMonitor:
                 # create the new timer
                 if not self._on_shutdown:
                     self._timer_update_launch_uris = threading.Timer(
-                        self.INTERVAL_UPDATE_LAUNCH_URIS, self._update_launch_uris)
+                        self.INTERVAL_UPDATE_LAUNCH_URIS, self._update_launch_uris
+                    )
                     self._timer_update_launch_uris.start()
 
     def _getNodePid(self, nodes):
-        '''
+        """
         Gets process id of the node.
         This method blocks until the info is retrieved or socket timeout is reached (0.7 seconds).
 
@@ -361,8 +375,8 @@ class MasterMonitor:
         :param uri: the uri of the node
 
         :type uri: str
-        '''
-        for (nodename, uri) in nodes.items():
+        """
+        for nodename, uri in nodes.items():
             if uri is not None:
                 pid = None
                 try:
@@ -373,19 +387,17 @@ class MasterMonitor:
                     socket.setdefaulttimeout(0.7)
                     node = xmlrpcclient.ServerProxy(uri)
                     pid = _succeed(node.getPid(self.ros_node_name))
-                except (Exception, socket.error) as e:
+                except (OSError, Exception) as e:
                     with self._lock:
-                        self._limited_log(
-                            nodename, "can't get PID: %s" % str(e), level=rospy.DEBUG)
+                        self._limited_log(nodename, "can't get PID: %s" % str(e), level=rospy.DEBUG)
                     master = xmlrpcclient.ServerProxy(self.getMasteruri())
-                    code, message, new_uri = master.lookupNode(
-                        self.ros_node_name, nodename)
+                    code, message, new_uri = master.lookupNode(self.ros_node_name, nodename)
                     with self._lock:
-                        self.__new_master_state.getNode(
-                            nodename).uri = None if (code == -1) else new_uri
+                        self.__new_master_state.getNode(nodename).uri = None if (code == -1) else new_uri
                         if code == -1:
                             self._limited_log(
-                                nodename, "can't update contact information. ROS master responds with: %s" % message)
+                                nodename, "can't update contact information. ROS master responds with: %s" % message
+                            )
                         try:
                             del self.__cached_nodes[nodename]
                         except:
@@ -394,12 +406,12 @@ class MasterMonitor:
                     with self._lock:
                         self.__new_master_state.getNode(nodename).pid = pid
                         self.__cached_nodes[nodename] = (uri, pid, time.time())
-#          print "_getNodePid _lock RET", threading.current_thread()
+                #          print "_getNodePid _lock RET", threading.current_thread()
                 finally:
                     socket.setdefaulttimeout(None)
 
     def _getServiceInfo(self, services):
-        '''
+        """
         Gets service info through the RPC interface of the service.
         This method blocks until the info is retrieved or socket timeout is reached (0.5 seconds).
 
@@ -410,8 +422,8 @@ class MasterMonitor:
         :param uri: the uri of the service
 
         :type uri: str
-        '''
-        for (service, uri) in services.items():
+        """
+        for service, uri in services.items():
             with self._lock:
                 if service in self.__cached_services:
                     if time.time() - self.__cached_services[service][2] < self.MAX_PING_SEC:
@@ -422,34 +434,31 @@ class MasterMonitor:
                     dest_addr, dest_port = rospy.parse_rosrpc_uri(uri)
                 except:
                     continue
-        #      raise ROSServiceException("service [%s] has an invalid RPC URI [%s]"%(service, uri))
+                #      raise ROSServiceException("service [%s] has an invalid RPC URI [%s]"%(service, uri))
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
                     # connect to service and probe it to get the headers
                     s.settimeout(0.5)
                     s.connect((dest_addr, dest_port))
-                    header = {'probe': '1', 'md5sum': '*',
-                              'callerid': self.ros_node_name, 'service': service}
+                    header = {"probe": "1", "md5sum": "*", "callerid": self.ros_node_name, "service": service}
                     roslib.network.write_ros_handshake_header(s, header)
                     buf = io.StringIO() if sys.version_info < (3, 0) else io.BytesIO()
-                    stype = roslib.network.read_ros_handshake_header(
-                        s, buf, 2048)
+                    stype = roslib.network.read_ros_handshake_header(s, buf, 2048)
                     with self._lock:
-                        self.__new_master_state.getService(
-                            service).type = stype['type']
-                        self.__cached_services[service] = (
-                            uri, stype['type'], time.time())
-                except socket.error:
+                        self.__new_master_state.getService(service).type = stype["type"]
+                        self.__cached_services[service] = (uri, stype["type"], time.time())
+                except OSError:
                     with self._lock:
                         try:
                             del self.__cached_services[service]
                         except:
                             pass
-        #      raise ROSServiceIOException("Unable to communicate with service [%s], address [%s]"%(service, uri))
+                #      raise ROSServiceIOException("Unable to communicate with service [%s], address [%s]"%(service, uri))
                 except:
                     with self._lock:
                         self._limited_log(
-                            service, "can't get service type: %s" % traceback.format_exc(), level=rospy.DEBUG)
+                            service, "can't get service type: %s" % traceback.format_exc(), level=rospy.DEBUG
+                        )
                     with self._lock:
                         try:
                             del self.__cached_services[service]
@@ -461,56 +470,52 @@ class MasterMonitor:
                         s.close()
 
     def getListedMasterInfo(self):
-        '''
+        """
         :return: a extended ROS Master State.
 
         :rtype:  :mod:`fkie_mas_discovery.master_info.MasterInfo.listedState()` for result type
-        '''
+        """
         t = str(time.time())
-        result = (t, t, self.getMasteruri(), str(
-            self.getMastername()), [], [], [], [], [], [])
-        if not (self.__master_state is None):
+        result = (t, t, self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [])
+        if self.__master_state is not None:
             try:
                 with self._state_access_lock:
                     fi = FilterInterface.from_list()
-                    fi.set_hide_pattern(
-                        self._re_hide_nodes, self._re_hide_topics, self._re_hide_services)
+                    fi.set_hide_pattern(self._re_hide_nodes, self._re_hide_topics, self._re_hide_services)
                     result = self.__master_state.listedState()
             except:
                 print(traceback.format_exc())
         return result
 
     def getListedMasterInfoFiltered(self, filter_list):
-        '''
+        """
         :return: a extended filtered ROS Master State.
 
         :rtype:  :mod:`fkie_mas_discovery.master_info.MasterInfo.listedState()` for result type
-        '''
+        """
         t = str(time.time())
-        result = (t, t, self.getMasteruri(), str(
-            self.getMastername()), [], [], [], [], [], [])
-        if not (self.__master_state is None):
+        result = (t, t, self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [])
+        if self.__master_state is not None:
             try:
                 with self._state_access_lock:
                     fi = FilterInterface.from_list(filter_list)
-                    fi.set_hide_pattern(
-                        self._re_hide_nodes, self._re_hide_topics, self._re_hide_services)
+                    fi.set_hide_pattern(self._re_hide_nodes, self._re_hide_topics, self._re_hide_services)
                     result = self.__master_state.listedState(fi)
             except:
                 print(traceback.format_exc())
         return result
 
     def getCurrentState(self):
-        '''
+        """
         :return: The current ROS Master State
 
         :rtype: :mod:`fkie_mas_discovery.master_info.MasterInfo` or ``None``
-        '''
+        """
         with self._state_access_lock:
             return self.__master_state
 
     def updateState(self, clear_cache=False):
-        '''
+        """
         Gets state from the ROS Master through his RPC interface.
 
         :param clear_cache: The URI of nodes and services will be cached to reduce the load.
@@ -523,7 +528,7 @@ class MasterMonitor:
         :rtype: :mod:`fkie_mas_discovery.master_info.MasterInfo`
 
         :raise: ``MasterConnectionException``, if not complete information was get from the ROS master.
-        '''
+        """
         with self._create_access_lock:
             now = time.time()
             threads = []
@@ -533,21 +538,18 @@ class MasterMonitor:
                     self.__cached_nodes = dict()
                     self.__cached_services = dict()
                 socket.setdefaulttimeout(5)
-                self.__new_master_state = master_state = MasterInfo(
-                    self.getMasteruri(), self.getMastername())
+                self.__new_master_state = master_state = MasterInfo(self.getMasteruri(), self.getMastername())
                 # update master state
                 master = self._master
                 # master = xmlrpclib.ServerProxy(self.getMasteruri())
                 # get topic types
-                code, message, topicTypes = master.getTopicTypes(
-                    self.ros_node_name)
+                code, message, topicTypes = master.getTopicTypes(self.ros_node_name)
                 # convert topicType list to the dict
                 topicTypesDict = {}
                 for topic, type in topicTypes:
                     topicTypesDict[topic] = type
                 # get system state
-                code, message, state = master.getSystemState(
-                    self.ros_node_name)
+                code, message, state = master.getSystemState(self.ros_node_name)
 
                 # add published topics
                 for t, l in state[0]:
@@ -556,8 +558,7 @@ class MasterMonitor:
                         master_state.nodes = n
                         master_state.getNode(n).publishedTopics = t
                         master_state.getTopic(t).publisherNodes = n
-                        master_state.getTopic(
-                            t).type = topicTypesDict.get(t, 'None')
+                        master_state.getTopic(t).type = topicTypesDict.get(t, "None")
                 # add subscribed topics
                 for t, l in state[1]:
                     master_state.topics = t
@@ -565,8 +566,7 @@ class MasterMonitor:
                         master_state.nodes = n
                         master_state.getNode(n).subscribedTopics = t
                         master_state.getTopic(t).subscriberNodes = n
-                        master_state.getTopic(
-                            t).type = topicTypesDict.get(t, 'None')
+                        master_state.getTopic(t).type = topicTypesDict.get(t, "None")
 
                 # add services
                 services = dict()
@@ -583,12 +583,14 @@ class MasterMonitor:
                         if service.name in self.__cached_services:
                             service.uri = self.__cached_services[service.name][0]
                             service.type = self.__cached_services[service.name][1]
-                            if service.isLocal and time.time() - self.__cached_services[service.name][2] > self.MAX_PING_SEC:
+                            if (
+                                service.isLocal
+                                and time.time() - self.__cached_services[service.name][2] > self.MAX_PING_SEC
+                            ):
                                 services[service.name] = service.uri
                         else:
                             tmp_slist.append(service)
-                            param_server_multi.lookupService(
-                                self.ros_node_name, t)
+                            param_server_multi.lookupService(self.ros_node_name, t)
                 try:
                     r = param_server_multi()
                     for (code, msg, uri), service in zip(r, tmp_slist):
@@ -597,17 +599,16 @@ class MasterMonitor:
                             if service.isLocal:
                                 services[service.name] = uri
                             else:
-                                self.__cached_services[service.name] = (
-                                    uri, None, time.time())
+                                self.__cached_services[service.name] = (uri, None, time.time())
                         else:
                             with self._lock:
                                 self._limited_log(
-                                    service.name, "can't get contact information. ROS master responds with: %s" % msg)
+                                    service.name, "can't get contact information. ROS master responds with: %s" % msg
+                                )
                 except:
                     traceback.print_exc()
                 if services:
-                    pidThread = threading.Thread(
-                        target=self._getServiceInfo, args=((services,)))
+                    pidThread = threading.Thread(target=self._getServiceInfo, args=((services,)))
                     pidThread.start()
                     threads.append(pidThread)
 
@@ -626,8 +627,7 @@ class MasterMonitor:
                         else:
                             # 'print "request node:", node.name
                             tmp_nlist.append(node)
-                            param_server_multi.lookupNode(
-                                self.ros_node_name, name)
+                            param_server_multi.lookupNode(self.ros_node_name, name)
                     r = param_server_multi()
                     for (code, msg, uri), node in zip(r, tmp_nlist):
                         if code == 1:
@@ -635,24 +635,23 @@ class MasterMonitor:
                             if node.isLocal:
                                 nodes[node.name] = uri
                             else:
-                                self.__cached_nodes[node.name] = (
-                                    uri, None, time.time())
+                                self.__cached_nodes[node.name] = (uri, None, time.time())
                         else:
                             with self._lock:
                                 self._limited_log(
-                                    node.name, "can't get contact information. ROS master responds with: %s" % msg)
+                                    node.name, "can't get contact information. ROS master responds with: %s" % msg
+                                )
                 except:
                     traceback.print_exc()
 
                 if nodes:
                     # get process id of the nodes
-                    pidThread = threading.Thread(
-                        target=self._getNodePid, args=((nodes,)))
+                    pidThread = threading.Thread(target=self._getNodePid, args=((nodes,)))
                     pidThread.start()
                     threads.append(pidThread)
 
                 master_state.timestamp = now
-            except socket.error as e:
+            except OSError as e:
                 if isinstance(e, tuple):
                     (errn, msg) = e
                     if errn not in [100, 101, 102]:
@@ -705,13 +704,13 @@ class MasterMonitor:
                     del self._printed_errors[p]
 
     def updateSyncInfo(self):
-        '''
+        """
         This method can be called to update the origin ROS master URI of the nodes
         and services in new ``master_state``. This is only need, if a synchronization is
         running. The synchronization service will be detect automatically by searching
         for the service ending with ``get_sync_info``. The method will be called by
         :mod:`fkie_mas_discovery.master_monitor.MasterMonitor.checkState()`.
-        '''
+        """
         # 'print "updateSyncInfo _create_access_lock try...", threading.current_thread()
 
         def getNodeuri(nodename, publisher, subscriber, services):
@@ -732,16 +731,14 @@ class MasterMonitor:
             # get synchronization info, if sync node is running
             # to determine the origin ROS MASTER URI of the nodes
             for name, service in master_state.services.items():
-                if service.name.endswith('get_sync_info'):
+                if service.name.endswith("get_sync_info"):
                     if get_hostname(self.getMasteruri()) == get_hostname(service.uri):
                         socket.setdefaulttimeout(3)
-                        get_sync_info = rospy.ServiceProxy(
-                            service.name, GetSyncInfo)
+                        get_sync_info = rospy.ServiceProxy(service.name, GetSyncInfo)
                         try:
                             sync_info = get_sync_info()
                         except rospy.ServiceException as e:
-                            Log.warn(
-                                "ERROR Service call 'get_sync_info' failed: %s", str(e))
+                            Log.warn("ERROR Service call 'get_sync_info' failed: %s", str(e))
                         finally:
                             socket.setdefaulttimeout(None)
 
@@ -752,8 +749,7 @@ class MasterMonitor:
                         try:
                             # TODO: add nodeuri to the nodes (needs changes in the MSG definitions)
                             # set the sync node only if it has the same uri
-                            nuri = getNodeuri(
-                                n, m.publisher, m.subscriber, m.services)
+                            nuri = getNodeuri(n, m.publisher, m.subscriber, m.services)
                             state_node = master_state.getNode(n)
                             if state_node is not None and (state_node.uri == nuri or nuri is None):
                                 state_node.masteruri = m.masteruri
@@ -768,38 +764,36 @@ class MasterMonitor:
                             pass
 
     def getMasteruri(self):
-        '''
+        """
         Requests the ROS master URI from the ROS master through the RPC interface and
         returns it.
 
         :return: ROS master URI
 
         :rtype: str or ``None``
-        '''
+        """
         code = -1
         if self.__masteruri_rpc is None:
             master = xmlrpcclient.ServerProxy(self.__masteruri)
-            code, message, self.__masteruri_rpc = master.getUri(
-                self.ros_node_name)
+            code, message, self.__masteruri_rpc = master.getUri(self.ros_node_name)
         return self.__masteruri_rpc if code >= 0 or self.__masteruri_rpc is not None else self.__masteruri
 
     def getMastername(self):
-        '''
+        """
         Returns the name of the master. If no name is set, the hostname of the
         ROS master URI will be extracted.
 
         :return: the name of the ROS master
 
         :rtype: str or ``None``
-        '''
+        """
         if self.__mastername is None:
             try:
                 self.__mastername = get_hostname(self.getMasteruri())
                 try:
                     master_port = urlparse(self.__masteruri).port
                     if master_port != 11311:
-                        self.__mastername = '%s_%d' % (
-                            self.__mastername, master_port)
+                        self.__mastername = "%s_%d" % (self.__mastername, master_port)
                 except:
                     pass
             except:
@@ -807,50 +801,56 @@ class MasterMonitor:
         return self.__mastername
 
     def getMasterContacts(self):
-        '''
+        """
         The RPC method called by XML-RPC server to request the master contact information.
 
         :return: (``timestamp of the ROS master state``, ``ROS master URI``, ``master name``, ``name of this service``, ``URI of this RPC server``)
         :rtype: (str, str, str, str, str)
-        '''
+        """
         t = 0
         if self.__master_state is not None:
             with self._state_access_lock:
                 t = self.__master_state.timestamp
-        return ('%.9f' % t, str(self.getMasteruri()), str(self.getMastername()), self.ros_node_name, roslib.network.create_local_xmlrpc_uri(self.rpc_port))
+        return (
+            "%.9f" % t,
+            str(self.getMasteruri()),
+            str(self.getMastername()),
+            self.ros_node_name,
+            roslib.network.create_local_xmlrpc_uri(self.rpc_port),
+        )
 
     def getMasterErrors(self):
-        '''
+        """
         The RPC method called by XML-RPC server to request the occured network errors.
 
         :return: (``ROS master URI``, ``list with errors``)
         :rtype: (str, [str])
-        '''
+        """
         return (str(self.getMasteruri()), self._master_errors)
 
     def getCurrentTime(self):
-        '''
+        """
         The RPC method called by XML-RPC server to request the current host time.
 
         :return: (``ROS master URI``, ``current time``)
         :rtype: (str, float)
-        '''
+        """
         return (str(self.getMasteruri()), time.time())
 
     def setTime(self, timestamp):
-        '''
+        """
         The RPC method called by XML-RPC server to set new host time.
         :param timestamp: UNIX timestamp
         :type timestamp: float
         :return: (``ROS master URI``, ``current time``)
         :rtype: (str, float)
-        '''
+        """
         dtime = datetime.fromtimestamp(timestamp)
-        args = ['sudo', '-n', '/bin/date', '-s', '%s' % dtime]
-        Log.info('Set time: %s' % args)
+        args = ["sudo", "-n", "/bin/date", "-s", "%s" % dtime]
+        Log.info("Set time: %s" % args)
         subp = subprocess.Popen(args, stderr=subprocess.PIPE)
         success = True
-        result_err = ''
+        result_err = ""
         if subp.stderr is not None:
             result_err = subp.stderr.read()
             if result_err:
@@ -858,7 +858,7 @@ class MasterMonitor:
         return (str(self.getMasteruri()), success, time.time(), result_err)
 
     def getTopicsMd5sum(self, topic_types):
-        '''
+        """
         :return: a list with topic type and current md5sum.
 
                 - ``topic types`` is of the form
@@ -866,7 +866,7 @@ class MasterMonitor:
                     ``[ (topic1, md5sum1) ... ]``
 
         :rtype:  list
-        '''
+        """
         topic_list = []
         for ttype in topic_types:
             try:
@@ -877,16 +877,16 @@ class MasterMonitor:
         return topic_list
 
     def getUser(self):
-        '''
+        """
         The RPC method called by XML-RPC server to request the user name used to launch the master_discovery.
 
         :return: (``ROS master URI``, ``user name``)
         :rtype: (str, str)
-        '''
+        """
         return (str(self.getMasteruri()), getpass.getuser())
 
     def checkState(self, clear_cache=False):
-        '''
+        """
         Gets the state from the ROS master and compares it to the stored state.
 
         :param clear_cache: The URI of nodes and services will be cached to reduce the load.
@@ -899,7 +899,7 @@ class MasterMonitor:
         :return: ``True`` if the ROS master state is changed
 
         :rtype: bool
-        '''
+        """
         result = False
         s = self.updateState(clear_cache)
         with self._create_access_lock:
@@ -910,17 +910,21 @@ class MasterMonitor:
                 if self.__master_state is not None and s.timestamp < self.__master_state.timestamp:
                     do_update = True
                     result = True
-                    timejump_msg = "Timejump into past detected! Restart all ROS nodes, includes master_discovery, please!"
+                    timejump_msg = (
+                        "Timejump into past detected! Restart all ROS nodes, includes master_discovery, please!"
+                    )
                     Log.warn(timejump_msg)
-                    json_w_timejump = SystemWarningGroup(
-                        SystemWarningGroup.ID_TIME_JUMP)
-                    json_w_timejump.append(SystemWarning(
-                        msg='Timejump into past detected!', hint='Restart all ROS nodes, includes master_discovery, please! master_discovery shutting down in 5 seconds!'))
+                    json_w_timejump = SystemWarningGroup(SystemWarningGroup.ID_TIME_JUMP)
+                    json_w_timejump.append(
+                        SystemWarning(
+                            msg="Timejump into past detected!",
+                            hint="Restart all ROS nodes, includes master_discovery, please! master_discovery shutting down in 5 seconds!",
+                        )
+                    )
                     self.update_errors_json([json_w_timejump])
                     if timejump_msg not in self._master_errors:
                         self._master_errors.append(timejump_msg)
-                    self._exit_timer = threading.Timer(
-                        5.0, self._timejump_exit)
+                    self._exit_timer = threading.Timer(5.0, self._timejump_exit)
                     self._exit_timer.start()
             if do_update:
                 self.updateSyncInfo()
@@ -936,31 +940,29 @@ class MasterMonitor:
             if result and self.connect_server:
                 self.ts_updated = time.time()
                 result = {"timestamp": self.__new_master_state.timestamp}
-                self.wsClient.publish('ros.nodes.changed', result)
-                self.wsClient.publish('ros.topics.changed', result)
-                self.wsClient.publish('ros.services.changed', result)
+                self.wsClient.publish("ros.nodes.changed", result)
+                self.wsClient.publish("ros.topics.changed", result)
+                self.wsClient.publish("ros.services.changed", result)
                 self._screen_do_check = True
             return result
 
     def _timejump_exit(self):
-        Log.warn(
-            'Shutdown yourself to avoid system instability because of time jump into past!\n')
-        rospy.signal_shutdown(
-            'Shutdown yourself to avoid system instability because of time jump into past')
+        Log.warn("Shutdown yourself to avoid system instability because of time jump into past!\n")
+        rospy.signal_shutdown("Shutdown yourself to avoid system instability because of time jump into past")
 
     def reset(self):
-        '''
+        """
         Sets the master state to ``None``.
-        '''
+        """
         with self._state_access_lock:
             if self.__master_state is not None:
                 del self.__master_state
             self.__master_state = None
 
-    def update_master_errors(self, error_list: List[str]):
+    def update_master_errors(self, error_list: list[str]):
         self._master_errors = list(error_list)
 
-    def update_errors_json(self, json_warnings: List[SystemWarningGroup]):
+    def update_errors_json(self, json_warnings: list[SystemWarningGroup]):
         if not self.connect_server:
             return
         updated = False
@@ -976,18 +978,17 @@ class MasterMonitor:
             for wg in self._json_warning_groups.values():
                 count_warnings += len(wg.warnings)
             Log.debug(
-                f"ros.provider.warnings with {count_warnings} warnings in {len(self._json_warning_groups)} groups")
-            self.wsClient.publish('ros.provider.warnings', list(
-                self._json_warning_groups.values()))
+                f"ros.provider.warnings with {count_warnings} warnings in {len(self._json_warning_groups)} groups"
+            )
+            self.wsClient.publish("ros.provider.warnings", list(self._json_warning_groups.values()))
 
     def get_provider_warnings(self) -> str:
-        Log.info('Request to [ros.provider.get_warnings]')
-        return json.dumps(list(
-            self._json_warning_groups.values()), cls=SelfEncoder)
+        Log.info("Request to [ros.provider.get_warnings]")
+        return json.dumps(list(self._json_warning_groups.values()), cls=SelfEncoder)
 
     def get_node_list(self, forceRefresh: bool = False) -> str:
-        Log.info(f'Request to [ros.nodes.get_list]; forceRefresh(ignored): {forceRefresh}')
-        node_list: List[RosNode] = []
+        Log.info(f"Request to [ros.nodes.get_list]; forceRefresh(ignored): {forceRefresh}")
+        node_list: list[RosNode] = []
         with self._state_access_lock:
             if self.__master_state is not None:
                 node_list = self.__master_state.toJson()
@@ -995,9 +996,9 @@ class MasterMonitor:
         Log.info(f"Node status size: {sys.getsizeof(result) / 1024 / 1024:,.4f} Mbit")
         return result
 
-    def get_service_list(self, filter: List[RosTopicId] = []) -> str:
-        Log.info(f'Request to [ros.services.get_list]; filter: {filter}')
-        service_list: List[RosService] = []
+    def get_service_list(self, filter: list[RosTopicId] = []) -> str:
+        Log.info(f"Request to [ros.services.get_list]; filter: {filter}")
+        service_list: list[RosService] = []
         with self._state_access_lock:
             if self.__master_state is not None:
                 service_list = self.__master_state.toJsonServices(filter)
@@ -1005,9 +1006,9 @@ class MasterMonitor:
         Log.info(f"Services status size: {sys.getsizeof(result) / 1024 / 1024:,.4f} Mbit")
         return result
 
-    def get_topic_list(self, filter: List[RosTopicId] = []) -> str:
-        Log.info(f'Request to [ros.topics.get_list]; filter: {filter}')
-        topic_list: List[RosTopic] = []
+    def get_topic_list(self, filter: list[RosTopicId] = []) -> str:
+        Log.info(f"Request to [ros.topics.get_list]; filter: {filter}")
+        topic_list: list[RosTopic] = []
         with self._state_access_lock:
             if self.__master_state is not None:
                 topic_list = self.__master_state.toJsonTopics(filter)
@@ -1016,48 +1017,49 @@ class MasterMonitor:
         return result
 
     def get_system_uri(self) -> str:
-        Log.info('Request to [ros.system.get_uri]')
+        Log.info("Request to [ros.system.get_uri]")
         return f"{self.getMasteruri()} [{self.ws_port}]"
 
     def stop_node(self, name: str) -> bool:
         Log.info(f"Request to stop node '{name}'")
         success = False
-        message = ''
+        message = ""
         self._screen_do_check = True
         if self.__master_state is not None:
             try:
-                node_uri = ''
+                node_uri = ""
                 with self._state_access_lock:
                     node_uri = self.__master_state.nodes[name].uri
-                Log.debug('  found URI: %s', node_uri)
+                Log.debug("  found URI: %s", node_uri)
                 if node_uri:
                     socket.setdefaulttimeout(10)
                     p = xmlrpcclient.ServerProxy(node_uri)
                     (code, statusMessage, ignore) = p.shutdown(
-                        rospy.get_name(), '[node manager] request from %s' % self.__mastername)
+                        rospy.get_name(), "[node manager] request from %s" % self.__mastername
+                    )
                     if code == 1:
                         success = True
                     else:
-                        message = "Error while shutting down node '%s': %s" % (
-                            name, statusMessage)
+                        message = "Error while shutting down node '%s': %s" % (name, statusMessage)
                         Log.warn(message)
-                        return json.dumps({'result': success, 'message': message}, cls=SelfEncoder)
+                        return json.dumps({"result": success, "message": message}, cls=SelfEncoder)
                 else:
                     success = False
-                    message = 'No uri for given node found'
+                    message = "No uri for given node found"
             except KeyError:
                 msg = "Error while stopping node: Node '%s' not found" % name
                 Log.warn(msg)
-                return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
+                return json.dumps({"result": success, "message": msg}, cls=SelfEncoder)
             except Exception as e:
                 msg = "Error while stopping node '%s': %s" % (name, e)
                 Log.warn(msg)
                 import traceback
+
                 print(traceback.format_exc())
-                return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
+                return json.dumps({"result": success, "message": msg}, cls=SelfEncoder)
             finally:
                 socket.setdefaulttimeout(None)
-        return json.dumps({'result': success, 'message': message}, cls=SelfEncoder)
+        return json.dumps({"result": success, "message": message}, cls=SelfEncoder)
 
     def unregister_node(self, name: str) -> bool:
         Log.info(f"Request to unregister node '{name}'")
@@ -1071,20 +1073,16 @@ class MasterMonitor:
                 master = xmlrpcclient.ServerProxy(node.masteruri)
                 master_multi = xmlrpcclient.MultiCall(master)
                 for p in node.publishedTopics:
-                    Log.info(
-                        f"unregister publisher '{p}' [{node.name}] from ROS master: {node.masteruri}")
+                    Log.info(f"unregister publisher '{p}' [{node.name}] from ROS master: {node.masteruri}")
                     master_multi.unregisterPublisher(node.name, p, node.uri)
                 for t in node.subscribedTopics:
-                    Log.info(
-                        f"unregister subscriber '{t}' [{node.name}] from ROS master: {node.masteruri}")
+                    Log.info(f"unregister subscriber '{t}' [{node.name}] from ROS master: {node.masteruri}")
                     master_multi.unregisterSubscriber(node.name, t, node.uri)
                 for s in node.services:
-                    Log.info(
-                        f"unregister service '{s}' [{node.name}] from ROS master: {node.masteruri}")
+                    Log.info(f"unregister service '{s}' [{node.name}] from ROS master: {node.masteruri}")
                     service = self.__master_state.getService(s)
                     if service is not None:
-                        master_multi.unregisterService(
-                            node.name, s, service.uri)
+                        master_multi.unregisterService(node.name, s, service.uri)
                 r = master_multi()
                 for code, msg, _ in r:
                     if code != 1:
@@ -1094,16 +1092,17 @@ class MasterMonitor:
             except KeyError:
                 msg = f"Error while unregistering node: Node '{name}' not found"
                 Log.warn(msg)
-                return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
+                return json.dumps({"result": success, "message": msg}, cls=SelfEncoder)
             except Exception as e:
                 msg = f"Error while stopping node '{name}': {e}"
                 Log.warn(msg)
                 import traceback
+
                 print(traceback.format_exc())
-                return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
+                return json.dumps({"result": success, "message": msg}, cls=SelfEncoder)
             finally:
                 socket.setdefaulttimeout(None)
-        return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
+        return json.dumps({"result": success, "message": ""}, cls=SelfEncoder)
 
     def checkScreens(self):
         last_check = 0
@@ -1114,18 +1113,17 @@ class MasterMonitor:
                 new_screens_set = set()
                 new_screen_nodes_set = set()
                 screens = screen.get_active_screens()
-                screen_dict: Dict[str, ScreensMapping] = {}
+                screen_dict: dict[str, ScreensMapping] = {}
                 # get screens
                 for session_name, node_name in screens.items():
                     if node_name in screen_dict:
                         screen_dict[node_name].screens.append(session_name)
                     else:
-                        screen_dict[node_name] = ScreensMapping(
-                            name=node_name, screens=[session_name])
+                        screen_dict[node_name] = ScreensMapping(name=node_name, screens=[session_name])
                     new_screens_set.add(session_name)
                     new_screen_nodes_set.add(node_name)
                 # create json message
-                json_msg: List(ScreensMapping) = []
+                json_msg: list(ScreensMapping) = []
                 for node_name, msg in screen_dict.items():
                     json_msg.append(msg)
                 # add nodes without screens send by the last message
@@ -1136,9 +1134,8 @@ class MasterMonitor:
                 div_screen_nodes = self._screen_nodes_set ^ new_screen_nodes_set
                 div_screens = self._screens_set ^ new_screens_set
                 if div_screen_nodes or div_screens:
-                    Log.debug(
-                        f"publish ros.screen.list with {len(json_msg)} nodes.")
-                    self.wsClient.publish('ros.screen.list', {"screens": json_msg})
+                    Log.debug(f"publish ros.screen.list with {len(json_msg)} nodes.")
+                    self.wsClient.publish("ros.screen.list", {"screens": json_msg})
                     self._screen_json_msg = json_msg
                     self._screen_nodes_set = new_screen_nodes_set
                     self._screens_set = new_screens_set
@@ -1148,7 +1145,7 @@ class MasterMonitor:
             time.sleep(1.0)
 
     def getScreenList(self) -> str:
-        Log.info('Request to [ros.screen.get_list]')
+        Log.info("Request to [ros.screen.get_list]")
         self._screen_do_check = True
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps(self._screen_json_msg, cls=SelfEncoder)
@@ -1159,21 +1156,23 @@ class MasterMonitor:
             return
         # notify changes
         if self._on_shutdown or not self.provider_list:
-            self.wsClient.publish('ros.discovery.ready', {'status': False})
+            self.wsClient.publish("ros.discovery.ready", {"status": False})
         else:
-            self.wsClient.publish('ros.provider.list', provider_list)
+            self.wsClient.publish("ros.provider.list", provider_list)
 
     def getProviderList(self) -> str:
-        Log.info('Request to [ros.provider.get_list]')
+        Log.info("Request to [ros.provider.get_list]")
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps(self.provider_list, cls=SelfEncoder)
 
     def stop_subscriber(self, topic_name: str) -> str:
-        Log.debug('Request to [ros.subscriber.stop]: %s' % str(topic_name))
+        Log.debug("Request to [ros.subscriber.stop]: %s" % str(topic_name))
         result = self.stop_node(f"/mas_subscriber/{topic_name.strip('/')}")
         return json.dumps({"result": result, "message": ""}, cls=SelfEncoder)
 
     def getProviderTimestamp(self, timestamp) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
-        return json.dumps({'timestamp': time.time() * 1000, "diff": time.time() * 1000 - float(timestamp)}, cls=SelfEncoder)
+        return json.dumps(
+            {"timestamp": time.time() * 1000, "diff": time.time() * 1000 - float(timestamp)}, cls=SelfEncoder
+        )

@@ -1,7 +1,7 @@
-import { TSystemInfo } from "@/types";
 import log from "electron-log";
 import hostile from "hostile";
 import si from "systeminformation";
+import { TSystemInfo } from "@/types";
 
 /** Environment variables that are relevant for ROS / RMW configuration. */
 const ENV_ALLOW_LIST: string[] = [

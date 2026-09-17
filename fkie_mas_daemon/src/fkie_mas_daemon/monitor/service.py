@@ -6,12 +6,13 @@
 #
 # ****************************************************************************
 
-import rospy
 import socket
 import threading
 import time
 
+import rospy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+
 from .cpu_load import CpuLoad
 from .cpu_temperatur import CpuTemperatur
 from .hdd_usage import HddUsage
@@ -54,12 +55,14 @@ class DiagnosticObj(DiagnosticStatus):
         if isinstance(item, DiagnosticStatus):
             return self.msg.name < item.name
         return False
+
     def __le__(self, item):
         if isinstance(item, DiagnosticObj):
             return self.msg.name <= item.msg.name
         if isinstance(item, DiagnosticStatus):
             return self.msg.name <= item.name
         return False
+
 
 class Service:
     DEBOUNCE_DIAGNOSTICS = 1.0
@@ -75,13 +78,9 @@ class Service:
         self._update_last_ts = 0
         self._update_timer = None
         if self.use_diagnostics_agg:
-            self._sub_diag_agg = rospy.Subscriber(
-                "/diagnostics_agg", DiagnosticArray, self._callback_diagnostics
-            )
+            self._sub_diag_agg = rospy.Subscriber("/diagnostics_agg", DiagnosticArray, self._callback_diagnostics)
         else:
-            self._sub_diag = rospy.Subscriber(
-                "/diagnostics", DiagnosticArray, self._callback_diagnostics
-            )
+            self._sub_diag = rospy.Subscriber("/diagnostics", DiagnosticArray, self._callback_diagnostics)
         hostname = socket.gethostname()
 
         self.sensors = []
@@ -104,13 +103,9 @@ class Service:
                 self._sub_diag_agg.unregister()
                 self._sub_diag_agg = None
             if value:
-                self._sub_diag_agg = rospy.Subscriber(
-                    "/diagnostics_agg", DiagnosticArray, self._callback_diagnostics
-                )
+                self._sub_diag_agg = rospy.Subscriber("/diagnostics_agg", DiagnosticArray, self._callback_diagnostics)
             else:
-                self._sub_diag = rospy.Subscriber(
-                    "/diagnostics", DiagnosticArray, self._callback_diagnostics
-                )
+                self._sub_diag = rospy.Subscriber("/diagnostics", DiagnosticArray, self._callback_diagnostics)
             self.use_diagnostics_agg = value
 
     def _callback_diagnostics(self, msg):

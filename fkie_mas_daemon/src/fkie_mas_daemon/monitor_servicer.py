@@ -6,13 +6,13 @@
 #
 # ****************************************************************************
 
-from typing import List
 import json
 import os
-import psutil
 import signal
-import threading
 import sys
+import threading
+
+import psutil
 import rospy
 from fkie_mas_pylib.websocket.server import WebSocketServer
 
@@ -22,16 +22,19 @@ except ImportError as err:
     sys.stderr.write("Cannot import GetLoggers service definition: %s" % err)
 
 
-from fkie_mas_daemon.monitor.service import Service
-from fkie_mas_pylib.interface.runtime_interface import DiagnosticArray
-from fkie_mas_pylib.interface.runtime_interface import DiagnosticStatus
-from fkie_mas_pylib.interface.runtime_interface import LoggerConfig
-from fkie_mas_pylib.interface.runtime_interface import SystemEnvironment
-from fkie_mas_pylib.interface.runtime_interface import SystemInformation
+from fkie_mas_pylib.defines import SETTINGS_PATH
 from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import (
+    DiagnosticArray,
+    DiagnosticStatus,
+    LoggerConfig,
+    SystemEnvironment,
+    SystemInformation,
+)
 from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.system import screen
-from fkie_mas_pylib.defines import SETTINGS_PATH
+
+from fkie_mas_daemon.monitor.service import Service
 
 
 class MonitorServicer:
@@ -52,23 +55,20 @@ class MonitorServicer:
         self._monitor.stop()
 
     def _toJsonDiagnostics(self, rosmsg):
-        cbMsg = DiagnosticArray(
-            float(rosmsg.header.stamp.secs)
-            + float(rosmsg.header.stamp.nsecs) / 1000000000.0, []
-        )
+        cbMsg = DiagnosticArray(float(rosmsg.header.stamp.secs) + float(rosmsg.header.stamp.nsecs) / 1000000000.0, [])
         for sensor in rosmsg.status:
             values = []
             for v in sensor.values:
                 values.append(DiagnosticStatus.KeyValue(v.key, v.value))
-            status = DiagnosticStatus(
-                sensor.level, sensor.name, sensor.message, sensor.hardware_id, values
-            )
+            status = DiagnosticStatus(sensor.level, sensor.name, sensor.message, sensor.hardware_id, values)
             cbMsg.status.append(status)
         return cbMsg
 
     def diagnosticsCbPublisher(self, rosmsg):
-        self.websocket.publish("ros.provider.diagnostics",
-                               json.dumps(self._toJsonDiagnostics(rosmsg), cls=SelfEncoder),)
+        self.websocket.publish(
+            "ros.provider.diagnostics",
+            json.dumps(self._toJsonDiagnostics(rosmsg), cls=SelfEncoder),
+        )
 
     def getDiagnostics(self) -> DiagnosticArray:
         Log.info("interface: get diagnostics")
@@ -87,7 +87,7 @@ class MonitorServicer:
     def rosCleanPurge(self) -> {bool, str}:
         Log.info("interface: ros_clean_purge")
         result = False
-        message = ''
+        message = ""
         try:
             screen.ros_clean()
             result = True
@@ -98,19 +98,20 @@ class MonitorServicer:
     def rosShutdown(self) -> {bool, str}:
         Log.info("ros.provider.shutdown")
         result = False
-        message = ''
+        message = ""
         procs = []
         try:
             for process in psutil.process_iter():
                 try:
-                    cmdStr = ' '.join(process.cmdline())
+                    cmdStr = " ".join(process.cmdline())
                     if cmdStr.find(SETTINGS_PATH) > -1:
                         # stop daemon after all other processes are killed
-                        if (cmdStr.find('mas-daemon') == -1):
+                        if cmdStr.find("mas-daemon") == -1:
                             procs.append(process)
                             process.terminate()
-                except Exception as error:
+                except Exception:
                     import traceback
+
                     print(traceback.format_exc())
             gone, alive = psutil.wait_procs(procs, timeout=3)
             for p in alive:
@@ -120,6 +121,7 @@ class MonitorServicer:
             result = True
         except Exception as error:
             import traceback
+
             print(traceback.format_exc())
             message = str(error)
         screen.wipe()
@@ -130,27 +132,24 @@ class MonitorServicer:
             os.kill(pid, sig)
         os.kill(os.getpid(), signal.SIGINT)
 
-    def getLoggers(self, name: str, loggers: List[str] = []) -> str:
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}'")
-        loggerConfigs: List[LoggerConfig] = []
-        service_name = '%s/get_loggers' % name
+    def getLoggers(self, name: str, loggers: list[str] = []) -> str:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_loggers] for '{name}'")
+        loggerConfigs: list[LoggerConfig] = []
+        service_name = "%s/get_loggers" % name
         get_logger = rospy.ServiceProxy(service_name, GetLoggers)
         resp = get_logger()
         for logger in resp.loggers:
-            loggerConfigs.append(LoggerConfig(
-                level=logger.level, name=logger.name))
+            loggerConfigs.append(LoggerConfig(level=logger.level, name=logger.name))
         return json.dumps(loggerConfigs, cls=SelfEncoder)
 
-    def setLoggerLevel(self, name: str, logger_json: List[LoggerConfig]) -> str:
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}'")
+    def setLoggerLevel(self, name: str, logger_json: list[LoggerConfig]) -> str:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.set_logger_level] for '{name}'")
         loggers = logger_json
         # request the current logger
-        service_name_get = '%s/get_loggers' % name
+        service_name_get = "%s/get_loggers" % name
         get_logger = rospy.ServiceProxy(service_name_get, GetLoggers)
         resp = get_logger()
-        service_name_set = '%s/set_logger_level' % name
+        service_name_set = "%s/set_logger_level" % name
         for lRemote in loggers:
             # call set service only if new level
             doSet = True
@@ -158,8 +157,6 @@ class MonitorServicer:
                 if lCurrent.name == lRemote.name and lCurrent.level == lRemote.level:
                     doSet = False
             if doSet:
-                set_logger = rospy.ServiceProxy(
-                    service_name_set, SetLoggerLevel)
-                resultSet = set_logger(SetLoggerLevelRequest(
-                    logger=lRemote.name, level=lRemote.level))
-        return json.dumps({'result': True, 'message': ''}, cls=SelfEncoder)
+                set_logger = rospy.ServiceProxy(service_name_set, SetLoggerLevel)
+                resultSet = set_logger(SetLoggerLevelRequest(logger=lRemote.name, level=lRemote.level))
+        return json.dumps({"result": True, "message": ""}, cls=SelfEncoder)

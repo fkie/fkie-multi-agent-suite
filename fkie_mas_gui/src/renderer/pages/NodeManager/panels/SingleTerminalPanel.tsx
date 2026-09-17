@@ -1,15 +1,14 @@
 import { Alert, AlertTitle, Box } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
+import { useCustomEventListener } from "react-custom-events";
 import TerminalClient from "@/renderer/components/TerminalClient/TerminalClient";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { TCmdTerminal } from "@/renderer/providers";
-import Provider from "@/renderer/providers/Provider";
-import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
 import { ConnectionState, EventProviderState } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_STATE } from "@/renderer/providers/eventTypes";
+import Provider from "@/renderer/providers/Provider";
 import { CmdType, CmdTypes, TEnvEntry } from "@/types";
-import { useCustomEventListener } from "react-custom-events";
 import { emitCloseComponent } from "../../../components/layout/events";
 
 interface SingleTerminalPanelProps {

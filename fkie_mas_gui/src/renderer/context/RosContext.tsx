@@ -2,18 +2,18 @@ import { SnackbarKey, useSnackbar } from "notistack";
 import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { ConnectConfig } from "ssh2";
-
+import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/components/layout";
 import {
+  colorFromHostname,
   ErrorAlertComponent,
   ReloadFileAlertComponent,
   RestartNodesAlertComponent,
-  colorFromHostname,
 } from "@/renderer/components/UI";
-import { LAYOUT_TABS, LAYOUT_TAB_SETS } from "@/renderer/components/layout";
 import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import {
+  getFileName,
   LaunchArgument,
   LaunchLoadReply,
   LaunchLoadRequest,
@@ -24,21 +24,8 @@ import {
   SubscriberFilter,
   SubscriberNode,
   URI,
-  getFileName,
 } from "@/renderer/models";
 import ConnectionState from "@/renderer/providers/ConnectionState";
-import Provider from "@/renderer/providers/Provider";
-import {
-  EVENT_PROVIDER_AUTH_REQUEST,
-  EVENT_PROVIDER_DISCOVERED,
-  EVENT_PROVIDER_NODE_BINARY_MODIFIED,
-  EVENT_PROVIDER_PATH_EVENT,
-  EVENT_PROVIDER_REMOVED,
-  EVENT_PROVIDER_RESTART_NODES,
-  EVENT_PROVIDER_ROS_NODES,
-  EVENT_PROVIDER_STATE,
-  EVENT_PROVIDER_WARNINGS,
-} from "@/renderer/providers/eventTypes";
 import {
   EventProviderAuthRequest,
   EventProviderDiscovered,
@@ -50,11 +37,23 @@ import {
   EventProviderState,
   EventProviderWarnings,
 } from "@/renderer/providers/events";
+import {
+  EVENT_PROVIDER_AUTH_REQUEST,
+  EVENT_PROVIDER_DISCOVERED,
+  EVENT_PROVIDER_NODE_BINARY_MODIFIED,
+  EVENT_PROVIDER_PATH_EVENT,
+  EVENT_PROVIDER_REMOVED,
+  EVENT_PROVIDER_RESTART_NODES,
+  EVENT_PROVIDER_ROS_NODES,
+  EVENT_PROVIDER_STATE,
+  EVENT_PROVIDER_WARNINGS,
+} from "@/renderer/providers/eventTypes";
+import Provider from "@/renderer/providers/Provider";
 import { TResult, TRosInfo, TSystemInfo } from "@/types";
 import { emitCloseComponent, emitOpenComponent } from "../components/layout/events";
 import { useSetting } from "../hooks/useSetting";
 import { TProviderLaunchParams } from "../models/ProviderLaunchConfiguration";
-import { LAUNCH_FILE_EXTENSIONS, getDefaultPortFromRos } from "./SettingsContext";
+import { getDefaultPortFromRos, LAUNCH_FILE_EXTENSIONS } from "./SettingsContext";
 
 // ─────────────────────────────────────────────
 // Types

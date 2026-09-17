@@ -15,17 +15,18 @@ import time
 import traceback
 from typing import Any
 
-from action_msgs.msg import GoalStatus
 import rclpy
+from action_msgs.msg import GoalStatus
+from fkie_mas_pylib.defines import ros2_action_nodename_tuple
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.interface.runtime_interface import ActionEvent
+from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket.client import WebSocketClient
 from rclpy.action import ActionClient
 from rosidl_runtime_py.utilities import get_action
 
-from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.interface.runtime_interface import ActionEvent
-from fkie_mas_pylib.defines import ros2_action_nodename_tuple
-from fkie_mas_pylib.websocket.client import WebSocketClient
-from fkie_mas_pylib.logging.logging import Log
 import fkie_mas_daemon as nmd
+
 from .msg_encoder import MsgEncoder
 
 
@@ -42,10 +43,10 @@ class RosActionClientLauncher:
 
         self.namespace, self.name = ros2_action_nodename_tuple(parsed_args.action_name)
         # Change terminal name
-        print('\33]0;%s\a' % (self.name), end='', flush=True)
+        print("\33]0;%s\a" % (self.name), end="", flush=True)
 
         self._port = parsed_args.ws_port
-        if os.environ.get('ROS_DISTRO') != 'galactic':
+        if os.environ.get("ROS_DISTRO") != "galactic":
             signal.signal(signal.SIGTERM, self.exit_gracefully)
             signal.signal(signal.SIGINT, self.exit_gracefully)
 
@@ -69,11 +70,7 @@ class RosActionClientLauncher:
         self.wsClient.subscribe("event", self._on_ws_event)
 
         # Create action client
-        self._action_client = ActionClient(
-            self.ros_node,
-            self.__action_class,
-            self._action_name
-        )
+        self._action_client = ActionClient(self.ros_node, self.__action_class, self._action_name)
 
         Log.info(f"start ROS action client for {self._action_name}[{self._action_type}]")
 
@@ -85,7 +82,7 @@ class RosActionClientLauncher:
         self.stop()
 
     def stop(self):
-        if hasattr(self, 'wsClient'):
+        if hasattr(self, "wsClient"):
             if self.wsClient:
                 self.wsClient.shutdown()
                 self.wsClient = None
@@ -94,7 +91,7 @@ class RosActionClientLauncher:
         if self._on_shutdown:
             return
         self._on_shutdown = True
-        Log.info('shutdown action client')
+        Log.info("shutdown action client")
         # Only tries to cancel if the goal is still active
         self._cancel_goal()
         self.stop()
@@ -102,7 +99,7 @@ class RosActionClientLauncher:
             self._action_client.destroy()
             # This stops rclpy.spin() cleanly instead of spinning again
             rclpy.shutdown()
-        print('bye!')
+        print("bye!")
 
     def _on_ws_event(self, msg):
         """Handle websocket events, e.g. cancel request or no more subscribers."""
@@ -198,8 +195,7 @@ class RosActionClientLauncher:
         sub_def = field.get("def")
 
         # Complex (nested message) type: recurse over its "def" list
-        if isinstance(sub_def, list) and sub_def and isinstance(sub_def[0], dict) \
-                and "name" in sub_def[0]:
+        if isinstance(sub_def, list) and sub_def and isinstance(sub_def[0], dict) and "name" in sub_def[0]:
             nested = {}
             for sub in sub_def:
                 sub_name = sub.get("name")
@@ -228,8 +224,7 @@ class RosActionClientLauncher:
             return value
         t = field_type.lower()
         try:
-            if any(t.startswith(p) for p in
-                   ("int", "uint", "byte", "char")):
+            if any(t.startswith(p) for p in ("int", "uint", "byte", "char")):
                 return int(value)
             if t.startswith("float") or t.startswith("double"):
                 return float(value)
@@ -258,10 +253,7 @@ class RosActionClientLauncher:
         self._fill_message_from_dict(goal_msg, goal_dict)
 
         Log.info(f"Sending goal to '{self._action_name}'")
-        send_goal_future = self._action_client.send_goal_async(
-            goal_msg,
-            feedback_callback=self._feedback_callback
-        )
+        send_goal_future = self._action_client.send_goal_async(goal_msg, feedback_callback=self._feedback_callback)
         send_goal_future.add_done_callback(self._goal_response_callback)
 
     def _fill_message_from_dict(self, msg, values: dict):
@@ -271,7 +263,7 @@ class RosActionClientLauncher:
                 Log.warn(f"Message has no field '{field_name}' -> skipped")
                 continue
             attr = getattr(msg, field_name)
-            if isinstance(field_value, dict) and hasattr(attr, '__slots__'):
+            if isinstance(field_value, dict) and hasattr(attr, "__slots__"):
                 self._fill_message_from_dict(attr, field_value)
             else:
                 try:
@@ -302,8 +294,7 @@ class RosActionClientLauncher:
         """Called when feedback is received from the action server."""
         feedback = feedback_msg.feedback
         feedback_data = json.loads(
-            json.dumps(feedback, cls=MsgEncoder,
-                       **{"no_arr": False, "no_str": False, "array_items_count": 15})
+            json.dumps(feedback, cls=MsgEncoder, **{"no_arr": False, "no_str": False, "array_items_count": 15})
         )
         event = ActionEvent(
             action_name=self._action_name,
@@ -312,11 +303,10 @@ class RosActionClientLauncher:
             goal_id=self._goal_id,
             status="executing",
             data=feedback_data,
-            timestamp=time.time()
+            timestamp=time.time(),
         )
         self.wsClient.publish(
-            f"ros.action.feedback.{self._action_name.replace('/', '_')}",
-            json.dumps(event, cls=SelfEncoder)
+            f"ros.action.feedback.{self._action_name.replace('/', '_')}", json.dumps(event, cls=SelfEncoder)
         )
 
     def _result_callback(self, future):
@@ -335,8 +325,7 @@ class RosActionClientLauncher:
         result_data = None
         if result.result is not None:
             result_data = json.loads(
-                json.dumps(result.result, cls=MsgEncoder,
-                        **{"no_arr": False, "no_str": False, "array_items_count": 15})
+                json.dumps(result.result, cls=MsgEncoder, **{"no_arr": False, "no_str": False, "array_items_count": 15})
             )
         Log.info(f"Action '{self._action_name}' finished with status: {status}")
 
@@ -355,13 +344,12 @@ class RosActionClientLauncher:
             goal_id=self._goal_id,
             status=status,
             data=data,
-            timestamp=time.time()
+            timestamp=time.time(),
         )
         if message:
             event.message = message
         self.wsClient.publish(
-            f"ros.action.result.{self._action_name.replace('/', '_')}",
-            json.dumps(event, cls=SelfEncoder)
+            f"ros.action.result.{self._action_name.replace('/', '_')}", json.dumps(event, cls=SelfEncoder)
         )
 
     def _cancel_goal(self):
@@ -383,14 +371,18 @@ class RosActionClientLauncher:
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--ws_port', nargs='?', type=int,
-                            required=True, help='Port for websocket server')
-        parser.add_argument('-a', '--action_name', nargs='?', required=True,
-                            help="Name of the ROS action (e.g. '/navigate_to_pose')")
-        parser.add_argument('-t', '--action_type', nargs='?', required=True,
-                            help="Type of the ROS action (e.g. 'nav2_msgs/action/NavigateToPose')")
-        parser.add_argument('-g', '--goal_json', nargs='?', default=None,
-                            help="Goal as JSON string")
+        parser.add_argument("--ws_port", nargs="?", type=int, required=True, help="Port for websocket server")
+        parser.add_argument(
+            "-a", "--action_name", nargs="?", required=True, help="Name of the ROS action (e.g. '/navigate_to_pose')"
+        )
+        parser.add_argument(
+            "-t",
+            "--action_type",
+            nargs="?",
+            required=True,
+            help="Type of the ROS action (e.g. 'nav2_msgs/action/NavigateToPose')",
+        )
+        parser.add_argument("-g", "--goal_json", nargs="?", default=None, help="Goal as JSON string")
         parser.set_defaults(help=False)
         return parser
 
@@ -405,11 +397,11 @@ class RosActionClientLauncher:
             pass
         except RuntimeError as e:
             # Context already shut down (e.g. after exit_gracefully)
-            if 'Context must be initialized' in str(e):
+            if "Context must be initialized" in str(e):
                 pass
             else:
                 raise
         except Exception:
-            self.ros_node.get_logger().warning('Start failed: %s' % traceback.format_exc())
+            self.ros_node.get_logger().warning("Start failed: %s" % traceback.format_exc())
             sys.stdout.flush()
             self.exit_gracefully(-1, None)

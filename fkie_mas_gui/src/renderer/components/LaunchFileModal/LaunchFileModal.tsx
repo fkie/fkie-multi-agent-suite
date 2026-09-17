@@ -18,15 +18,14 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { enqueueSnackbar } from "notistack";
 import { HTMLAttributes, useCallback, useEffect, useState } from "react";
-
 import { useAlwaysCurrentRef } from "@/renderer/hooks/useAlwaysCurrentRef";
 import { useAppState } from "@/renderer/hooks/useAppState";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { getFileName, LaunchArgument, LaunchLoadReply, LaunchLoadRequest, PathItem } from "@/renderer/models";
 import { getDir } from "@/renderer/models/FileItem";
-import { enqueueSnackbar } from "notistack";
 import { ErrorAlertComponent } from "../UI";
 import DraggablePaper from "../UI/DraggablePaper";
 
@@ -100,7 +99,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
   const getLaunchFile = useCallback(
     async (file: string): Promise<void> => {
       const provider = rosCtx.getProviderById(selectedProvider || selectedLaunchFile.providerId || "", true);
-      if (!provider || !provider.isAvailable()) return;
+      if (!provider?.isAvailable()) return;
 
       if (provider.launchLoadFile) {
         const rosPackage = "";
@@ -224,7 +223,7 @@ export default function LaunchFileModal(props: LaunchFileModalProps): JSX.Elemen
     if (!selectedLaunch) return;
 
     const provider = rosCtx.getProviderById(selectedProvider || selectedLaunchFile.providerId || "", true);
-    if (!provider || !provider.isAvailable()) return;
+    if (!provider?.isAvailable()) return;
 
     if (provider.launchLoadFile) {
       const rosPackage = "";

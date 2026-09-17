@@ -28,7 +28,7 @@
             &_metrics {
                 position: absolute;
                 top: -30000px; // offscreen
-            } 
+            }
 
             &_overlay {
                 @include absoluteFill;

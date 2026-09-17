@@ -10,28 +10,29 @@
 import json
 import threading
 import traceback
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable
-from typing import List
+from inspect import signature
 from types import SimpleNamespace
+
 import websockets
 import websockets.sync.server
-from inspect import signature
-from fkie_mas_pylib.logging.logging import Log
+
 from fkie_mas_pylib.interface import SelfAllEncoder
-from fkie_mas_pylib.websocket.queue import QueueItem, PQueue
+from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket.queue import PQueue, QueueItem
 
 
 class RemoteCallInfo:
-
     def __init__(self, origin_id: int, handler) -> None:
         self.origin_id = origin_id
         self.handler = handler
 
 
 class WebSocketHandler:
-
-    def __init__(self, server, connection: websockets.sync.server.ServerConnection, callback_on_sub: Callable[[str], None]):
+    def __init__(
+        self, server, connection: websockets.sync.server.ServerConnection, callback_on_sub: Callable[[str], None]
+    ):
         self._lock = threading.RLock()
         self.server = server
         self.connection = connection
@@ -50,8 +51,7 @@ class WebSocketHandler:
         self._registrations = set()
         self._remote_calls_id = 0
         self._remote_calls_map = {}  # int: RemoteCallInfo
-        self._send_thread = threading.Thread(
-            target=self._send_handler, daemon=True)
+        self._send_thread = threading.Thread(target=self._send_handler, daemon=True)
         self._send_thread.start()
 
     def shutdown(self):
@@ -62,23 +62,23 @@ class WebSocketHandler:
         except Exception as err:
             Log.debug(f"{self.address}: error while closing connection: {err}")
 
-    def subscriptions(self) -> List[str]:
+    def subscriptions(self) -> list[str]:
         # return a copy to avoid 'set changed size during iteration'
         with self._lock:
             return list(self._subscriptions)
 
     def has_subscription(self, uri: str) -> bool:
-        '''
+        """
         :return: True if this client subscribed the given uri.
-        '''
+        """
         with self._lock:
             return uri in self._subscriptions
 
     def _notify_subs_changed(self, uri: str) -> None:
-        '''
+        """
         Informs the server about a changed subscription. Called without holding
         the handler lock to avoid deadlocks with other handlers.
-        '''
+        """
         if self._callback_on_sub is None:
             return
         try:
@@ -90,10 +90,9 @@ class WebSocketHandler:
         try:
             for message in self.connection:
                 try:
-                    msg = json.loads(message,
-                                     object_hook=lambda d: SimpleNamespace(**d))
-                    has_id = hasattr(msg, 'id')
-                    if not hasattr(msg, 'uri'):
+                    msg = json.loads(message, object_hook=lambda d: SimpleNamespace(**d))
+                    has_id = hasattr(msg, "id")
+                    if not hasattr(msg, "uri"):
                         # forward remote call
                         is_response = False
                         with self._lock:
@@ -103,97 +102,76 @@ class WebSocketHandler:
                             with self._lock:
                                 # remove the entry, the call is finished
                                 rci: RemoteCallInfo = self._remote_calls_map.pop(msg.id)
-                            Log.info(
-                                f'forward response {rci.origin_id} to {rci.handler.address}')
-                            if hasattr(msg, 'result'):
-                                reply = {"id": rci.origin_id,
-                                         "result": msg.result}
-                            elif hasattr(msg, 'error'):
-                                reply = {"id": rci.origin_id,
-                                         "error": msg.error}
+                            Log.info(f"forward response {rci.origin_id} to {rci.handler.address}")
+                            if hasattr(msg, "result"):
+                                reply = {"id": rci.origin_id, "result": msg.result}
+                            elif hasattr(msg, "error"):
+                                reply = {"id": rci.origin_id, "error": msg.error}
                             else:
                                 # neither result nor error, report a protocol error
-                                reply = {"id": rci.origin_id,
-                                         "error": "malformed response, neither result nor error"}
-                            rci.handler.queue.put(QueueItem(json.dumps(
-                                reply, cls=SelfAllEncoder), priority=0))
+                                reply = {"id": rci.origin_id, "error": "malformed response, neither result nor error"}
+                            rci.handler.queue.put(QueueItem(json.dumps(reply, cls=SelfAllEncoder), priority=0))
                         else:
-                            Log.warn(
-                                f"[{self.address}]: received malformed message (without uri) {message}")
-                            reply = {
-                                "error": "malformed message, should contain uri"}
+                            Log.warn(f"[{self.address}]: received malformed message (without uri) {message}")
+                            reply = {"error": "malformed message, should contain uri"}
                             if has_id:
-                                reply['id'] = msg.id
-                            self.queue.put(QueueItem(json.dumps(
-                                reply, cls=SelfAllEncoder), priority=0))
+                                reply["id"] = msg.id
+                            self.queue.put(QueueItem(json.dumps(reply, cls=SelfAllEncoder), priority=0))
                         continue
                     if has_id:
                         # handle rpc calls
-                        if msg.uri == 'sub':
+                        if msg.uri == "sub":
                             # create subscription
                             changed = []
-                            for uri in getattr(msg, 'params', []):
+                            for uri in getattr(msg, "params", []):
                                 Log.info(f"[{self.address}]: add subscription to '{uri}'")
                                 with self._lock:
                                     self._subscriptions.add(uri)
                                 changed.append(uri)
                             reply = {"id": msg.id, "result": True}
-                            self.queue.put(QueueItem(json.dumps(
-                                reply, cls=SelfAllEncoder), priority=0))
+                            self.queue.put(QueueItem(json.dumps(reply, cls=SelfAllEncoder), priority=0))
                             # notify outside of the lock
                             for uri in changed:
                                 self._notify_subs_changed(uri)
-                        elif msg.uri == 'unsub':
+                        elif msg.uri == "unsub":
                             # remove subscription
                             changed = []
-                            for uri in getattr(msg, 'params', []):
-                                Log.info(
-                                    f"[{self.address}]: remove subscription to '{uri}'")
+                            for uri in getattr(msg, "params", []):
+                                Log.info(f"[{self.address}]: remove subscription to '{uri}'")
                                 with self._lock:
                                     # discard() does not raise for unknown uris
                                     if uri in self._subscriptions:
                                         self._subscriptions.discard(uri)
                                         changed.append(uri)
                             reply = {"id": msg.id, "result": True}
-                            self.queue.put(QueueItem(json.dumps(
-                                reply, cls=SelfAllEncoder), priority=0))
+                            self.queue.put(QueueItem(json.dumps(reply, cls=SelfAllEncoder), priority=0))
                             # notify outside of the lock
                             for uri in changed:
                                 self._notify_subs_changed(uri)
-                        elif msg.uri == 'reg':
+                        elif msg.uri == "reg":
                             # register a method
-                            for uri in getattr(msg, 'params', []):
+                            for uri in getattr(msg, "params", []):
                                 self.server.register_rpc(uri, self)
                                 with self._lock:
                                     self._registrations.add(uri)
                             reply = {"id": msg.id, "result": True}
-                            self.queue.put(QueueItem(json.dumps(
-                                reply, cls=SelfAllEncoder), priority=0))
+                            self.queue.put(QueueItem(json.dumps(reply, cls=SelfAllEncoder), priority=0))
                         else:
                             callback, local = self.server.get_callback(msg.uri)
-                            params = msg.params if hasattr(msg, 'params') else []
+                            params = msg.params if hasattr(msg, "params") else []
                             if callback is not None:
                                 if local:
                                     # call local method
-                                    self._executor.submit(
-                                        self.handle_callback,
-                                        msg.id,
-                                        callback,
-                                        params
-                                    )
+                                    self._executor.submit(self.handle_callback, msg.id, callback, params)
                                 else:
                                     # call rpc of a registered connected client
-                                    Log.info(
-                                        f"{self.address}: handle rpc for uri {msg.uri}, params: {params}")
+                                    Log.info(f"{self.address}: handle rpc for uri {msg.uri}, params: {params}")
                                     callback.remote_call(msg, self)
                             else:
-                                Log.info(
-                                    f"RPC-URI not found {msg.uri}, params: {params}")
-                                reply = {
-                                    "id": msg.id, "error": f"no method for {msg.uri} registered"}
-                                self.queue.put(QueueItem(json.dumps(
-                                    reply, cls=SelfAllEncoder), priority=0))
-                    elif hasattr(msg, 'message'):
+                                Log.info(f"RPC-URI not found {msg.uri}, params: {params}")
+                                reply = {"id": msg.id, "error": f"no method for {msg.uri} registered"}
+                                self.queue.put(QueueItem(json.dumps(reply, cls=SelfAllEncoder), priority=0))
+                    elif hasattr(msg, "message"):
                         self.server.publish(msg.uri, msg.message)
                 except Exception as error:
                     Log.warn(f"[{self.address}]: {error}: {traceback.format_exc()}")
@@ -216,7 +194,7 @@ class WebSocketHandler:
                     Log.debug(f"{self.address}: error while unregister {reg}: {err}")
             # wake up the send thread waiting on the queue
             try:
-                self.queue.put(QueueItem('', priority=0))
+                self.queue.put(QueueItem("", priority=0))
             except Exception:
                 pass
 
@@ -226,10 +204,10 @@ class WebSocketHandler:
         call_args = args if args is not None else []
         result = None
         error = None
-        reply = ''
+        reply = ""
         try:
             sig = signature(callback)
-            if ('requester' in sig.parameters):
+            if "requester" in sig.parameters:
                 result = callback(*(arg for arg in call_args), requester=self.address)
             else:
                 result = callback(*(arg for arg in call_args))
@@ -269,20 +247,16 @@ class WebSocketHandler:
         # check the subscription under the lock, but queue without it
         if not self.has_subscription(uri):
             return
-        self.queue.put(
-            QueueItem(f'{{"uri": "{uri}", "message": {message}}}', priority=1))
+        self.queue.put(QueueItem(f'{{"uri": "{uri}", "message": {message}}}', priority=1))
 
     def remote_call(self, msg, handler):
         with self._lock:
             if msg.uri in self._registrations:
-                Log.info(
-                    f'forward call {msg.uri} to {self.address}, new id: {self._remote_calls_id}')
-                self._remote_calls_map[self._remote_calls_id] = RemoteCallInfo(
-                    msg.id, handler)
+                Log.info(f"forward call {msg.uri} to {self.address}, new id: {self._remote_calls_id}")
+                self._remote_calls_map[self._remote_calls_id] = RemoteCallInfo(msg.id, handler)
                 msg.id = self._remote_calls_id
                 self._remote_calls_id += 1
-                self.queue.put(QueueItem(json.dumps(
-                    msg, cls=SelfAllEncoder), priority=0))
+                self.queue.put(QueueItem(json.dumps(msg, cls=SelfAllEncoder), priority=0))
 
     def _send_handler(self):
         try:

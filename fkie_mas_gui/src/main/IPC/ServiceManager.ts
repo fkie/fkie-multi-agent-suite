@@ -1,12 +1,12 @@
-import { ServiceCloseCallback, ServiceManagerEvents, TServiceManager } from "@/types";
-import { TServiceConfig } from "@/types/ServiceManager";
+import { join } from "node:path";
 import actionIcon from "@public/google_start.png?asset";
 import serviceCallIcon from "@public/google_sync_alt.png?asset";
 import introspectionIcon from "@public/google_troubleshoot.png?asset";
 import { BrowserWindow, ipcMain } from "electron";
-import { join } from "node:path";
-import { openUrl } from ".";
+import { ServiceCloseCallback, ServiceManagerEvents, TServiceManager } from "@/types";
+import { TServiceConfig } from "@/types/ServiceManager";
 import windowStateKeeper from "../windowStateKeeper";
+import { openUrl } from ".";
 
 type TPublisher = {
   window: BrowserWindow;

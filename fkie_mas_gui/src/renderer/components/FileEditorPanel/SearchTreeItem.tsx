@@ -2,8 +2,8 @@ import { Stack, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
   TreeItem,
-  treeItemClasses,
   TreeItemSlotProps,
+  treeItemClasses,
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";

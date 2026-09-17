@@ -57,7 +57,7 @@ export function MonacoProvider({ children }: { children: React.ReactNode }) {
   // -------------------- Services --------------------
   const workspaceRef = useRef<MonacoWorkspace | null>(null);
 
-    /**
+  /**
    * Child effects run before parent effects. Without this state flag consumers
    * that read the workspace in their own effect would see `undefined` and would
    * never re-run, because the context value would not change afterwards.

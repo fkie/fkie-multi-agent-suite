@@ -133,7 +133,7 @@ export default class LaunchNodeInfo {
     name: string,
     defaultValue: RosParameterValue | undefined = undefined
   ): RosParameterValue | undefined {
-    let result = undefined;
+    let result;
     for (const param of params || []) {
       if (param.name === "/tmp/launch_params_*/**/ros__parameters") {
         result = param.value?.[name];

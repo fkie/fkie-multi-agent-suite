@@ -1,3 +1,6 @@
+import { join } from "node:path";
+import editorIcon from "@public/google_edit_document.png?asset";
+import { BrowserWindow, ipcMain } from "electron";
 import {
   EditorCloseCallback,
   EditorManagerEvents,
@@ -8,11 +11,8 @@ import {
   TLaunchArg,
   TParameterRequest,
 } from "@/types";
-import editorIcon from "@public/google_edit_document.png?asset";
-import { BrowserWindow, ipcMain } from "electron";
-import { join } from "node:path";
-import { openUrl } from ".";
 import windowStateKeeper from "../windowStateKeeper";
+import { openUrl } from ".";
 
 type TEditor = {
   window: BrowserWindow;

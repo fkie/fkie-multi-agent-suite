@@ -13,12 +13,11 @@ import {
 import MuiAccordion, { AccordionProps } from "@mui/material/Accordion";
 import MuiAccordionDetails from "@mui/material/AccordionDetails";
 import MuiAccordionSummary, { AccordionSummaryProps } from "@mui/material/AccordionSummary";
+import { blue } from "@mui/material/colors";
 import { styled } from "@mui/material/styles";
 import React, { useCallback, useEffect, useState } from "react";
-
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { TRosMessageStruct } from "@/renderer/models";
-import { blue } from "@mui/material/colors";
 import BoolInput from "./BoolInput";
 import StringInput from "./StringInput";
 

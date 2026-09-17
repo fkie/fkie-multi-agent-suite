@@ -6,4 +6,3 @@ export * from "./FileTreeItem";
 export * from "./SearchTree";
 export * from "./SearchTreeItem";
 export * from "./types";
-

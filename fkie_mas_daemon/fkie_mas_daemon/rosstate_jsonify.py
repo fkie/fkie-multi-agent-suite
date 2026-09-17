@@ -8,57 +8,48 @@
 
 from __future__ import annotations
 
-import fkie_mas_daemon as nmd
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Sequence
-from typing import Set
-from typing import Tuple
-from typing import Union
-
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 import os
-import psutil
 import queue
 import threading
 import traceback
+from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+from typing import Any, Optional
 
+import psutil
+from composition_interfaces.srv import ListNodes
+from fkie_mas_pylib.interface.runtime_interface import (
+    EndpointInfo,
+    IncompatibleQos,
+    LifecycleTransition,
+    RosComposable,
+    RosLifecycleState,
+    RosNode,
+    RosQos,
+    RosService,
+    RosTopic,
+    SystemWarning,
+    SystemWarningGroup,
+)
+from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.service.future import WaitFuture, create_service_future, wait_until_futures_done
+from fkie_mas_pylib.system import screen
+from fkie_mas_pylib.system.host import get_local_addresses
 from rclpy.callback_groups import ReentrantCallbackGroup  # MutuallyExclusiveCallbackGroup
 from rclpy.node import Subscription
 from rclpy.qos import QoSCompatibility, QoSProfile, qos_check_compatible
-from composition_interfaces.srv import ListNodes
-from fkie_mas_daemon.monitor_servicer import MonitorServicer
 
-from fkie_mas_pylib.interface.runtime_interface import EndpointInfo
-from fkie_mas_pylib.interface.runtime_interface import IncompatibleQos
-from fkie_mas_pylib.interface.runtime_interface import RosComposable
-from fkie_mas_pylib.interface.runtime_interface import LifecycleTransition
-from fkie_mas_pylib.interface.runtime_interface import RosLifecycleState
-from fkie_mas_pylib.interface.runtime_interface import RosNode
-from fkie_mas_pylib.interface.runtime_interface import RosTopic
-from fkie_mas_pylib.interface.runtime_interface import RosQos
-from fkie_mas_pylib.interface.runtime_interface import RosService
-from fkie_mas_pylib.interface.runtime_interface import SystemWarning
-from fkie_mas_pylib.interface.runtime_interface import SystemWarningGroup
-from fkie_mas_pylib.logging.logging import Log
+import fkie_mas_daemon as nmd
+from fkie_mas_daemon.monitor_servicer import MonitorServicer
+from fkie_mas_msgs.msg import ParticipantEntitiesInfo, Participants
 from fkie_mas_pylib import names
-from fkie_mas_pylib.system import screen
-from fkie_mas_pylib.system.host import get_local_addresses
-from fkie_mas_pylib.service.future import WaitFuture
-from fkie_mas_pylib.service.future import create_service_future
-from fkie_mas_pylib.service.future import wait_until_futures_done
-from fkie_mas_msgs.msg import ParticipantEntitiesInfo
-from fkie_mas_msgs.msg import Participants
 
 LIFECYCLE_AVAILABLE = False
 try:
     from lifecycle_msgs.msg import TransitionEvent
-    from lifecycle_msgs.srv import GetState
-    from lifecycle_msgs.srv import GetAvailableTransitions
+    from lifecycle_msgs.srv import GetAvailableTransitions, GetState
+
     LIFECYCLE_AVAILABLE = True
 except ImportError:
     pass
@@ -82,13 +73,13 @@ IsNew = bool
 IsRequest = bool
 
 # (topic name without prefix, message/service type)
-TopicKey = Tuple[str, str]
+TopicKey = tuple[str, str]
 # hashable representation of a QoS profile, used to cache compatibility checks
-QosKey = Optional[Tuple]
+QosKey = Optional[tuple]
 
 # DDS topic name prefixes used for services (request/reply/status)
-DDS_SERVICE_PREFIXES = ('rr/', 'rq/', 'rs/')
-DDS_TOPIC_PREFIX = 'rt/'
+DDS_SERVICE_PREFIXES = ("rr/", "rq/", "rs/")
+DDS_TOPIC_PREFIX = "rt/"
 # reload the local network addresses every N update cycles (network may change)
 LOCAL_ADDRESS_REFRESH_CYCLES = 30
 # upper bound for pending lifecycle events; events are batched, so dropping
@@ -116,30 +107,30 @@ class QosPub:
 
 
 class CachedData:
-    node_dict: Dict[Tuple[NodeNamespace, NodeName, ParticipantGid], RosNode]
-    topic_objs: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic]
-    service_objs: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService]
+    node_dict: dict[tuple[NodeNamespace, NodeName, ParticipantGid], RosNode]
+    topic_objs: dict[tuple[TopicNameWoPrefix, TopicType], RosTopic]
+    service_objs: dict[tuple[ServiceNameWoPrefix, ServiceType], RosService]
     # node full name -> list of screen session names (inverted screen list)
-    screens_by_node: Dict[NodeFullName, List[str]]
+    screens_by_node: dict[NodeFullName, list[str]]
     # (namespace, basename) -> pids of all processes started with '__node:='.
     # Created once per update cycle to avoid repeated (expensive) process scans.
-    processes: Dict[Tuple[str, str], List[int]]
+    processes: dict[tuple[str, str], list[int]]
     # snapshot of all node names known to run inside a composable container
-    composable_node_names: Set[NodeFullName]
+    composable_node_names: set[NodeFullName]
     # collected local node names of the current update cycle
-    local_node_names: List[NodeFullName]
-    local_node_name_set: Set[NodeFullName]
+    local_node_names: list[NodeFullName]
+    local_node_name_set: set[NodeFullName]
     # O(1) index sets to avoid quadratic membership tests in lists
-    node_publisher_ids: Dict[NodeId, Set[TopicKey]]
-    node_subscriber_ids: Dict[NodeId, Set[TopicKey]]
-    topic_publisher_nodes: Dict[TopicKey, Set[NodeId]]
-    topic_subscriber_nodes: Dict[TopicKey, Set[NodeId]]
-    service_provider_nodes: Dict[TopicKey, Set[NodeId]]
-    node_service_ids: Dict[NodeId, Set[TopicKey]]
+    node_publisher_ids: dict[NodeId, set[TopicKey]]
+    node_subscriber_ids: dict[NodeId, set[TopicKey]]
+    topic_publisher_nodes: dict[TopicKey, set[NodeId]]
+    topic_subscriber_nodes: dict[TopicKey, set[NodeId]]
+    service_provider_nodes: dict[TopicKey, set[NodeId]]
+    node_service_ids: dict[NodeId, set[TopicKey]]
     # cache for QoS compatibility results: (publisher qos key, subscriber qos key)
-    qos_compatibility: Dict[Tuple[Tuple, Tuple], Tuple[QoSCompatibility, str]]
+    qos_compatibility: dict[tuple[tuple, tuple], tuple[QoSCompatibility, str]]
     # topic names which are used with more than one message type
-    type_mismatch: Dict[TopicNameWoPrefix, List[TopicType]]
+    type_mismatch: dict[TopicNameWoPrefix, list[TopicType]]
 
     def __init__(self):
         self.node_dict = {}
@@ -161,14 +152,16 @@ class CachedData:
 
 
 class RosStateJsonify:
-
-    def __init__(self, *,
-                 cb_nodes: Callable[[List[RosNode]], None],
-                 cb_topics: Callable[[Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic]], None],
-                 cb_services: Callable[[Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService]], None],
-                 cb_composables: Callable[[List[RosComposable]], None],
-                 cb_lifecycle: Callable[[List[RosLifecycleState]], None],
-                 monitor_servicer: Optional[MonitorServicer] = None):
+    def __init__(
+        self,
+        *,
+        cb_nodes: Callable[[list[RosNode]], None],
+        cb_topics: Callable[[dict[tuple[TopicNameWoPrefix, TopicType], RosTopic]], None],
+        cb_services: Callable[[dict[tuple[ServiceNameWoPrefix, ServiceType], RosService]], None],
+        cb_composables: Callable[[list[RosComposable]], None],
+        cb_lifecycle: Callable[[list[RosLifecycleState]], None],
+        monitor_servicer: MonitorServicer | None = None,
+    ):
         Log.debug("Create RosStateJsonify")
         self._callback_group = ReentrantCallbackGroup()
         self._shutdown = False
@@ -178,31 +171,31 @@ class RosStateJsonify:
         self._cb_composables = cb_composables
         self._cb_lifecycle = cb_lifecycle
         self.monitor_servicer = monitor_servicer
-        self._local_node_names: List[NodeFullName] = []
-        self._composable_nodes: Dict[NodeId, RosComposable] = {}
+        self._local_node_names: list[NodeFullName] = []
+        self._composable_nodes: dict[NodeId, RosComposable] = {}
         self._lock = threading.RLock()
-        self._lifecycle_subscriptions: Dict[NodeId, Subscription] = {}
+        self._lifecycle_subscriptions: dict[NodeId, Subscription] = {}
         self._local_addresses = get_local_addresses()
         self._update_cycles = 0
-        self._participant_infos: Dict[ParticipantGid, ParticipantEntitiesInfo] = {}
-        self._ros_service_dict: Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService] = {}
-        self._ros_topic_dict: Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic] = {}
+        self._participant_infos: dict[ParticipantGid, ParticipantEntitiesInfo] = {}
+        self._ros_service_dict: dict[tuple[ServiceNameWoPrefix, ServiceType], RosService] = {}
+        self._ros_topic_dict: dict[tuple[TopicNameWoPrefix, TopicType], RosTopic] = {}
         self._use_name_as_node_id = self.get_rwm_implementation() in ["rmw_zenoh_cpp"]
 
         # Tracks unassigned local nodes (no process, no screen) that are not yet
         # listed in any known composable container. Used to detect new composable
         # nodes between runs without triggering redundant updates.
-        self._unassigned_composable_nodes: Set[NodeFullName] = set()
+        self._unassigned_composable_nodes: set[NodeFullName] = set()
         # containers with a running (asynchronous) list_nodes request; they must
         # not be removed by the cleanup of the update cycle
-        self._pending_composable_ids: Set[NodeId] = set()
+        self._pending_composable_ids: set[NodeId] = set()
         # incremented on forceRefresh; results of older requests are discarded
         self._state_generation = 0
 
         # Lifecycle transition events are handled by a single worker thread.
         # This avoids spawning one thread per received event.
-        self._lifecycle_event_queue: "queue.Queue" = queue.Queue(maxsize=LIFECYCLE_QUEUE_MAX_SIZE)
-        self._lifecycle_worker: Optional[threading.Thread] = None
+        self._lifecycle_event_queue: queue.Queue = queue.Queue(maxsize=LIFECYCLE_QUEUE_MAX_SIZE)
+        self._lifecycle_worker: threading.Thread | None = None
         # shared executor for all asynchronous service calls; avoids piling up
         # threads if containers answer slowly
         self._executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix="ros_state_jsonify")
@@ -254,7 +247,7 @@ class RosStateJsonify:
     #  lifecycle handling
     # ------------------------------------------------------------------ #
 
-    def _on_lifecycle_event(self, _msg: "TransitionEvent", node_id: NodeId, node_name: NodeFullName):
+    def _on_lifecycle_event(self, _msg: TransitionEvent, node_id: NodeId, node_name: NodeFullName):
         self._queue_lifecycle_update(node_id, node_name)
 
     def _queue_lifecycle_update(self, node_id: NodeId, node_name: NodeFullName) -> None:
@@ -263,8 +256,7 @@ class RosStateJsonify:
             return
         with self._lock:
             if self._lifecycle_worker is None or not self._lifecycle_worker.is_alive():
-                self._lifecycle_worker = threading.Thread(
-                    target=self._thread_lifecycle_worker, daemon=True)
+                self._lifecycle_worker = threading.Thread(target=self._thread_lifecycle_worker, daemon=True)
                 self._lifecycle_worker.start()
         try:
             self._lifecycle_event_queue.put_nowait((node_id, node_name))
@@ -283,7 +275,7 @@ class RosStateJsonify:
             if item is None:
                 # shutdown requested
                 break
-            pending: Dict[NodeId, NodeFullName] = {item[0]: item[1]}
+            pending: dict[NodeId, NodeFullName] = {item[0]: item[1]}
             # batch all events which are already in the queue
             stop_requested = False
             while True:
@@ -297,7 +289,8 @@ class RosStateJsonify:
                 pending[next_item[0]] = next_item[1]
             if pending and not self._shutdown:
                 self._thread_update_lifecycle_call(
-                    [RosNode(node_id, node_name) for node_id, node_name in pending.items()])
+                    [RosNode(node_id, node_name) for node_id, node_name in pending.items()]
+                )
             if stop_requested:
                 break
 
@@ -305,8 +298,9 @@ class RosStateJsonify:
         """Creates a transition event subscription. Must be called with the lock held."""
         if LIFECYCLE_AVAILABLE and node_id not in self._lifecycle_subscriptions:
             Log.debug(f"{self.__class__.__name__}: subscribe to {topic_name}")
-            sub = nmd.ros_node.create_subscription(TransitionEvent, topic_name, partial(
-                self._on_lifecycle_event, node_id=node_id, node_name=node_name), 1)
+            sub = nmd.ros_node.create_subscription(
+                TransitionEvent, topic_name, partial(self._on_lifecycle_event, node_id=node_id, node_name=node_name), 1
+            )
             self._lifecycle_subscriptions[node_id] = sub
             return True
         return False
@@ -319,34 +313,34 @@ class RosStateJsonify:
     def get_message_type(cls, dds_type: str) -> str:
         result = dds_type
         if result:
-            result = result.replace('::', '/')
-            result = result.replace('/dds_', '')
+            result = result.replace("::", "/")
+            result = result.replace("/dds_", "")
             # NOTE: the trailing type suffix behind the last '/' is currently not removed:
             #   last_slash_index = result.rfind('/')
             #   if last_slash_index != -1:
             #       underscore_index = result.rfind('_', last_slash_index)
             #       if underscore_index != -1:
             #           result = result[:underscore_index]
-            result = result.rstrip('_')
+            result = result.rstrip("_")
         return result
 
     @classmethod
     def get_service_type(cls, dds_service_type: str) -> str:
         result = dds_service_type
-        for suffix in ['_Response_', '_Request_']:
+        for suffix in ["_Response_", "_Request_"]:
             if result.endswith(suffix):
                 # keep the leading '_' of the suffix, it is removed by the
                 # rstrip('_') in get_message_type() together with the type suffix
-                result = result[:-len(suffix) + 1]
+                result = result[: -len(suffix) + 1]
                 break
         return cls.get_message_type(result)
 
     @classmethod
     def get_service_name(cls, dds_service_name: str) -> str:
         result = dds_service_name
-        for suffix in ['Reply', 'Request']:
+        for suffix in ["Reply", "Request"]:
             if result.endswith(suffix):
-                result = result[:-len(suffix)]
+                result = result[: -len(suffix)]
                 break
         return result
 
@@ -358,78 +352,77 @@ class RosStateJsonify:
     @classmethod
     def _guid_arr_to_str(cls, gid: Sequence[int]) -> str:
         try:
-            return bytes(gid).hex('.').upper()
+            return bytes(gid).hex(".").upper()
         except Exception:
-            return '.'.join(f'{c:02X}' for c in gid)
+            return ".".join(f"{c:02X}" for c in gid)
 
     def _guid_to_str(self, guid: Any) -> ParticipantGid:
         data = guid.data.tolist() if hasattr(guid.data, "tolist") else list(guid.data)
         return self._guid_arr_to_str(data[0:12])
 
-    def parse_node_name(self, node_name: str) -> Tuple[NodeName, NodeNamespace]:
+    def parse_node_name(self, node_name: str) -> tuple[NodeName, NodeNamespace]:
         full_node_name = node_name
-        if not full_node_name.startswith('/'):
-            full_node_name = '/' + full_node_name
-        namespace, node_basename = full_node_name.rsplit('/', 1)
-        if namespace == '':
-            namespace = '/'
+        if not full_node_name.startswith("/"):
+            full_node_name = "/" + full_node_name
+        namespace, node_basename = full_node_name.rsplit("/", 1)
+        if namespace == "":
+            namespace = "/"
         return node_basename, namespace
 
     # ------------------------------------------------------------------ #
     #  process/screen/location helper
     # ------------------------------------------------------------------ #
 
-    def _scan_processes(self) -> Dict[Tuple[str, str], List[int]]:
+    def _scan_processes(self) -> dict[tuple[str, str], list[int]]:
         """Scans all processes once and returns an index (namespace, basename) -> [pid]
         for all processes started with a '__node:=' argument."""
-        index: Dict[Tuple[str, str], List[int]] = {}
+        index: dict[tuple[str, str], list[int]] = {}
         for process in psutil.process_iter(["pid", "cmdline"]):
             try:
                 cmdline = process.info["cmdline"]
                 if not cmdline:
                     continue
-                node_name: Optional[str] = None
+                node_name: str | None = None
                 node_ns = ""
                 for arg in cmdline:
                     if arg.startswith("__node:="):
-                        node_name = arg[len("__node:="):]
+                        node_name = arg[len("__node:=") :]
                     elif arg.startswith("__ns:="):
-                        node_ns = arg[len("__ns:="):].rstrip('/')
+                        node_ns = arg[len("__ns:=") :].rstrip("/")
                 if node_name:
                     index.setdefault((node_ns, node_name), []).append(process.info["pid"])
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
             except Exception:
-                Log.debug(f"{self.__class__.__name__}: ignored exception while scanning processes: "
-                          f"{traceback.format_exc()}")
+                Log.debug(
+                    f"{self.__class__.__name__}: ignored exception while scanning processes: {traceback.format_exc()}"
+                )
         return index
 
-    def _index_screens(self) -> Dict[NodeFullName, List[str]]:
+    def _index_screens(self) -> dict[NodeFullName, list[str]]:
         """Builds node full name -> [screen session names] once per update cycle."""
-        screens_by_node: Dict[NodeFullName, List[str]] = {}
+        screens_by_node: dict[NodeFullName, list[str]] = {}
         try:
             for session_name, screen_node_name in screen.get_active_screens().items():
                 screens_by_node.setdefault(screen_node_name, []).append(session_name)
         except Exception:
-            Log.debug(f"{self.__class__.__name__}: ignored exception while reading screens: "
-                      f"{traceback.format_exc()}")
+            Log.debug(f"{self.__class__.__name__}: ignored exception while reading screens: {traceback.format_exc()}")
         return screens_by_node
 
-    def find_node(self, name: NodeFullName,
-                  processes: Optional[Dict[Tuple[str, str], List[int]]] = None) -> List[int]:
+    def find_node(self, name: NodeFullName, processes: dict[tuple[str, str], list[int]] | None = None) -> list[int]:
         """Returns the pids of all processes started with __node:=<basename> [__ns:=<namespace>]."""
         if processes is None:
             processes = self._scan_processes()
         # a node without explicit __ns:= runs in the root namespace
-        return list(processes.get((names.namespace(name).rstrip('/'), names.basename(name)), []))
+        return list(processes.get((names.namespace(name).rstrip("/"), names.basename(name)), []))
 
     # kept for API compatibility
     findNode = find_node
 
     def is_location_local(self, location: str) -> bool:
-        if 'SHM' in location:
+        if "SHM" in location:
             return True
-        if '127.0.' in location:
+        if "127.0." in location:
             return True
         for loc_addr in self._local_addresses:
             if loc_addr in location:
@@ -440,18 +433,18 @@ class RosStateJsonify:
     #  public accessors
     # ------------------------------------------------------------------ #
 
-    def get_services(self) -> Dict[Tuple[ServiceNameWoPrefix, ServiceType], RosService]:
+    def get_services(self) -> dict[tuple[ServiceNameWoPrefix, ServiceType], RosService]:
         return self._ros_service_dict
 
-    def get_topics(self) -> Dict[Tuple[TopicNameWoPrefix, TopicType], RosTopic]:
+    def get_topics(self) -> dict[tuple[TopicNameWoPrefix, TopicType], RosTopic]:
         return self._ros_topic_dict
 
-    def get_local_node_names(self) -> List[NodeFullName]:
+    def get_local_node_names(self) -> list[NodeFullName]:
         return self._local_node_names
 
     def apply_participants(self, msg: Participants):
         # update the participant info (IP addresses)
-        new_ros_state: Dict[ParticipantGid, ParticipantEntitiesInfo] = {}
+        new_ros_state: dict[ParticipantGid, ParticipantEntitiesInfo] = {}
         for participant in msg.participants:
             new_ros_state[self._guid_to_str(participant.guid)] = participant
         with self._lock:
@@ -461,8 +454,7 @@ class RosStateJsonify:
         """Updates all composable nodes currently tracked in self._composable_nodes."""
         with self._lock:
             nodes_to_update = [
-                RosNode(node_id, composable.containerName)
-                for node_id, composable in self._composable_nodes.items()
+                RosNode(node_id, composable.containerName) for node_id, composable in self._composable_nodes.items()
             ]
             self._pending_composable_ids.update(n.id for n in nodes_to_update)
             generation = self._state_generation
@@ -473,19 +465,19 @@ class RosStateJsonify:
     #  state update
     # ------------------------------------------------------------------ #
 
-    def _has_new_unassigned_nodes(self, discovered_nodes: List[RosNode]) -> List[NodeId]:
+    def _has_new_unassigned_nodes(self, discovered_nodes: list[RosNode]) -> list[NodeId]:
         """Checks if new unassigned local nodes appeared since the last run.
 
         Returns a list of container NodeIds that need to be refreshed. Only
         triggers if genuinely new nodes were discovered compared to the previous
         invocation.
         """
-        containers_to_update: List[NodeId] = []
-        current_unassigned: Set[NodeFullName] = set()
+        containers_to_update: list[NodeId] = []
+        current_unassigned: set[NodeFullName] = set()
 
         with self._lock:
             # collect all node names already known to belong to a container
-            known_composable_names: Set[NodeFullName] = set()
+            known_composable_names: set[NodeFullName] = set()
             for composable in self._composable_nodes.values():
                 known_composable_names.update(composable.nodes)
 
@@ -493,7 +485,7 @@ class RosStateJsonify:
             # assigned to any composable container
             for node in discovered_nodes:
                 if node.is_local and not node.process_ids and not node.screens:
-                    if node.name not in known_composable_names and '_impl_' not in node.name:
+                    if node.name not in known_composable_names and "_impl_" not in node.name:
                         current_unassigned.add(node.name)
 
             # only trigger refresh if there are nodes that were NOT unassigned
@@ -535,11 +527,11 @@ class RosStateJsonify:
             for composable in self._composable_nodes.values():
                 cached_data.composable_node_names.update(composable.nodes)
 
-        result: List[RosNode] = []
-        transition_event_publisher: List[NodeId] = []
-        new_transition_event_nodes: List[RosNode] = []
-        found_composable_nodes: List[NodeId] = []
-        new_composable_nodes: List[RosNode] = []
+        result: list[RosNode] = []
+        transition_event_publisher: list[NodeId] = []
+        new_transition_event_nodes: list[RosNode] = []
+        found_composable_nodes: list[NodeId] = []
+        new_composable_nodes: list[RosNode] = []
 
         topic_list = nmd.ros_node.get_topic_names_and_types(no_demangle=True)
         for topic_name, _topic_types in topic_list:
@@ -547,12 +539,12 @@ class RosStateJsonify:
             is_request = self._is_request_topic(topic_name)
             # publisher QoS profiles grouped by topic type; endpoints with
             # different types never match, so they must not be compared
-            pub_qos_by_type: Dict[TopicType, List[QosPub]] = {}
-            sub_types: Set[TopicType] = set()
+            pub_qos_by_type: dict[TopicType, list[QosPub]] = {}
+            sub_types: set[TopicType] = set()
 
             pub_infos = nmd.ros_node.get_publishers_info_by_topic(topic_name, True)
             for pub_info in pub_infos:
-                if '_NODE_NAME_UNKNOWN_' in pub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in pub_info.node_namespace:
+                if "_NODE_NAME_UNKNOWN_" in pub_info.node_name or "_NODE_NAMESPACE_UNKNOWN_" in pub_info.node_namespace:
                     continue
                 try:
                     if self._use_name_as_node_id:
@@ -561,7 +553,8 @@ class RosStateJsonify:
                         gid = self._guid_arr_to_str(pub_info.endpoint_gid[0:12])
                     t_gid = self._guid_arr_to_str(pub_info.endpoint_gid)
                     ros_node, is_new_node = self._get_node_from(
-                        pub_info.node_namespace, pub_info.node_name, gid, cached_data)
+                        pub_info.node_namespace, pub_info.node_name, gid, cached_data
+                    )
                 except Exception:
                     Log.debug(f"{self.__class__.__name__}: ignored exception: {traceback.format_exc()}")
                     continue
@@ -573,8 +566,10 @@ class RosStateJsonify:
                     tp = self._get_topic_from(topic_name, pub_info.topic_type, cached_data)
                     # topic or service ?
                     if isinstance(tp, RosTopic):
-                        Log.debug(f"{self.__class__.__name__}:      add publisher {ros_node.id} "
-                                  f"{pub_info.node_namespace}/{pub_info.node_name} for {tp.name}")
+                        Log.debug(
+                            f"{self.__class__.__name__}:      add publisher {ros_node.id} "
+                            f"{pub_info.node_namespace}/{pub_info.node_name} for {tp.name}"
+                        )
                         topic_key: TopicKey = (tp.name, tp.msg_type)
                         publisher_nodes = cached_data.topic_publisher_nodes.setdefault(topic_key, set())
                         if ros_node.id not in publisher_nodes:
@@ -586,22 +581,26 @@ class RosStateJsonify:
                             ros_node.publishers.append(tp.get_topic_id())
                             node_publishers.add(topic_key)
                         pub_qos_by_type.setdefault(pub_info.topic_type, []).append(
-                            QosPub(ros_node, pub_info.qos_profile, self._qos_cache_key(pub_info.qos_profile)))
+                            QosPub(ros_node, pub_info.qos_profile, self._qos_cache_key(pub_info.qos_profile))
+                        )
                         # the node is a system node if topic type is from MAS messages
-                        discover_state_publisher = 'fkie_mas_msgs::msg::dds_::DiscoveredState_' in pub_info.topic_type
-                        endpoint_publisher = 'fkie_mas_msgs::msg::dds_::Endpoint_' in pub_info.topic_type
+                        discover_state_publisher = "fkie_mas_msgs::msg::dds_::DiscoveredState_" in pub_info.topic_type
+                        endpoint_publisher = "fkie_mas_msgs::msg::dds_::Endpoint_" in pub_info.topic_type
                         ros_node.system_node |= discover_state_publisher or endpoint_publisher
                         # check for lifecycle transition event topic
                         if self._is_local_lifecycle_transition_topic(tp.name, tp.msg_type, ros_node, cached_data):
                             with self._lock:
-                                if self._subscribe_lifecycle(topic_name=tp.name, node_id=ros_node.id,
-                                                             node_name=ros_node.name):
+                                if self._subscribe_lifecycle(
+                                    topic_name=tp.name, node_id=ros_node.id, node_name=ros_node.name
+                                ):
                                     new_transition_event_nodes.append(ros_node)
                             transition_event_publisher.append(ros_node.id)
                     elif is_request:
                         if ros_node.id not in tp.requester:
-                            Log.debug(f"{self.__class__.__name__}:      add requester {ros_node.id} "
-                                      f"{pub_info.node_namespace}/{pub_info.node_name}")
+                            Log.debug(
+                                f"{self.__class__.__name__}:      add requester {ros_node.id} "
+                                f"{pub_info.node_namespace}/{pub_info.node_name}"
+                            )
                             tp.requester.append(ros_node.id)
                     else:
                         # it is a publisher for a Reply service.
@@ -610,8 +609,7 @@ class RosStateJsonify:
                             with self._lock:
                                 ros_node.is_container = True
                                 if ros_node.id not in self._composable_nodes:
-                                    self._composable_nodes[ros_node.id] = RosComposable(
-                                        ros_node.name, ros_node.id, [])
+                                    self._composable_nodes[ros_node.id] = RosComposable(ros_node.name, ros_node.id, [])
                                     new_composable_nodes.append(ros_node)
                                 found_composable_nodes.append(ros_node.id)
                 except Exception:
@@ -619,7 +617,7 @@ class RosStateJsonify:
 
             sub_infos = nmd.ros_node.get_subscriptions_info_by_topic(topic_name, True)
             for sub_info in sub_infos:
-                if '_NODE_NAME_UNKNOWN_' in sub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in sub_info.node_namespace:
+                if "_NODE_NAME_UNKNOWN_" in sub_info.node_name or "_NODE_NAMESPACE_UNKNOWN_" in sub_info.node_namespace:
                     continue
                 try:
                     if self._use_name_as_node_id:
@@ -628,7 +626,8 @@ class RosStateJsonify:
                         gid = self._guid_arr_to_str(sub_info.endpoint_gid[0:12])
                     t_gid = self._guid_arr_to_str(sub_info.endpoint_gid)
                     ros_node, is_new_node = self._get_node_from(
-                        sub_info.node_namespace, sub_info.node_name, gid, cached_data)
+                        sub_info.node_namespace, sub_info.node_name, gid, cached_data
+                    )
                 except Exception:
                     Log.debug(f"{self.__class__.__name__}: ignored exception: {traceback.format_exc()}")
                     continue
@@ -638,17 +637,21 @@ class RosStateJsonify:
                     tp = self._get_topic_from(topic_name, sub_info.topic_type, cached_data)
                     # topic or service ?
                     if isinstance(tp, RosTopic):
-                        Log.debug(f"{self.__class__.__name__}:      add subscriber {ros_node.id} "
-                                  f"{sub_info.node_namespace}/{sub_info.node_name} for {tp.name}")
+                        Log.debug(
+                            f"{self.__class__.__name__}:      add subscriber {ros_node.id} "
+                            f"{sub_info.node_namespace}/{sub_info.node_name} for {tp.name}"
+                        )
                         sub_types.add(sub_info.topic_type)
                         topic_key = (tp.name, tp.msg_type)
                         subscriber_nodes = cached_data.topic_subscriber_nodes.setdefault(topic_key, set())
                         if ros_node.id not in subscriber_nodes:
                             # check QoS compatibility only against publishers with the same type
                             incompatible_qos = self._get_incompatible_qos(
-                                pub_qos_by_type.get(sub_info.topic_type, []), sub_info.qos_profile, cached_data)
-                            endpoint_info = EndpointInfo(t_gid, ros_node.id, self._get_qos(
-                                sub_info.qos_profile), incompatible_qos)
+                                pub_qos_by_type.get(sub_info.topic_type, []), sub_info.qos_profile, cached_data
+                            )
+                            endpoint_info = EndpointInfo(
+                                t_gid, ros_node.id, self._get_qos(sub_info.qos_profile), incompatible_qos
+                            )
                             tp.subscriber.append(endpoint_info)
                             subscriber_nodes.add(ros_node.id)
                         node_subscribers = cached_data.node_subscriber_ids.setdefault(ros_node.id, set())
@@ -656,8 +659,10 @@ class RosStateJsonify:
                             ros_node.subscribers.append(tp.get_topic_id())
                             node_subscribers.add(topic_key)
                     elif is_request and ros_node.id not in tp.provider:
-                        Log.debug(f"{self.__class__.__name__}:      add provider {ros_node.id} "
-                                  f"{sub_info.node_namespace}/{sub_info.node_name}")
+                        Log.debug(
+                            f"{self.__class__.__name__}:      add provider {ros_node.id} "
+                            f"{sub_info.node_namespace}/{sub_info.node_name}"
+                        )
                         tp.provider.append(ros_node.id)
                         # The node subscribes a Request service type. We add this service to the node.
                         # The node is now the provider of this service
@@ -692,9 +697,9 @@ class RosStateJsonify:
                     Log.debug(f"{self.__class__.__name__}: ignored exception: {traceback.format_exc()}")
 
             # cleanup the composable nodes, containers with a pending request are kept
-            old_container_nodes = (set(self._composable_nodes)
-                                   - set(found_composable_nodes)
-                                   - self._pending_composable_ids)
+            old_container_nodes = (
+                set(self._composable_nodes) - set(found_composable_nodes) - self._pending_composable_ids
+            )
             for node_id in old_container_nodes:
                 del self._composable_nodes[node_id]
 
@@ -706,7 +711,7 @@ class RosStateJsonify:
         containers_to_refresh = self._has_new_unassigned_nodes(result)
         with self._lock:
             new_composable_ids = {n.id for n in new_composable_nodes}
-            nodes_to_update: List[RosNode] = list(new_composable_nodes)
+            nodes_to_update: list[RosNode] = list(new_composable_nodes)
             for cid in containers_to_refresh:
                 # avoid duplicates: only add if not already in new_composable_nodes
                 if cid in self._composable_nodes and cid not in new_composable_ids:
@@ -731,9 +736,13 @@ class RosStateJsonify:
         if self._cb_services:
             self._cb_services(cached_data.service_objs)
 
-    def _add_services_by_node(self, result: List[RosNode], cached_data: CachedData,
-                              new_composable_nodes: List[RosNode],
-                              found_composable_nodes: List[NodeId]) -> None:
+    def _add_services_by_node(
+        self,
+        result: list[RosNode],
+        cached_data: CachedData,
+        new_composable_nodes: list[RosNode],
+        found_composable_nodes: list[NodeId],
+    ) -> None:
         """Adds services reported per node. Required for rmw_zenoh_cpp, which does
         not expose the DDS service topics."""
         for node in result:
@@ -764,8 +773,10 @@ class RosStateJsonify:
                                     new_composable_nodes.append(node)
                                 found_composable_nodes.append(node.id)
             except Exception:
-                Log.debug(f"{self.__class__.__name__}: ignored exception for node "
-                          f"{node_ns}/{node_base_name}: {traceback.format_exc()}")
+                Log.debug(
+                    f"{self.__class__.__name__}: ignored exception for node "
+                    f"{node_ns}/{node_base_name}: {traceback.format_exc()}"
+                )
 
     def _report_type_mismatch(self, data: CachedData) -> None:
         """Reports topics used with more than one message type."""
@@ -776,8 +787,10 @@ class RosStateJsonify:
             return
         warnings_group = SystemWarningGroup(WARNING_GROUP_TOPIC_TYPES)
         for topic_name, types in data.type_mismatch.items():
-            msg = (f"topic '{topic_name}' is used with different message types: {', '.join(types)}; "
-                   "these endpoints will never connect")
+            msg = (
+                f"topic '{topic_name}' is used with different message types: {', '.join(types)}; "
+                "these endpoints will never connect"
+            )
             Log.warn(f"{self.__class__.__name__}: {msg}")
             warnings_group.append(SystemWarning(msg=msg))
         self.monitor_servicer.update_warning_groups([warnings_group])
@@ -787,7 +800,7 @@ class RosStateJsonify:
     # ------------------------------------------------------------------ #
 
     def _is_request_topic(self, topic_name: str) -> IsRequest:
-        return topic_name.startswith('rq/')
+        return topic_name.startswith("rq/")
 
     def _append_local_node_name(self, data: CachedData, node_name: NodeFullName) -> None:
         """Adds a node name to the list of local nodes, duplicates are ignored."""
@@ -795,11 +808,12 @@ class RosStateJsonify:
             data.local_node_name_set.add(node_name)
             data.local_node_names.append(node_name)
 
-    def _get_incompatible_qos(self, pub_qos: List[QosPub], sub_qos_profile: Any,
-                              data: CachedData) -> List[IncompatibleQos]:
+    def _get_incompatible_qos(
+        self, pub_qos: list[QosPub], sub_qos_profile: Any, data: CachedData
+    ) -> list[IncompatibleQos]:
         """Checks the QoS profile of a subscriber against all publishers of the same
         topic and type. Already checked QoS combinations are taken from the cache."""
-        incompatible_qos: List[IncompatibleQos] = []
+        incompatible_qos: list[IncompatibleQos] = []
         if not pub_qos:
             return incompatible_qos
         sub_qos_key = self._qos_cache_key(sub_qos_profile)
@@ -814,23 +828,24 @@ class RosStateJsonify:
                 if cache_key is not None:
                     data.qos_compatibility[cache_key] = (compatibility, reason)
             if compatibility != QoSCompatibility.OK:
-                incompatible_qos.append(IncompatibleQos(
-                    qp.node.id, self._qos_compatibility2str(compatibility), reason))
+                incompatible_qos.append(IncompatibleQos(qp.node.id, self._qos_compatibility2str(compatibility), reason))
         return incompatible_qos
 
     def _qos_cache_key(self, qos_profile: Any) -> QosKey:
         """Creates a hashable representation of a QoS profile.
         Returns None if the profile can not be converted, in this case no caching is applied."""
         try:
-            return (int(qos_profile.durability),
-                    int(qos_profile.history),
-                    int(qos_profile.depth),
-                    int(qos_profile.liveliness),
-                    int(qos_profile.reliability),
-                    qos_profile.deadline.nanoseconds,
-                    qos_profile.liveliness_lease_duration.nanoseconds,
-                    qos_profile.lifespan.nanoseconds,
-                    bool(qos_profile.avoid_ros_namespace_conventions))
+            return (
+                int(qos_profile.durability),
+                int(qos_profile.history),
+                int(qos_profile.depth),
+                int(qos_profile.liveliness),
+                int(qos_profile.reliability),
+                qos_profile.deadline.nanoseconds,
+                qos_profile.liveliness_lease_duration.nanoseconds,
+                qos_profile.lifespan.nanoseconds,
+                bool(qos_profile.avoid_ros_namespace_conventions),
+            )
         except Exception:
             return None
 
@@ -845,8 +860,9 @@ class RosStateJsonify:
         if not ros_node.is_local and any(self.is_location_local(loc) for loc in ros_node.location):
             ros_node.is_local = True
 
-    def _get_node_from(self, node_ns: NodeNamespace, node_name: NodeName,
-                       gid: ParticipantGid, data: CachedData) -> Tuple[RosNode, IsNew]:
+    def _get_node_from(
+        self, node_ns: NodeNamespace, node_name: NodeName, gid: ParticipantGid, data: CachedData
+    ) -> tuple[RosNode, IsNew]:
         key = (node_ns, node_name, gid)
         ros_node = data.node_dict.get(key)
         if ros_node is not None:
@@ -859,20 +875,20 @@ class RosStateJsonify:
         ros_node.namespace = node_ns
         ros_node.gid = gid
         # add active screens of this node
-        process_ids: List[int] = []
+        process_ids: list[int] = []
         for session_name in data.screens_by_node.get(full_name, ()):
             Log.debug(f"{self.__class__.__name__}:     append screen: {session_name}")
             ros_node.screens.append(session_name)
             try:
-                process_ids.append(int(session_name.split('.')[0]))
+                process_ids.append(int(session_name.split(".")[0]))
             except ValueError:
                 Log.debug(f"{self.__class__.__name__}: can not parse pid from screen session {session_name}")
         # try to find the process of the node, uses the process list cached for this update cycle
         process_ids.extend(self.find_node(full_name, data.processes))
         # remove duplicates, keep the order
         ros_node.process_ids = list(dict.fromkeys(process_ids))
-        ros_node.system_node = names.basename(full_name).startswith('_') or full_name in ['/rosout']
-        ros_node.system_node |= node_ns == '/mas' or node_ns.startswith('/mas/')
+        ros_node.system_node = names.basename(full_name).startswith("_") or full_name in ["/rosout"]
+        ros_node.system_node |= node_ns == "/mas" or node_ns.startswith("/mas/")
         # if a process/screen is available, we assume it is a local node
         if ros_node.process_ids:
             ros_node.location = list(self._local_addresses)
@@ -888,8 +904,7 @@ class RosStateJsonify:
         data.node_dict[key] = ros_node
         return ros_node, True
 
-    def _get_topic_from(self, topic_name: str, topic_type: str,
-                        data: CachedData) -> Union[RosTopic, RosService]:
+    def _get_topic_from(self, topic_name: str, topic_type: str, data: CachedData) -> RosTopic | RosService:
         if topic_name.startswith(DDS_TOPIC_PREFIX):
             name = topic_name[2:]
             key = (name, topic_type)
@@ -921,22 +936,24 @@ class RosStateJsonify:
             data.topic_objs[key] = result_obj
         return result_obj
 
-    def _is_local_composable_service(self, service_name: ServiceNameWoPrefix,
-                                     service_type: ServiceType, ros_node: RosNode) -> bool:
+    def _is_local_composable_service(
+        self, service_name: ServiceNameWoPrefix, service_type: ServiceType, ros_node: RosNode
+    ) -> bool:
         # cheap checks first
-        if not service_name.endswith('/_container/list_nodes'):
+        if not service_name.endswith("/_container/list_nodes"):
             return False
         if service_type != "composition_interfaces/srv/ListNodes":
             return False
         return ros_node.is_local
 
-    def _is_local_lifecycle_transition_topic(self, topic_name: TopicNameWoPrefix, topic_type: TopicType,
-                                             ros_node: RosNode, data: CachedData) -> bool:
+    def _is_local_lifecycle_transition_topic(
+        self, topic_name: TopicNameWoPrefix, topic_type: TopicType, ros_node: RosNode, data: CachedData
+    ) -> bool:
         """Checks whether the topic is a lifecycle event topic of a local node.
         Nodes running inside a local composable container count as local."""
         try:
             # cheap checks first
-            if not topic_name.endswith('/transition_event'):
+            if not topic_name.endswith("/transition_event"):
                 return False
             if topic_type != "lifecycle_msgs/msg/TransitionEvent":
                 return False
@@ -948,22 +965,24 @@ class RosStateJsonify:
         return False
 
     def _get_qos(self, qos: QoSProfile) -> RosQos:
-        return RosQos(qos.durability,
-                      qos.history,
-                      qos.depth,
-                      qos.liveliness,
-                      qos.reliability,
-                      qos.deadline,
-                      qos.liveliness_lease_duration,
-                      qos.lifespan,
-                      qos.avoid_ros_namespace_conventions)
+        return RosQos(
+            qos.durability,
+            qos.history,
+            qos.depth,
+            qos.liveliness,
+            qos.reliability,
+            qos.deadline,
+            qos.liveliness_lease_duration,
+            qos.lifespan,
+            qos.avoid_ros_namespace_conventions,
+        )
 
     def _qos_compatibility2str(self, qc: QoSCompatibility) -> str:
         if qc == QoSCompatibility.OK:
             return "ok"
         return "warning"
 
-    def _publish_warnings(self, error_msgs: List[str]) -> None:
+    def _publish_warnings(self, error_msgs: list[str]) -> None:
         if not error_msgs:
             return
         warnings_group = SystemWarningGroup(SystemWarningGroup.ID_ROS_STATE)
@@ -977,45 +996,50 @@ class RosStateJsonify:
     #  asynchronous service calls
     # ------------------------------------------------------------------ #
 
-    def _thread_update_lifecycle_call(self, nodes: List[RosNode]):
+    def _thread_update_lifecycle_call(self, nodes: list[RosNode]):
         """Updates the lifecycle state of the specified nodes by calling the
         services /get_state and /get_available_transitions."""
         if not nodes or not LIFECYCLE_AVAILABLE or self._shutdown:
             return
-        error_msgs: List[str] = []
+        error_msgs: list[str] = []
         try:
-            wait_futures: List[WaitFuture] = []
+            wait_futures: list[WaitFuture] = []
             for node in nodes:
                 Log.debug(f"{self.__class__.__name__}:  update lifecycle state '{node.name}'")
-                create_service_future(nmd.ros_node,
-                                      wait_futures=wait_futures,
-                                      type="lifecycle state",
-                                      node_id=node.id,
-                                      node_name=node.name,
-                                      service_name=f"{node.name}/get_state",
-                                      srv_type=GetState,
-                                      request=GetState.Request(),
-                                      callback_group=self._callback_group)
+                create_service_future(
+                    nmd.ros_node,
+                    wait_futures=wait_futures,
+                    type="lifecycle state",
+                    node_id=node.id,
+                    node_name=node.name,
+                    service_name=f"{node.name}/get_state",
+                    srv_type=GetState,
+                    request=GetState.Request(),
+                    callback_group=self._callback_group,
+                )
                 Log.debug(f"{self.__class__.__name__}:  update lifecycle transitions '{node.name}'")
-                create_service_future(nmd.ros_node,
-                                      wait_futures=wait_futures,
-                                      type="lifecycle transition",
-                                      node_id=node.id,
-                                      node_name=node.name,
-                                      service_name=f"{node.name}/get_available_transitions",
-                                      srv_type=GetAvailableTransitions,
-                                      request=GetAvailableTransitions.Request(),
-                                      callback_group=self._callback_group)
+                create_service_future(
+                    nmd.ros_node,
+                    wait_futures=wait_futures,
+                    type="lifecycle transition",
+                    node_id=node.id,
+                    node_name=node.name,
+                    service_name=f"{node.name}/get_available_transitions",
+                    srv_type=GetAvailableTransitions,
+                    request=GetAvailableTransitions.Request(),
+                    callback_group=self._callback_group,
+                )
             if not wait_futures:
                 return
             # wait until all services are finished or timed out
             wait_until_futures_done(wait_futures, SERVICE_CALL_TIMEOUT)
             # handle response
-            lifecycle_states: Dict[NodeId, RosLifecycleState] = {}
+            lifecycle_states: dict[NodeId, RosLifecycleState] = {}
             for wait_future in wait_futures:
                 if wait_future.node_id not in lifecycle_states:
                     lifecycle_states[wait_future.node_id] = RosLifecycleState(
-                        id=wait_future.node_id, name=wait_future.node_name)
+                        id=wait_future.node_id, name=wait_future.node_name
+                    )
             for wait_future in wait_futures:
                 lifecycle_state = lifecycle_states[wait_future.node_id]
                 if wait_future.finished:
@@ -1027,13 +1051,18 @@ class RosStateJsonify:
                             elif wait_future.type == "lifecycle transition":
                                 for transition in response.available_transitions:
                                     lifecycle_state.available_transitions.append(
-                                        LifecycleTransition(transition.transition.label, transition.transition.id))
+                                        LifecycleTransition(transition.transition.label, transition.transition.id)
+                                    )
                     except Exception as exception:
-                        error_msgs.append(f"{self.__class__.__name__}:-> failed to update {wait_future.type} "
-                                          f"of '{wait_future.node_name}': '{exception}'")
+                        error_msgs.append(
+                            f"{self.__class__.__name__}:-> failed to update {wait_future.type} "
+                            f"of '{wait_future.node_name}': '{exception}'"
+                        )
                 else:
-                    error_msgs.append(f"{self.__class__.__name__}:-> Timeout while update {wait_future.type} "
-                                      f"of '{wait_future.node_name}'")
+                    error_msgs.append(
+                        f"{self.__class__.__name__}:-> Timeout while update {wait_future.type} "
+                        f"of '{wait_future.node_name}'"
+                    )
                 wait_future.client.destroy()
             # callback, called outside of the lock to avoid dead locks
             if not self._shutdown and self._cb_lifecycle:
@@ -1043,38 +1072,41 @@ class RosStateJsonify:
         finally:
             self._publish_warnings(error_msgs)
 
-    def _thread_update_composables_call(self, nodes: List[RosNode], retry: int = 1, generation: int = -1):
+    def _thread_update_composables_call(self, nodes: list[RosNode], retry: int = 1, generation: int = -1):
         """Updates the list of composable nodes in the specified container nodes."""
-        error_msgs: List[str] = []
+        error_msgs: list[str] = []
         node_ids = {node.id for node in nodes}
         try:
             if self._shutdown:
                 return
-            wait_futures: List[WaitFuture] = []
+            wait_futures: list[WaitFuture] = []
             for node in nodes:
                 Log.debug(f"{self.__class__.__name__}:  update composables nodes for '{node.name}'")
-                create_service_future(nmd.ros_node,
-                                      wait_futures=wait_futures,
-                                      type="composable",
-                                      node_id=node.id,
-                                      node_name=node.name,
-                                      service_name=f"{node.name}/_container/list_nodes",
-                                      srv_type=ListNodes,
-                                      request=ListNodes.Request(),
-                                      callback_group=self._callback_group)
+                create_service_future(
+                    nmd.ros_node,
+                    wait_futures=wait_futures,
+                    type="composable",
+                    node_id=node.id,
+                    node_name=node.name,
+                    service_name=f"{node.name}/_container/list_nodes",
+                    srv_type=ListNodes,
+                    request=ListNodes.Request(),
+                    callback_group=self._callback_group,
+                )
             if not wait_futures:
                 return
             # wait until all services are finished or timed out
             wait_until_futures_done(wait_futures, SERVICE_CALL_TIMEOUT)
             # handle response
-            retry_nodes: List[RosNode] = []
+            retry_nodes: list[RosNode] = []
             for wait_future in wait_futures:
                 if wait_future.finished and wait_future.type == "composable":
                     try:
                         response = wait_future.future.result()
                         if response is not None:
-                            composable = RosComposable(container_name=wait_future.node_name,
-                                                       node_id=wait_future.node_id)
+                            composable = RosComposable(
+                                container_name=wait_future.node_name, node_id=wait_future.node_id
+                            )
                             composable.nodes.extend(response.full_node_names)
                             composable.composableIds = list(zip(response.full_node_names, response.unique_ids))
                             with self._lock:
@@ -1082,15 +1114,19 @@ class RosStateJsonify:
                                 if generation < 0 or generation == self._state_generation:
                                     self._composable_nodes[wait_future.node_id] = composable
                     except Exception as exception:
-                        error_msgs.append(f"{self.__class__.__name__}:-> failed to update composable nodes "
-                                          f"of '{wait_future.node_name}': '{exception}'")
+                        error_msgs.append(
+                            f"{self.__class__.__name__}:-> failed to update composable nodes "
+                            f"of '{wait_future.node_name}': '{exception}'"
+                        )
                 elif not wait_future.finished:
                     if retry < COMPOSABLE_RETRY_MAX:
                         # retry for the node of this future, not for the last node of the loop
                         retry_nodes.append(RosNode(wait_future.node_id, wait_future.node_name))
                     else:
-                        error_msgs.append(f"{self.__class__.__name__}:-> Timeout while update "
-                                          f"{wait_future.type} of '{wait_future.node_name}'")
+                        error_msgs.append(
+                            f"{self.__class__.__name__}:-> Timeout while update "
+                            f"{wait_future.type} of '{wait_future.node_name}'"
+                        )
                 wait_future.client.destroy()
 
             if retry_nodes:

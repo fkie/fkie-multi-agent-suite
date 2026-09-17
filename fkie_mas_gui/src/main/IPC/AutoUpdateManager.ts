@@ -1,3 +1,6 @@
+import { BrowserWindow, ipcMain } from "electron";
+import log from "electron-log";
+import { autoUpdater } from "electron-updater";
 import {
   AuCheckingForUpdateCallback,
   AuDownloadProgressCallback,
@@ -7,9 +10,6 @@ import {
   AuUpdateErrorCallback,
   TAutoUpdateManager,
 } from "@/types";
-import { BrowserWindow, ipcMain } from "electron";
-import log from "electron-log";
-import { autoUpdater } from "electron-updater";
 
 /**
  * Class AutoUpdateManager: Handles autoUpdate of the app

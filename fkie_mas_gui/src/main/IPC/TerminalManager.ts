@@ -1,11 +1,11 @@
-import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "@/types";
-import { TTerminalConfig } from "@/types/TerminalManager";
+import { join } from "node:path";
 import ioIcon from "@public/google_terminal.png?asset";
 import logIcon from "@public/google_text_snippet.png?asset";
 import { BrowserWindow, ipcMain } from "electron";
-import { join } from "node:path";
-import { openUrl } from ".";
+import { TerminalCloseCallback, TerminalManagerEvents, TTerminalManager } from "@/types";
+import { TTerminalConfig } from "@/types/TerminalManager";
 import windowStateKeeper from "../windowStateKeeper";
+import { openUrl } from ".";
 import { ROSInfo } from "./ROSInfo";
 
 type TTerminal = {

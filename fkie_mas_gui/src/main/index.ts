@@ -6,17 +6,18 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
-import { electronApp, is, optimizer } from "@electron-toolkit/utils";
-import appIcon from "@public/mas.png?asset";
-import { BrowserWindow, app, shell } from "electron";
-import log from "electron-log";
-import express from "express";
-import RateLimit from "express-rate-limit";
+
 import fs from "node:fs";
 import os from "node:os";
 import path, { join } from "node:path";
+import { electronApp, is, optimizer } from "@electron-toolkit/utils";
+import appIcon from "@public/mas.png?asset";
+import { app, BrowserWindow, shell } from "electron";
+import log from "electron-log";
+import express from "express";
+import RateLimit from "express-rate-limit";
 import * as sourceMap from "source-map-support";
-import { AutoUpdateManager, DialogManager, ShutdownManager, registerHandlers } from "./IPC";
+import { AutoUpdateManager, DialogManager, registerHandlers, ShutdownManager } from "./IPC";
 import CommandExecutor, { updateDebianPackages } from "./IPC/CommandExecutor";
 import CommandLine from "./IPC/CommandLine";
 import MenuBuilder from "./menu";

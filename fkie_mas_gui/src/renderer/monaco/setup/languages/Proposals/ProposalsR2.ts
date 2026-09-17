@@ -1,6 +1,6 @@
-import { TFileRange } from "@/types/FileRange";
 import { Monaco } from "@monaco-editor/react";
 import { languages } from "monaco-editor";
+import { TFileRange } from "@/types/FileRange";
 import { resolveValue } from "../../utils";
 import { TTagAttributeProposals } from "./TTagAttributeProposals";
 
@@ -169,7 +169,6 @@ export async function getTagProposals(
   range: TFileRange,
   lineContent: string
 ): Promise<languages.CompletionItem[]> {
-
   function createProposal(label: string, insertText: string, documentation: string): languages.CompletionItem {
     return {
       label: label,
@@ -197,7 +196,11 @@ export async function getTagProposals(
       `${open}node name="\${1:NODE_NAME}" pkg="\${2:PACKAGE}" exec="\${3:NODE_EXECUTABLE_NAME}">\n  \n</node${close}`,
       "Add a new ROS node"
     ),
-    createProposal("executable", `${open}executable name="\${1:NAME}" cmd="\${2:COMMAND}" /${close}`, "Add a new executable"),
+    createProposal(
+      "executable",
+      `${open}executable name="\${1:NAME}" cmd="\${2:COMMAND}" /${close}`,
+      "Add a new executable"
+    ),
     createProposal(
       "executable cwd",
       `${open}executable name="\${1:NAME}" cmd="\${2:COMMAND}" cwd="\${3:WORKING_DIRECTORY}" /${close}`,

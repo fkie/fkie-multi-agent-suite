@@ -12,7 +12,7 @@ import { Ros1XmlLanguage } from "./languages/XmlLaunchHighlighter";
 import { Ros2XmlLanguage } from "./languages/XmlLaunchHighlighterR2";
 import { createDocumentSymbols, createXMLDependencyProposals } from "./languages/XmlLaunchProposals";
 import { createDocumentSymbolsR2, createXMLDependencyProposalsR2 } from "./languages/XmlLaunchProposalsR2";
-import { replaceAllXmlVars, ResolverCacheEntry } from "./resolveUtils";
+import { ResolverCacheEntry, replaceAllXmlVars } from "./resolveUtils";
 
 export const SUPPORTED_FILES = ["ros2xml", "ros1xml", "launch", "python", "yaml"];
 

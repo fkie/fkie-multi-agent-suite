@@ -401,7 +401,7 @@ export default class ProviderLaunchConfiguration {
         // Join the rest back in case the value also contains '='
         const value = rest.join("=");
         const result = `${name}=${bashQuote(value)}`;
-        return result
+        return result;
       });
     return exportLines;
   }

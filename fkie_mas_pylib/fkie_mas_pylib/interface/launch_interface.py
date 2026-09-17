@@ -7,35 +7,32 @@
 # ****************************************************************************
 
 import json
-
-from typing import Any
-from typing import List
-from typing import Dict
-from typing import Tuple
 from numbers import Number
+from typing import Any
 
 from fkie_mas_pylib.defines import SEARCH_IN_EXT
 from fkie_mas_pylib.interface import SelfEncoder
-from .runtime_interface import RosParameter
-from .runtime_interface import RosQos
+
+from .runtime_interface import RosParameter, RosQos
 
 
 class LaunchReturnStatus:
-    '''
+    """
     The status message included in replies.
-    '''
-    OK = 'OK'
-    ERROR = 'ERROR'
-    ALREADY_OPEN = 'ALREADY_OPEN'
-    MULTIPLE_BINARIES = 'MULTIPLE_BINARIES'
-    MULTIPLE_LAUNCHES = 'MULTIPLE_LAUNCHES'
-    PARAMS_REQUIRED = 'PARAMS_REQUIRED'
-    FILE_NOT_FOUND = 'FILE_NOT_FOUND'
-    NODE_NOT_FOUND = 'NODE_NOT_FOUND'
-    PACKAGE_NOT_FOUND = 'PACKAGE_NOT_FOUND'
-    CONNECTION_ERROR = 'CONNECTION_ERROR'
+    """
 
-    def __init__(self, code: str, msg: str = '') -> None:
+    OK = "OK"
+    ERROR = "ERROR"
+    ALREADY_OPEN = "ALREADY_OPEN"
+    MULTIPLE_BINARIES = "MULTIPLE_BINARIES"
+    MULTIPLE_LAUNCHES = "MULTIPLE_LAUNCHES"
+    PARAMS_REQUIRED = "PARAMS_REQUIRED"
+    FILE_NOT_FOUND = "FILE_NOT_FOUND"
+    NODE_NOT_FOUND = "NODE_NOT_FOUND"
+    PACKAGE_NOT_FOUND = "PACKAGE_NOT_FOUND"
+    CONNECTION_ERROR = "CONNECTION_ERROR"
+
+    def __init__(self, code: str, msg: str = "") -> None:
         self.code = code
         self.message = msg
 
@@ -44,8 +41,9 @@ class LaunchReturnStatus:
 
 
 class LaunchArgument:
-
-    def __init__(self, name: str, value: str, default_value: Any = None, description: str = None, choices: List[str] = None) -> None:
+    def __init__(
+        self, name: str, value: str, default_value: Any = None, description: str = None, choices: list[str] = None
+    ) -> None:
         self.name = name
         self.value = value
         self.default_value = default_value
@@ -57,11 +55,14 @@ class LaunchArgument:
 
 
 class LaunchLoadReply:
-
-    def __init__(self, *, status: LaunchReturnStatus = LaunchReturnStatus('OK'),
-                 paths: List[str] = None,
-                 args: List[LaunchArgument] = None,
-                 changed_nodes: List[str] = None) -> None:
+    def __init__(
+        self,
+        *,
+        status: LaunchReturnStatus = LaunchReturnStatus("OK"),
+        paths: list[str] = None,
+        args: list[LaunchArgument] = None,
+        changed_nodes: list[str] = None,
+    ) -> None:
         self.status = status
         self.paths = paths if paths is not None else []
         self.args = args if args is not None else []
@@ -72,9 +73,7 @@ class LaunchLoadReply:
 
 
 class LaunchFile:
-
-    def __init__(self, path: str = '', *,
-                 masteruri: str = '', host: str = '') -> None:
+    def __init__(self, path: str = "", *, masteruri: str = "", host: str = "") -> None:
         self.path = path
         self.masteruri = masteruri
         self.host = host
@@ -84,7 +83,7 @@ class LaunchFile:
 
 
 class LaunchLoadRequest:
-    '''
+    """
     The request message to list the ROS packages in given path.
     :param str package: ROS package name
     :param str launch: launch file in the package path. If the package contains
@@ -98,12 +97,20 @@ class LaunchLoadRequest:
     :param str masteruri: starts nodes of this file with specified ROS_MASTER_URI. If host is empty,
                       the nodes are started on the host specified by hostname of the masteruri.
     :param str host: start nodes of this file on specified host.
-    '''
+    """
 
-    def __init__(self, *, ros_package: str = '', launch: str = '', path: str = '',
-                 args: List[LaunchArgument] = [], force_first_file: bool = False,
-                 request_args: bool = False,
-                 masteruri: str = '', host: str = '') -> None:
+    def __init__(
+        self,
+        *,
+        ros_package: str = "",
+        launch: str = "",
+        path: str = "",
+        args: list[LaunchArgument] = [],
+        force_first_file: bool = False,
+        request_args: bool = False,
+        masteruri: str = "",
+        host: str = "",
+    ) -> None:
         self.ros_package = ros_package
         self.launch = launch
         self.path = path
@@ -118,13 +125,13 @@ class LaunchLoadRequest:
 
 
 class LaunchAssociations:
-    '''
+    """
     Represents the associations specified in Launch file.
     :param str node: node (full name)
     :param [str] nodes: list with associated nodes (full name).
-    '''
+    """
 
-    def __init__(self, node: str, nodes: List[str]) -> None:
+    def __init__(self, node: str, nodes: list[str]) -> None:
         self.node = node
         self.nodes = nodes
 
@@ -133,7 +140,7 @@ class LaunchAssociations:
 
 
 class LaunchNodeInfo:
-    '''
+    """
     Represents the launch information for a given node
     :param: unique_name generated unique node name
     :param: node_name the name of the node
@@ -180,43 +187,44 @@ class LaunchNodeInfo:
     :param: on_exit list of actions to execute upon process exit.
     :param: composable_container the name of the node where this node should be loaded.
 
-    '''
-#    : param: exec_name the label used to represent the process.
-#    Defaults to the basename of node executable.
+    """
 
-    def __init__(self, unique_name: str, *,
-                 node_name: str = None,
-                 name_configured: str = None,
-                 node_namespace: str = None,
-                 package_name: str = None,
-                 executable: str = None,
-                 timer_period: float = 0,
-                 respawn: bool = False,
-                 respawn_delay: Number = 0,
-                 args: str = None,
-                 remap_args: List[Tuple[str, str]] = None,
-                 parameters: List[RosParameter] = None,
-                 additional_env: Dict[str, str] = None,
-                 remove_environment: List[str] = None,
-                 launch_prefix: str = None,
-                 output: str = None,
-                 output_format: str = None,
-                 cmd: str = None,
-                 cwd: str = None,
-                 sigterm_timeout: str = None,
-                 sigkill_timeout: str = None,
-                 on_exit: List[Any] = None,
-                 required: bool = False,
-                 file_name: str = None,
-                 file_name_realpath: str = None,
-                 file_range: Dict[str, Number] = {"startLineNumber": 0,
-                                                  "endLineNumber": 0,
-                                                  "startColumn": 0,
-                                                  "endColumn": 0},
-                 launch_context_arg: List[LaunchArgument] = None,
-                 launch_name: str = None,
-                 composable_container: str = None
-                 ) -> None:
+    #    : param: exec_name the label used to represent the process.
+    #    Defaults to the basename of node executable.
+
+    def __init__(
+        self,
+        unique_name: str,
+        *,
+        node_name: str = None,
+        name_configured: str = None,
+        node_namespace: str = None,
+        package_name: str = None,
+        executable: str = None,
+        timer_period: float = 0,
+        respawn: bool = False,
+        respawn_delay: Number = 0,
+        args: str = None,
+        remap_args: list[tuple[str, str]] = None,
+        parameters: list[RosParameter] = None,
+        additional_env: dict[str, str] = None,
+        remove_environment: list[str] = None,
+        launch_prefix: str = None,
+        output: str = None,
+        output_format: str = None,
+        cmd: str = None,
+        cwd: str = None,
+        sigterm_timeout: str = None,
+        sigkill_timeout: str = None,
+        on_exit: list[Any] = None,
+        required: bool = False,
+        file_name: str = None,
+        file_name_realpath: str = None,
+        file_range: dict[str, Number] = {"startLineNumber": 0, "endLineNumber": 0, "startColumn": 0, "endColumn": 0},
+        launch_context_arg: list[LaunchArgument] = None,
+        launch_name: str = None,
+        composable_container: str = None,
+    ) -> None:
         self.node_name = node_name
         self.name_configured = name_configured
         self.node_namespace = node_namespace
@@ -249,7 +257,7 @@ class LaunchNodeInfo:
 
 
 class LaunchContent:
-    '''
+    """
     Report the nodes of a launch file.
     :param str path: full path of the launch file with contains the reported nodes.
     :param Argument args: arguments used to load the launch file.
@@ -257,15 +265,19 @@ class LaunchContent:
                           the nodes are started on the host specified by hostname of the masteruri.
     :param str host: if not empty, the nodes of this launch file are launched on specified host.
     :param [str] nodes: list of node names.
-   '''
+    """
 
-    def __init__(self, path: str, *,
-                 args: List[LaunchArgument] = None,
-                 masteruri: str = '',
-                 host: str = '',
-                 nodes: List[str] = None,
-                 parameters: List[RosParameter] = None,
-                 associations: List[LaunchAssociations] = None) -> None:
+    def __init__(
+        self,
+        path: str,
+        *,
+        args: list[LaunchArgument] = None,
+        masteruri: str = "",
+        host: str = "",
+        nodes: list[str] = None,
+        parameters: list[RosParameter] = None,
+        associations: list[LaunchAssociations] = None,
+    ) -> None:
         self.path = path
         self.args = args or []
         self.masteruri = masteruri
@@ -273,25 +285,29 @@ class LaunchContent:
         self.nodes = nodes or []
         self.parameters = parameters or []
         self.associations = associations or []
-        self.warnings: List[str] = []
-        self.env: Dict[str, str] = None
+        self.warnings: list[str] = []
+        self.env: dict[str, str] = None
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
 
 
 class RosRun:
-    '''
+    """
     Run ros node
-    '''
+    """
 
-    def __init__(self, package: str, binary: str, *,
-                 name: str = '',
-                 ns: str = '',
-                 args: List[str] = None,
-                 ros_args: List[str] = None,
-                 prefix: str = ''
-                 ) -> None:
+    def __init__(
+        self,
+        package: str,
+        binary: str,
+        *,
+        name: str = "",
+        ns: str = "",
+        args: list[str] = None,
+        ros_args: list[str] = None,
+        prefix: str = "",
+    ) -> None:
         self.package = package
         self.binary = binary
         self.name = name
@@ -303,15 +319,13 @@ class RosRun:
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
 
-class RosRunReply:
-    '''
-    Reply to run ros node
-    '''
 
-    def __init__(self, package: str, binary: str, *,
-                 result: bool = False,
-                 message: str = ""
-                 ) -> None:
+class RosRunReply:
+    """
+    Reply to run ros node
+    """
+
+    def __init__(self, package: str, binary: str, *, result: bool = False, message: str = "") -> None:
         self.package = package
         self.binary = binary
         self.result = result
@@ -319,25 +333,28 @@ class RosRunReply:
 
 
 class LaunchNode:
-    '''
+    """
     Starts a ROS node by full name.
     :param str name: full name of the ros node exists in the launch file.
     :param str opt_binary: the full path of the binary. Used in case of multiple binaries in the same package.
     :param str opt_launch: full name of the launch file to use. Used in case the node with same name exists in more then one loaded launch file.
     :param str loglevel: log level
     :param str cmd_prefix: custom command prefix. It will be prepended before launch prefix.*/
-    '''
+    """
 
-    def __init__(self, name: str, *,
-                 opt_binary: str = '',
-                 opt_launch: str = '',
-                 loglevel: str = '',
-                 logformat: str = '',
-                 masteruri: str = '',
-                 reload_global_param: bool = False,
-                 cmd_prefix: str = '',
-                 ignore_timer: bool = False
-                 ) -> None:
+    def __init__(
+        self,
+        name: str,
+        *,
+        opt_binary: str = "",
+        opt_launch: str = "",
+        loglevel: str = "",
+        logformat: str = "",
+        masteruri: str = "",
+        reload_global_param: bool = False,
+        cmd_prefix: str = "",
+        ignore_timer: bool = False,
+    ) -> None:
         self.name = name
         self.opt_binary = opt_binary
         self.opt_launch = opt_launch
@@ -353,18 +370,17 @@ class LaunchNode:
 
 
 class LaunchNodeReply:
-    '''
+    """
     The response message with load status
     :param str name: name of the node.
     :param str status: the status of the start process. One of the codes of LaunchReturnStatus. Default: 'OK'
     :param [str] path: a list of paths with binaries for a node, only if MULTIPLE_BINARIES is returned.
     :param [str] launch: a list with names launch files, only if MULTIPLE_LAUNCHES is returned.
-    '''
+    """
 
-    def __init__(self, name: str, *,
-                 status: str = 'OK',
-                 paths: List[str] = None,
-                 launch_files: List[str] = None) -> None:
+    def __init__(
+        self, name: str, *, status: str = "OK", paths: list[str] = None, launch_files: list[str] = None
+    ) -> None:
         self.name = name
         self.status = LaunchReturnStatus(status)
         self.paths = paths if paths is not None else []
@@ -375,14 +391,13 @@ class LaunchNodeReply:
 
 
 class LaunchInterpretPathRequest:
-    '''
+    """
     Request to parse the text for included paths.
     :param str text: line in the launch config.
     :param [LaunchArgument] launch: a list of the arguments used load the launch file.
-    '''
+    """
 
-    def __init__(self, text: str, *,
-                 args: List[LaunchArgument] = []) -> None:
+    def __init__(self, text: str, *, args: list[LaunchArgument] = []) -> None:
         self.text = text
         self.args = args
 
@@ -391,20 +406,18 @@ class LaunchInterpretPathRequest:
 
 
 class LaunchInterpretPathReply:
-    '''
+    """
     Response for a request to parse the text for included paths.
     :param str text: line in the launch config.
     :param str status: the status of the parsing. One of the codes of LaunchReturnStatus. Default: 'OK'
     :param str path: the path of the configuration file containing the text.
     :param bool exists: True if detected include path exists.
     :param [LaunchArgument] launch: a list of the arguments used load the launch file.
-    '''
+    """
 
-    def __init__(self, text: str, *,
-                 status: str = 'OK',
-                 path: str = '',
-                 exists: bool = False,
-                 args: List[LaunchArgument] = []) -> None:
+    def __init__(
+        self, text: str, *, status: str = "OK", path: str = "", exists: bool = False, args: list[LaunchArgument] = []
+    ) -> None:
         self.text = text
         self.status = LaunchReturnStatus(status)
         self.path = path
@@ -416,13 +429,17 @@ class LaunchInterpretPathReply:
 
 
 class LaunchIncludedFilesRequest:
-    def __init__(self, path: str, *,
-                 recursive: bool = True,
-                 unique: bool = False,
-                 pattern: List[str] = [],
-                 search_in_ext: List[str] = SEARCH_IN_EXT,
-                 args: List[LaunchArgument] = []) -> None:
-        '''
+    def __init__(
+        self,
+        path: str,
+        *,
+        recursive: bool = True,
+        unique: bool = False,
+        pattern: list[str] = [],
+        search_in_ext: list[str] = SEARCH_IN_EXT,
+        args: list[LaunchArgument] = [],
+    ) -> None:
+        """
         Request to parse the given file for included files.
         :param str path: file to parse.
         :param bool recursive: True to read recursive. Default: True.
@@ -430,7 +447,7 @@ class LaunchIncludedFilesRequest:
         :param [str] pattern: pattern to change include detection.
         :param [str] search_in_ext: search only for files with given extensions. Default: ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
         :param [LaunchArgument] include_args: use include launch arguments.
-        '''
+        """
         self.path = path
         self.recursive = recursive
         self.unique = unique
@@ -443,19 +460,21 @@ class LaunchIncludedFilesRequest:
 
 
 class LaunchIncludedFile:
-
-    def __init__(self, path: str,
-                 line_number: int,
-                 inc_path: str,
-                 inc_realpath: str,
-                 exists: bool,
-                 raw_inc_path: str,
-                 rec_depth: int,
-                 args: List[LaunchArgument],
-                 default_inc_args: List[LaunchArgument],
-                 size: int = 0,
-                 conditional_excluded: bool = False):
-        '''
+    def __init__(
+        self,
+        path: str,
+        line_number: int,
+        inc_path: str,
+        inc_realpath: str,
+        exists: bool,
+        raw_inc_path: str,
+        rec_depth: int,
+        args: list[LaunchArgument],
+        default_inc_args: list[LaunchArgument],
+        size: int = 0,
+        conditional_excluded: bool = False,
+    ):
+        """
         Representation of an included file found in given string or path of a file.
 
         :param str path: current reading file.
@@ -468,7 +487,7 @@ class LaunchIncludedFile:
         :param [LaunchArgument] default_inc_args: a list with default arguments defined in 'inc_path'.
         :param int size: size of the file in bytes.
         :param bool conditional_excluded: if True the included file is not loaded be current configuration.
-        '''
+        """
         self.path = path
         self.line_number = line_number
         self.inc_path = inc_path
@@ -486,17 +505,14 @@ class LaunchIncludedFile:
 
 
 class LaunchMessageStruct:
-    def __init__(self, msg_type: str, *,
-                 data: Dict = {},
-                 valid: bool = False,
-                 message: str = '') -> None:
-        '''
+    def __init__(self, msg_type: str, *, data: dict = {}, valid: bool = False, message: str = "") -> None:
+        """
         Represend the structure of a ROS message.
         :param str msg_type: Type of the message.
         :param dict data: structure of the ROS message as dictionary. Each field is at least described by {type: 'msg_type', name: 'slot', def: 'subresult or []', default_value: '[]', is_array: 'true or false'}.
         :param bool valid: True if the data for the message type was loaded successfully.
         :param string message: Error message if valid is False.
-        '''
+        """
         self.msg_type = msg_type
         self.data = data
         self.valid = valid
@@ -504,18 +520,21 @@ class LaunchMessageStruct:
 
 
 class LaunchPublishMessage:
-    def __init__(self, topic_name: str,
-                 msg_type: str, *,
-                 data: Dict = {},
-                 rate: float = 0.0,
-                 once: bool = False,
-                 latched: bool = False,
-                 verbose: bool = False,
-                 use_rostime: bool = False,
-                 substitute_keywords: bool = True,
-                 qos: RosQos = RosQos()
-                 ) -> None:
-        '''
+    def __init__(
+        self,
+        topic_name: str,
+        msg_type: str,
+        *,
+        data: dict = {},
+        rate: float = 0.0,
+        once: bool = False,
+        latched: bool = False,
+        verbose: bool = False,
+        use_rostime: bool = False,
+        substitute_keywords: bool = True,
+        qos: RosQos = RosQos(),
+    ) -> None:
+        """
         Publisher configuration.
         :param str topic_name: the ROS topic name.
         :param str msg_type: Type of the message.
@@ -527,7 +546,7 @@ class LaunchPublishMessage:
         :param bool use_rostime: use rostime for time stamps, else walltime is used.
         :param bool substitute_keywords: When publishing with a rate, performs keyword ('now' or 'auto') substitution for each message.
         :param RosQos qos: Quality of service subscription options (Only ROS2).
-        '''
+        """
         self.topic_name = topic_name
         self.msg_type = msg_type
         self.data = data
@@ -544,15 +563,13 @@ class LaunchPublishMessage:
 
 
 class LaunchCallService:
-    def __init__(self, service_name: str,
-                 srv_type: str, *,
-                 data: Dict = {}) -> None:
-        '''
+    def __init__(self, service_name: str, srv_type: str, *, data: dict = {}) -> None:
+        """
         Publisher configuration.
         :param str service_name: the ROS service name.
         :param str srv_type: Type of the request message.
         :param dict data: structure of the ROS request message as dictionary.
-        '''
+        """
         self.service_name = service_name
         self.srv_type = srv_type
         self.data = data

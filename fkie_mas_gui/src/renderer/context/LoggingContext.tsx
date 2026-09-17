@@ -1,11 +1,6 @@
 import React, { createContext, useCallback, useMemo, useState } from "react";
 
-import {
-    emitStateError,
-    emitStateInfo,
-    emitStateSuccess,
-    emitStateWarn,
-} from "@/renderer/components/layout/events";
+import { emitStateError, emitStateInfo, emitStateSuccess, emitStateWarn } from "@/renderer/components/layout/events";
 import { LogEvent, LoggingLevel } from "@/renderer/models";
 import { JSONObject, TResult } from "@/types";
 import { useSetting } from "../hooks/useSetting";

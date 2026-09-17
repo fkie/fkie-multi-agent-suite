@@ -9,18 +9,18 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import {
-    Alert,
-    Button,
-    Divider,
-    IconButton,
-    Menu,
-    MenuItem,
-    Paper,
-    Select,
-    Stack,
-    ToggleButton,
-    Tooltip,
-    Typography,
+  Alert,
+  Button,
+  Divider,
+  IconButton,
+  Menu,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  ToggleButton,
+  Tooltip,
+  Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
@@ -214,7 +214,7 @@ export default function TopicEchoPanel(props: TopicEchoPanelProps): JSX.Element 
     // Get messageType from node list of the provider
     const nodeList: RosNode[] | undefined = rosCtx.mapProviderRosNodes.get(selectedProvider);
     // TODO: select QoS depending on publishers QoS, see choose_qos: https://github.com/ros2/ros2cli/blob/rolling/ros2topic/ros2topic/verb/echo.py
-    let qos: RosQos | undefined = undefined;
+    let qos: RosQos | undefined;
     for (const node of nodeList || []) {
       for (const topic of node.subscribers || []) {
         if (msgType === "" && topicName === topic.name) {

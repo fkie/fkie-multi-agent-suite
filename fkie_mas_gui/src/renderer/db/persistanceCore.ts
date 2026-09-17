@@ -1,6 +1,4 @@
-import { JSONValue } from "@/types";
 import { IDBPDatabase } from "idb";
-
 import {
   AppDBSchema,
   dbClear,
@@ -8,11 +6,12 @@ import {
   dbGetAll,
   dbPut,
   dbPutMany,
-  identityTransformer,
   ITransformer,
+  identityTransformer,
   StoreName,
   StoreRecord,
 } from "@/renderer/db/appDB";
+import { JSONValue } from "@/types";
 
 /* ======================== Tab Identity =========================== */
 

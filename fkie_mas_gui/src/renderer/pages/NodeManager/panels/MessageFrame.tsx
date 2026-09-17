@@ -1,14 +1,13 @@
 import { Divider, Stack, Tooltip, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
+import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import JsonView from "react18-json-view";
-
 import { CopyButton } from "@/renderer/components/UI";
 import { useAppState } from "@/renderer/hooks/useAppState";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { RosQos, TSubscriberEventExt } from "@/renderer/models";
 import { qosFromJson } from "@/renderer/models/RosQos";
 import { findIn } from "@/renderer/utils";
-import { emitCustomEvent, useCustomEventListener } from "react-custom-events";
 import { TEventCollapsedState } from "../../../components/layout/events";
 
 interface MessageFrameProps {

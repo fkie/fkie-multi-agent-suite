@@ -17,8 +17,8 @@ import {
   SystemWarningGroup,
 } from "../models";
 import ConnectionState from "./ConnectionState";
-import Provider from "./Provider";
 import { EVENT_NODE_CMD_STATE, EVENT_NODE_DIAGNOSTIC, EVENT_SYSTEM_DIAGNOSTICS } from "./eventTypes";
+import Provider from "./Provider";
 
 export { ConnectionState };
 

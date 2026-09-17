@@ -7,17 +7,17 @@
 # ****************************************************************************
 
 
-from typing import List
 import threading
 import time
 
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+from fkie_mas_pylib.settings import Settings
+from fkie_mas_pylib.system.host import get_host_name
 from rclpy.clock import Clock
 
 import fkie_mas_daemon as nmd
-from fkie_mas_pylib.settings import Settings
-from fkie_mas_pylib.system.host import get_host_name
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from fkie_mas_daemon.time_helpers import rostime2float
+
 from .cpu_load import CpuLoad
 from .hdd_usage import HddUsage
 from .mem_usage import MemUsage
@@ -25,7 +25,6 @@ from .net_load import NetLoad
 
 
 class DiagnosticObj(DiagnosticStatus):
-
     def __init__(self, msg=DiagnosticStatus(), timestamp=0):
         self.msg = msg
         self.timestamp = timestamp
@@ -70,7 +69,6 @@ class DiagnosticObj(DiagnosticStatus):
 
 
 class Service:
-
     DEBOUNCE_DIAGNOSTICS = 0.5
 
     def __init__(self, settings: Settings, callbackDiagnostics=None):
@@ -82,11 +80,13 @@ class Service:
         self._update_timer = None
         self._callbackDiagnostics = callbackDiagnostics
         self._sub_diag = None
-        self._local_nodes: List[str] = []
+        self._local_nodes: list[str] = []
         self._sub_diag_agg = nmd.ros_node.create_subscription(
-            DiagnosticArray, '/diagnostics_agg', self._callback_diagnostics_agg, 10)
+            DiagnosticArray, "/diagnostics_agg", self._callback_diagnostics_agg, 10
+        )
         self._sub_diag = nmd.ros_node.create_subscription(
-            DiagnosticArray, 'diagnostics', self._callback_diagnostics, 10)
+            DiagnosticArray, "diagnostics", self._callback_diagnostics, 10
+        )
         hostname = get_host_name()
 
         self.sensors = []
@@ -103,15 +103,14 @@ class Service:
     def reload_parameter(self, settings: Settings):
         pass
 
-    def update_local_node_names(self, local_nodes: List[str]):
+    def update_local_node_names(self, local_nodes: list[str]):
         with self._mutex:
             self._local_nodes = local_nodes
 
     def _callback_diagnostics_agg(self, msg: DiagnosticArray):
         # aggregated diagnostics are stored
         with self._mutex:
-            stamp = float(msg.header.stamp.sec) + \
-                float(msg.header.stamp.nanosec) / 1000000000.0
+            stamp = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec) / 1000000000.0
             # stamp = time.time()
             for status in msg.status:
                 try:
@@ -131,8 +130,7 @@ class Service:
                     self._callbackDiagnostics(msg)
                 elif self._update_timer is None:
                     # start the timer
-                    self._update_timer = threading.Timer(
-                        self.DEBOUNCE_DIAGNOSTICS, self._publish_diagnostics)
+                    self._update_timer = threading.Timer(self.DEBOUNCE_DIAGNOSTICS, self._publish_diagnostics)
                     self._update_timer.start()
 
     def _callback_diagnostics(self, msg: DiagnosticArray):
@@ -172,12 +170,12 @@ class Service:
             result.header.stamp = self._clock.now().to_msg()
             for sensor in self.sensors:
                 try:
-                    diag_msg = sensor.last_state(
-                        rostime2float(now), filter_level, filter_ts)
+                    diag_msg = sensor.last_state(rostime2float(now), filter_level, filter_ts)
                     if diag_msg is not None:
                         result.status.append(diag_msg)
                 except:
                     import traceback
+
                     print(traceback.print_exc())
         return result
 
@@ -190,7 +188,7 @@ class Service:
                     # level is reported as bytes or int, depending on rclpy version
                     level = diag_obj.msg.level
                     if isinstance(level, (bytes, bytearray)):
-                        level = int.from_bytes(level, byteorder='big')
+                        level = int.from_bytes(level, byteorder="big")
                     if level >= filter_level:
                         result.status.append(diag_obj.msg)
         return result

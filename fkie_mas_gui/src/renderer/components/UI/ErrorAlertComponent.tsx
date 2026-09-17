@@ -1,4 +1,3 @@
-import useInterval from "@/renderer/hooks/useInterval";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
@@ -14,6 +13,7 @@ import {
 } from "@mui/material";
 import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar } from "notistack";
 import { forwardRef, useCallback, useEffect, useState } from "react";
+import useInterval from "@/renderer/hooks/useInterval";
 
 interface ErrorAlertComponentProps {
   id: SnackbarKey | undefined;

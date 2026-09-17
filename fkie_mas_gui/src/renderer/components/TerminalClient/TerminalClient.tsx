@@ -5,15 +5,14 @@ MIT License
 Copyright (c) 2016 Shuanglei Tao <tsl0922@gmail.com>
 */
 
+import { Box } from "@mui/material";
 import { ITerminalOptions, ITheme } from "@xterm/xterm";
-
+import { useMemo } from "react";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { TCmdTerminal } from "@/renderer/providers";
 import Provider from "@/renderer/providers/Provider";
 import { CmdType } from "@/types";
-import { Box } from "@mui/material";
-import { useMemo } from "react";
 import { ClientOptions, Terminal } from "./Terminal";
 
 // TODO: Add parameter for this

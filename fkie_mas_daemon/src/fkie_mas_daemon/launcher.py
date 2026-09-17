@@ -7,49 +7,46 @@
 # ****************************************************************************
 
 import os
+import shlex
+import socket
+
+import roslaunch
 import roslib
 import rospkg
 import rospy
-import shlex
-import socket
-import roslaunch
+
 try:
     import xmlrpclib as xmlrpcclient
 except ImportError:
     import xmlrpc.client as xmlrpcclient
 
-from rosgraph.network import get_local_addresses
-from fkie_mas_pylib import ros_pkg
-from fkie_mas_pylib.defines import LOG_PATH
-from fkie_mas_pylib.defines import RESPAWN_SCRIPT
+from fkie_mas_pylib.defines import LOG_PATH, RESPAWN_SCRIPT
 from fkie_mas_pylib.launch import xml_ros1
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.system import exceptions
-from fkie_mas_pylib.system import host
-from fkie_mas_pylib.system import screen
-from fkie_mas_pylib.system import ros1_masteruri
-
-
-from fkie_mas_daemon.strings import isstring
-from fkie_mas_daemon.strings import utf8
-
+from fkie_mas_pylib.system import exceptions, host, ros1_masteruri, screen
 from fkie_mas_pylib.system.supervised_popen import SupervisedPopen
+from rosgraph.network import get_local_addresses
+
+from fkie_mas_daemon.strings import isstring, utf8
+from fkie_mas_pylib import ros_pkg
+
 from .startcfg import StartConfig
 
 STARTED_BINARIES = dict()
-''':var STARTED_BINARIES: dictionary with nodes and tuple of (paths of started binaries and their last modification time). Used to detect changes on binaries.'''
+""":var STARTED_BINARIES: dictionary with nodes and tuple of (paths of started binaries and their last modification time). Used to detect changes on binaries."""
 
 
-def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel='', logformat='', reload_global_param=False, cmd_prefix=''):
-    '''
+def create_start_config(
+    node, launchcfg, executable="", masteruri=None, loglevel="", logformat="", reload_global_param=False, cmd_prefix=""
+):
+    """
     :param str cmd_prefix: custom command prefix. It will be prepended before launch prefix.
     :return: Returns start configuration created from loaded launch file.
     :rtype: fkie_mas_daemon.startcfg.StartConfig
-    '''
+    """
     n = launchcfg.get_node(node)
     if n is None:
-        raise exceptions.StartException(
-            "Node '%s' not found in launch file %s" % (node, launchcfg.filename))
+        raise exceptions.StartException("Node '%s' not found in launch file %s" % (node, launchcfg.filename))
     result = StartConfig(n.package, n.type)
     result.config_path = launchcfg.filename
     if executable:
@@ -58,11 +55,11 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     result.namespace = n.namespace
     result.fullname = node
     # set launch prefix
-    prefix = n.launch_prefix if n.launch_prefix is not None else ''
-    if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
+    prefix = n.launch_prefix if n.launch_prefix is not None else ""
+    if prefix.lower() == "screen" or prefix.lower().find("screen ") != -1:
         Log.info("SCREEN prefix removed before start!")
-        prefix = ''
-    result.prefix = '%s %s' % (cmd_prefix, prefix) if cmd_prefix else prefix
+        prefix = ""
+    result.prefix = "%s %s" % (cmd_prefix, prefix) if cmd_prefix else prefix
     result.env = {key: value for key, value in n.env_args}
     # set remapings
     result.remaps = {remap[0]: remap[1] for remap in n.remap_args}
@@ -71,17 +68,18 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
         result.respawn = n.respawn
         if n.respawn_delay > 0:
             result.respawn_delay = n.respawn_delay
-        respawn_params = _get_respawn_params(rospy.names.ns_join(
-            n.namespace, n.name), launchcfg.roscfg.params, result.respawn_delay)
-        result.respawn_max = respawn_params['max']
-        result.respawn_min_runtime = respawn_params['min_runtime']
-        result.respawn_delay = respawn_params['delay']
+        respawn_params = _get_respawn_params(
+            rospy.names.ns_join(n.namespace, n.name), launchcfg.roscfg.params, result.respawn_delay
+        )
+        result.respawn_max = respawn_params["max"]
+        result.respawn_min_runtime = respawn_params["min_runtime"]
+        result.respawn_delay = respawn_params["delay"]
     # set log level
     result.loglevel = loglevel
     result.logformat = logformat
     # set masteruri and host config
-    if 'ROS_MASTER_URI' in result.env:
-        result.masteruri = result.env['ROS_MASTER_URI']
+    if "ROS_MASTER_URI" in result.env:
+        result.masteruri = result.env["ROS_MASTER_URI"]
         result.host = launchcfg.host
         if not result.host and masteruri:
             result.host = host.get_hostname(masteruri)
@@ -104,8 +102,13 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
         global_params = get_global_params(launchcfg.roscfg)
         result.params.update(global_params)
         Log.info("add global parameter for '%s'" % launchcfg.filename)
-        Log.debug("add global parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(
-            val)[:80], '...' if len(utf8(val)) > 80 else'') for key, val in global_params.items()))
+        Log.debug(
+            "add global parameter:\n  %s",
+            "\n  ".join(
+                "%s: %s%s" % (key, utf8(val)[:80], "..." if len(utf8(val)) > 80 else "")
+                for key, val in global_params.items()
+            ),
+        )
         launchcfg.global_param_done.append(result.masteruri)
     # add params and clear_params
     nodens = "%s%s%s" % (n.namespace, n.name, rospy.names.SEP)
@@ -117,10 +120,14 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
             result.clear_params.append(cparam)
     if reload_global_param:
         result.clear_params.extend(get_global_clear_params(launchcfg.roscfg))
-    Log.debug("set delete parameter:\n  %s",
-              '\n  '.join(result.clear_params))
-    Log.debug("add parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(val)[
-        :80], '...' if len(utf8(val)) > 80 else '') for key, val in result.params.items()))
+    Log.debug("set delete parameter:\n  %s", "\n  ".join(result.clear_params))
+    Log.debug(
+        "add parameter:\n  %s",
+        "\n  ".join(
+            "%s: %s%s" % (key, utf8(val)[:80], "..." if len(utf8(val)) > 80 else "")
+            for key, val in result.params.items()
+        ),
+    )
     return result
 
 
@@ -142,7 +149,7 @@ def remove_src_binary(cmdlist):
     count = 0
     if len(cmdlist) > 1:
         for c in cmdlist:
-            if c.find('/src/') == -1:
+            if c.find("/src/") == -1:
                 result.append(c)
                 count += 1
     else:
@@ -155,24 +162,24 @@ def remove_src_binary(cmdlist):
 
 
 def run_node(startcfg):
-    '''
+    """
     Start a node local or on specified host using a :class:`.startcfg.StartConfig`
 
     :param startcfg: start configuration e.g. returned by :meth:`create_start_config`
     :type startcfg: :class:`fkie_mas_daemon.startcfg.StartConfig`
     :raise exceptions.StartException: on errors
     :raise exceptions.BinarySelectionRequest: on multiple binaries
-    '''
+    """
     hostname = startcfg.hostname
     nodename = roslib.names.ns_join(startcfg.namespace, startcfg.name)
-    binary = ''
+    binary = ""
     if not hostname or host.is_local(hostname, wait=True):
         # run on local host
         # interpret arguments with path elements
         args = []
         for arg in startcfg.args:
             new_arg = arg
-            if arg.startswith('$(find'):
+            if arg.startswith("$(find"):
                 new_arg = xml_ros1.interpret_path(arg)
                 Log.debug("interpret arg '%s' to '%s'" % (arg, new_arg))
             args.append(new_arg)
@@ -188,22 +195,19 @@ def run_node(startcfg):
         # get binary path from package
         if not cmd_type:
             try:
-                cmd = roslib.packages.find_node(
-                    startcfg.package, startcfg.binary)
+                cmd = roslib.packages.find_node(startcfg.package, startcfg.binary)
             except (roslib.packages.ROSPkgException, rospkg.ResourceNotFound) as e:
                 # multiple nodes, invalid package
                 Log.warn("resource not found: %s" % utf8(e))
-                raise exceptions.ResourceNotFound(
-                    startcfg.package, "resource not found: %s" % utf8(e))
+                raise exceptions.ResourceNotFound(startcfg.package, "resource not found: %s" % utf8(e))
             if isstring(cmd):
                 cmd = [cmd]
             if cmd is None or len(cmd) == 0:
-                raise exceptions.StartException(
-                    '%s in package [%s] not found!' % (startcfg.binary, startcfg.package))
+                raise exceptions.StartException("%s in package [%s] not found!" % (startcfg.binary, startcfg.package))
             cmd = remove_src_binary(cmd)
             if len(cmd) > 1:
                 # Open selection for executables
-                err = 'Multiple executables with same name in package [%s]  found:' % startcfg.package
+                err = "Multiple executables with same name in package [%s]  found:" % startcfg.package
                 raise exceptions.BinarySelectionRequest(cmd, err)
             else:
                 cmd_type = cmd[0]
@@ -218,31 +222,29 @@ def run_node(startcfg):
         # set environment
         new_env = dict(os.environ)
         # set display variable to local display
-        if 'DISPLAY' in startcfg.env:
-            if not startcfg.env['DISPLAY'] or startcfg.env['DISPLAY'] == 'remote':
-                del startcfg.env['DISPLAY']
+        if "DISPLAY" in startcfg.env:
+            if not startcfg.env["DISPLAY"] or startcfg.env["DISPLAY"] == "remote":
+                del startcfg.env["DISPLAY"]
         # else:
         #    new_env['DISPLAY'] = ':0'
         # add environment from launch
         new_env.update(startcfg.env)
         if startcfg.namespace:
-            new_env['ROS_NAMESPACE'] = startcfg.namespace
+            new_env["ROS_NAMESPACE"] = startcfg.namespace
         # set logging
         if startcfg.logformat:
-            new_env['ROSCONSOLE_FORMAT'] = '%s' % startcfg.logformat
+            new_env["ROSCONSOLE_FORMAT"] = "%s" % startcfg.logformat
         if startcfg.loglevel:
-            new_env['ROSCONSOLE_CONFIG_FILE'] = _rosconsole_cfg_file(
-                startcfg.package, startcfg.loglevel)
+            new_env["ROSCONSOLE_CONFIG_FILE"] = _rosconsole_cfg_file(startcfg.package, startcfg.loglevel)
         # handle respawn
         if startcfg.respawn:
             if startcfg.respawn_delay > 0:
-                new_env['RESPAWN_DELAY'] = '%d' % startcfg.respawn_delay
-            respawn_params = _get_respawn_params(
-                startcfg.fullname, startcfg.params)
-            if respawn_params['max'] > 0:
-                new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
-            if respawn_params['min_runtime'] > 0:
-                new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
+                new_env["RESPAWN_DELAY"] = "%d" % startcfg.respawn_delay
+            respawn_params = _get_respawn_params(startcfg.fullname, startcfg.params)
+            if respawn_params["max"] > 0:
+                new_env["RESPAWN_MAX"] = "%d" % respawn_params["max"]
+            if respawn_params["min_runtime"] > 0:
+                new_env["RESPAWN_MIN_RUNTIME"] = "%d" % respawn_params["min_runtime"]
             cmd_type = "%s %s %s" % (RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
         else:
             cmd_type = "%s %s" % (startcfg.prefix, cmd_type)
@@ -251,25 +253,28 @@ def run_node(startcfg):
         if masteruri is None:
             masteruri = ros1_masteruri.from_ros()
         if masteruri is not None:
-            if 'ROS_MASTER_URI' not in startcfg.env:
-                new_env['ROS_MASTER_URI'] = masteruri
+            if "ROS_MASTER_URI" not in startcfg.env:
+                new_env["ROS_MASTER_URI"] = masteruri
             # host in startcfg is a nmduri -> get host name
             ros_hostname = host.get_ros_hostname(masteruri, hostname)
             if ros_hostname:
                 addr = socket.gethostbyname(ros_hostname)
                 if addr in set(ip for ip in get_local_addresses()):
-                    Log.info('set ROS_HOSTNAME to %s' % ros_hostname)
-                    new_env['ROS_HOSTNAME'] = ros_hostname
+                    Log.info("set ROS_HOSTNAME to %s" % ros_hostname)
+                    new_env["ROS_HOSTNAME"] = ros_hostname
             # load params to ROS master
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params)
         # start
-        cmd_str = utf8('%s %s %s' % (screen_prefix, cmd_type, ' '.join(args)))
-        Log.info("%s (launch_file: '%s', masteruri: %s)" %
-                 (cmd_str, startcfg.config_path, masteruri))
-        Log.debug(
-            "environment while run node '%s': '%s'" % (cmd_str, new_env))
-        SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" %
-                        startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
+        cmd_str = utf8("%s %s %s" % (screen_prefix, cmd_type, " ".join(args)))
+        Log.info("%s (launch_file: '%s', masteruri: %s)" % (cmd_str, startcfg.config_path, masteruri))
+        Log.debug("environment while run node '%s': '%s'" % (cmd_str, new_env))
+        SupervisedPopen(
+            shlex.split(cmd_str),
+            cwd=cwd,
+            env=new_env,
+            object_id="run_node_%s" % startcfg.fullname,
+            description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)),
+        )
     else:
         # TODO add support for start node on remote daemon
         pass
@@ -288,14 +293,14 @@ def run_node(startcfg):
 
 
 def changed_binaries(nodes):
-    '''
+    """
     Checks for each ROS-node however the binary used for the start was changed.
 
     :param nodes: list of ROS-node names to check
     :type nodes: list(str)
     :return: list with ROS-nodes with changed binary
     :rtype: list(str)
-    '''
+    """
     result = []
     global STARTED_BINARIES
     for nodename in nodes:
@@ -309,34 +314,35 @@ def changed_binaries(nodes):
         except Exception:
             print(" Error while check changed binary for %s" % nodename)
             import traceback
+
             print(traceback.format_exc())
     return result
 
 
-def _rosconsole_cfg_file(package, loglevel='INFO'):
-    result = os.path.join(LOG_PATH, '%s.rosconsole.config' % package)
-    with open(result, 'w') as cfg_file:
-        cfg_file.write('log4j.logger.ros=%s\n' % loglevel)
-        cfg_file.write('log4j.logger.ros.roscpp=INFO\n')
-        cfg_file.write('log4j.logger.ros.roscpp.superdebug=WARN\n')
+def _rosconsole_cfg_file(package, loglevel="INFO"):
+    result = os.path.join(LOG_PATH, "%s.rosconsole.config" % package)
+    with open(result, "w") as cfg_file:
+        cfg_file.write("log4j.logger.ros=%s\n" % loglevel)
+        cfg_file.write("log4j.logger.ros.roscpp=INFO\n")
+        cfg_file.write("log4j.logger.ros.roscpp.superdebug=WARN\n")
     return result
 
 
 def _get_respawn_params(node, params, respawn_delay_value=0):
-    result = {'max': 0, 'min_runtime': 0, 'delay': respawn_delay_value}
-    respawn_max = rospy.names.ns_join(node, 'respawn/max')
-    respawn_min_runtime = rospy.names.ns_join(node, 'respawn/min_runtime')
-    respawn_delay = rospy.names.ns_join(node, 'respawn/delay')
+    result = {"max": 0, "min_runtime": 0, "delay": respawn_delay_value}
+    respawn_max = rospy.names.ns_join(node, "respawn/max")
+    respawn_min_runtime = rospy.names.ns_join(node, "respawn/min_runtime")
+    respawn_delay = rospy.names.ns_join(node, "respawn/delay")
     try:
-        result['max'] = int(params[respawn_max].value)
+        result["max"] = int(params[respawn_max].value)
     except Exception:
         pass
     try:
-        result['min_runtime'] = int(params[respawn_min_runtime].value)
+        result["min_runtime"] = int(params[respawn_min_runtime].value)
     except Exception:
         pass
     try:
-        result['delay'] = int(params[respawn_delay].value)
+        result["delay"] = int(params[respawn_delay].value)
     except Exception:
         pass
     return result
@@ -364,7 +370,7 @@ def _load_parameters(masteruri, params, clear_params):
         for code, msg, _ in r:
             if code != 1 and not msg.find("is not set"):
                 Log.warn("Failed to clear parameter: %s", msg)
-#          raise StartException("Failed to clear parameter: %s"%(msg))
+        #          raise StartException("Failed to clear parameter: %s"%(msg))
 
         # multi-call objects are not reusable
         socket.setdefaulttimeout(6 + len(params))
@@ -372,10 +378,9 @@ def _load_parameters(masteruri, params, clear_params):
         for pkey, pval in params.items():
             value = pval
             # resolve path elements
-            if isstring(value) and (value.startswith('$')):
+            if isstring(value) and (value.startswith("$")):
                 value = xml_ros1.interpret_path(value)
-                Log.debug("interpret parameter '%s' to '%s'" %
-                          (value, pval))
+                Log.debug("interpret parameter '%s' to '%s'" % (value, pval))
             # add parameter to the multicall
             param_server_multi.setParam(rospy.get_name(), pkey, value)
             test_ret = _test_value(pkey, value)
@@ -384,16 +389,15 @@ def _load_parameters(masteruri, params, clear_params):
         r = param_server_multi()
         for code, msg, _ in r:
             if code != 1:
-                raise exceptions.StartException(
-                    "Failed to set parameter: %s" % (msg))
+                raise exceptions.StartException("Failed to set parameter: %s" % (msg))
     except roslaunch.core.RLException as e:
         raise exceptions.StartException(e)
     except rospkg.ResourceNotFound as rnf:
-        raise exceptions.StartException(
-            "Failed to set parameter. ResourceNotFound: %s" % (rnf))
+        raise exceptions.StartException("Failed to set parameter. ResourceNotFound: %s" % (rnf))
     except Exception as e:
-        raise exceptions.StartException("Failed to set parameter. ROS Parameter Server "
-                                        "reports: %s\n\n%s" % (e, '\n'.join(param_errors)))
+        raise exceptions.StartException(
+            "Failed to set parameter. ROS Parameter Server reports: %s\n\n%s" % (e, "\n".join(param_errors))
+        )
     finally:
         socket.setdefaulttimeout(None)
     return abs_paths, not_found_packages
@@ -422,7 +426,7 @@ def _abs_to_package_path(path):
     result = path
     pname, ppath = ros_pkg.get_name(path)
     if pname:
-        result = path.replace(ppath, '$(find %s)' % pname)
+        result = path.replace(ppath, "$(find %s)" % pname)
         Log.debug("replace abs path '%s' by '%s'" % (path, result))
     return result
 
@@ -431,7 +435,7 @@ def _params_to_package_path(params):
     result = {}
     for name, value in params.items():
         if isstring(value):
-            if value.startswith('/') and (os.path.isfile(value) or os.path.isdir(value)):
+            if value.startswith("/") and (os.path.isfile(value) or os.path.isdir(value)):
                 result[name] = _abs_to_package_path(value)
     return result
 
@@ -440,14 +444,14 @@ def _args_to_package_path(args):
     result = []
     for arg in args:
         new_arg = arg
-        if arg.startswith('/') and (os.path.isfile(arg) or os.path.isdir(arg)):
+        if arg.startswith("/") and (os.path.isfile(arg) or os.path.isdir(arg)):
             new_arg = _abs_to_package_path(arg)
         result.append(new_arg)
     return result
 
 
 def get_global_params(roscfg):
-    '''
+    """
     Return the parameter of the configuration file, which are not associated with
     any nodes in the configuration.
 
@@ -455,7 +459,7 @@ def get_global_params(roscfg):
     :type roscfg: roslaunch.ROSLaunchConfig<http://docs.ros.org/kinetic/api/roslaunch/html/>
     :return: the dictionary with names of the global parameter and their values
     :rtype: dict(str: value type)
-    '''
+    """
     result = dict()
     nodes = []
     for item in roscfg.resolved_node_names:

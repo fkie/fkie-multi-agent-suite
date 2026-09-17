@@ -6,11 +6,6 @@
 #
 # ****************************************************************************
 
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
-
 
 import launch
 from launch.substitutions.substitution_failure import SubstitutionFailure
@@ -22,14 +17,16 @@ class LaunchConfigException(Exception):
     pass
 
 
-def perform_to_string(context: launch.LaunchContext, value: Union[List[List], List[launch.Substitution], str, None], *, verbose: bool = True) -> Optional[str]:
-    result = ''
+def perform_to_string(
+    context: launch.LaunchContext, value: list[list] | list[launch.Substitution] | str | None, *, verbose: bool = True
+) -> str | None:
+    result = ""
     if isinstance(value, str):
         result = value
-    elif isinstance(value, List) and len(value) > 0:
+    elif isinstance(value, list) and len(value) > 0:
         for val in value:
-            sep = ' '
-            if isinstance(val, List):
+            sep = " "
+            if isinstance(val, list):
                 item = ""
                 try:
                     item = perform_substitutions(context, val)
@@ -44,10 +41,11 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
                 except Exception as err:
                     if verbose:
                         import traceback
+
                         print(traceback.format_exc())
                     raise LaunchConfigException(err)
                 # we fix command lines with {data: xyz}
-                if ' ' in item and '{' in item:
+                if " " in item and "{" in item:
                     item = f"'{item}'"
                 result += item + sep
             else:
@@ -56,7 +54,7 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
         try:
             if isinstance(value, tuple):
                 for tuple_item in value:
-                    if isinstance(tuple_item, List):
+                    if isinstance(tuple_item, list):
                         result += perform_substitutions(context, tuple_item)
                     else:
                         result += perform_substitutions(context, [tuple_item])
@@ -67,6 +65,7 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
         except (SubstitutionFailure, LookupError) as err:
             if verbose:
                 import traceback
+
                 print(traceback.format_exc())
             # if executable is not found we replace it by "ros2 run" command to visualize the error in the MAS gui
             if isinstance(value, ExecutableInPackage):
@@ -78,6 +77,7 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
         except Exception as err:
             if verbose:
                 import traceback
+
                 print(traceback.format_exc())
             raise LaunchConfigException(err)
     else:
@@ -85,12 +85,13 @@ def perform_to_string(context: launch.LaunchContext, value: Union[List[List], Li
     return result
 
 
-def perform_to_tuple_list(context: launch.LaunchContext, value: Union[List[Tuple[List[launch.Substitution], List[launch.Substitution]]], None]) -> Union[List[Tuple[str, str]], None]:
+def perform_to_tuple_list(
+    context: launch.LaunchContext, value: list[tuple[list[launch.Substitution], list[launch.Substitution]]] | None
+) -> list[tuple[str, str]] | None:
     result = []
     if value is not None:
         for val1, val2 in value:
-            result.append((perform_substitutions(context, val1),
-                          perform_substitutions(context, val2)))
+            result.append((perform_substitutions(context, val1), perform_substitutions(context, val2)))
     else:
         result = None
     return result

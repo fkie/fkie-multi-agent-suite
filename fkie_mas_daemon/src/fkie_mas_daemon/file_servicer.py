@@ -6,26 +6,19 @@
 #
 # ****************************************************************************
 
-from io import FileIO
+import json
 import os
 import re
+from io import FileIO
 
-import json
-
-from fkie_mas_pylib import ros_pkg
 from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.interface.file_interface import FileItem
-from fkie_mas_pylib.interface.file_interface import RosPackage
-from fkie_mas_pylib.interface.file_interface import PathItem
-from fkie_mas_pylib.interface.file_interface import LogPathItem
-from fkie_mas_pylib.interface.file_interface import LogPathClearResult
+from fkie_mas_pylib.interface.file_interface import FileItem, LogPathClearResult, LogPathItem, PathItem, RosPackage
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.system.screen import get_logfile
-from fkie_mas_pylib.system.screen import get_ros_logfile
+from fkie_mas_pylib.system.screen import get_logfile, get_ros_logfile
 from fkie_mas_pylib.websocket.server import WebSocketServer
-from fkie_mas_daemon.strings import utf8
 
-from typing import List
+from fkie_mas_daemon.strings import utf8
+from fkie_mas_pylib import ros_pkg
 
 MANIFEST_FILE = "manifest.xml"
 
@@ -76,7 +69,8 @@ class FileServicer:
                 content = content.hex()
                 encoding = "hex"
             return json.dumps(
-                FileItem(requestPath, mtime=mTime, size=fSize, readonly=readonly, value=content, encoding=encoding), cls=SelfEncoder
+                FileItem(requestPath, mtime=mTime, size=fSize, readonly=readonly, value=content, encoding=encoding),
+                cls=SelfEncoder,
             )
 
     def saveFileContent(self, request_json: FileItem) -> int:
@@ -99,10 +93,10 @@ class FileServicer:
         inputPath: str,
         recursive: bool = True,
         withHidden: bool = False,
-        filter: List[str] = [],
-    ) -> List[PathItem]:
-        path_list: List[PathItem] = []
-        dir_list: List[str] = []
+        filter: list[str] = [],
+    ) -> list[PathItem]:
+        path_list: list[PathItem] = []
+        dir_list: list[str] = []
         for name in os.listdir(inputPath):
             if not withHidden and name.startswith("."):
                 continue
@@ -140,31 +134,25 @@ class FileServicer:
             )
         return path_list
 
-    def getPathList(
-        self, inputPath: str, recursive: bool = False, filter=["node_modules"]
-    ) -> List[PathItem]:
+    def getPathList(self, inputPath: str, recursive: bool = False, filter=["node_modules"]) -> list[PathItem]:
         Log.info(f"Request to [ros.path.get_list] for {inputPath}, recursive: {recursive}")
-        path_list: List[PathItem] = self._glob(
-            inputPath, recursive=recursive, withHidden=False, filter=filter
-        )
+        path_list: list[PathItem] = self._glob(inputPath, recursive=recursive, withHidden=False, filter=filter)
         return json.dumps(path_list, cls=SelfEncoder)
 
-    def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
+    def getPackageList(self, clear_cache: bool = False) -> list[RosPackage]:
         Log.info("Request to [ros.packages.get_list]")
         try:
             if clear_cache:
                 try:
-                    from roslaunch import substitution_args
                     import rospkg
+                    from roslaunch import substitution_args
 
                     substitution_args._rospack = rospkg.RosPack()
                 except Exception as err:
                     Log.warn("Cannot reset package cache: %s" % utf8(err))
-            package_list: List[RosPackage] = []
+            package_list: list[RosPackage] = []
             # fill the input fields
-            root_paths = [
-                os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(":")
-            ]
+            root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(":")]
             packages = []
             for p in root_paths:
                 ret = ros_pkg.get_packages(p)
@@ -176,9 +164,10 @@ class FileServicer:
             return json.dumps(package_list, cls=SelfEncoder)
         except Exception:
             import traceback
+
             raise Exception(traceback.format_exc())
 
-    def getLogPaths(self, nodes: List[str]) -> List[LogPathItem]:
+    def getLogPaths(self, nodes: list[str]) -> list[LogPathItem]:
         Log.info("Request to [ros.path.get_log_paths] for %s" % nodes)
         result = []
         for node in nodes:
@@ -190,9 +179,7 @@ class FileServicer:
                 namespace = f"/{namespace_search.group(1)}"
                 node_name = node.replace(f"/{namespace}/", "")
 
-            screen_log = get_logfile(
-                node=node_name, for_new_screen=True, namespace=namespace
-            )
+            screen_log = get_logfile(node=node_name, for_new_screen=True, namespace=namespace)
             ros_log = get_ros_logfile(node)
             log_path_item = LogPathItem(
                 node,
@@ -204,10 +191,8 @@ class FileServicer:
             result.append(log_path_item)
         return json.dumps(result, cls=SelfEncoder)
 
-    def clearLogPaths(self, nodes: List[str]) -> List[LogPathClearResult]:
-        Log.info(
-            f"{self.__class__.__name__}: Request to [ros.path.clear_log_paths] for {nodes}"
-        )
+    def clearLogPaths(self, nodes: list[str]) -> list[LogPathClearResult]:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.path.clear_log_paths] for {nodes}")
         result = []
         for node in nodes:
             namespace = None
@@ -218,28 +203,22 @@ class FileServicer:
                 namespace = f"/{namespace_search.group(1)}"
                 node_name = node.replace(f"/{namespace}/", "")
 
-            screen_log = get_logfile(
-                node=node_name, for_new_screen=True, namespace=namespace
-            )
+            screen_log = get_logfile(node=node_name, for_new_screen=True, namespace=namespace)
             ros_log = get_ros_logfile(node)
             resultDelete = True
-            message = ''
-            if (os.path.exists(screen_log)):
+            message = ""
+            if os.path.exists(screen_log):
                 try:
                     os.remove(screen_log)
                 except OSError as error:
                     resultDelete = False
                     message += f"Can not remove {screen_log}: {error}. "
-            if (os.path.exists(ros_log)):
+            if os.path.exists(ros_log):
                 try:
                     os.remove(ros_log)
                 except OSError as error:
                     resultDelete = False
                     message += f"Can not remove {ros_log}: {error}. "
-            log_path_item = LogPathClearResult(
-                node,
-                result=resultDelete,
-                message=message
-            )
+            log_path_item = LogPathClearResult(node, result=resultDelete, message=message)
             result.append(log_path_item)
         return json.dumps(result, cls=SelfEncoder)

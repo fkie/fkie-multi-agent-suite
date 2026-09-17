@@ -1,5 +1,10 @@
 // ROS related imports
-import { TRosMessageStruct, rosMessageStructToString } from "../../types/TRosMessageStruct";
+import { rosMessageStructToString, TRosMessageStruct } from "../../types/TRosMessageStruct";
+// Other structs
+import { ActionEvent } from "./ActionEvent";
+import { ActionGoalRequest } from "./ActionGoalRequest";
+import { ActionIntrospectionEvent } from "./ActionIntrospectionEvent";
+import Composable from "./Composable";
 import DaemonVersion from "./DaemonVersion";
 import DiagnosticInfo, {
   DiagnosticArray,
@@ -11,18 +16,6 @@ import DiagnosticInfo, {
   getMaxDiagnosticLevel,
 } from "./Diagnostics";
 import FileItem, { FileLanguageAssociations, getBaseName, getFileAbb, getFileExtension, getFileName } from "./FileItem";
-import PathEvent, { PATH_EVENT_TYPE } from "./PathEvent";
-import PathItem from "./PathItem";
-import RosDuration from "./RosDuration";
-import RosNode, { RosNodeStatus, RosNodeStatusInfo } from "./RosNode";
-import RosPackage from "./RosPackage";
-import RosParameter, { RosParameterRange, RosParameterValue } from "./RosParameter";
-import RosQos from "./RosQos";
-import RosService from "./RosService";
-import RosTopic, { EndpointInfo, IncompatibleQos } from "./RosTopic";
-import RosTopicId from "./RosTopicId";
-import ServiceExtendedInfo, { TServiceNodeInfo } from "./ServiceExtendedInfo";
-import TopicExtendedInfo from "./TopicExtendedInfo";
 // Launch related imports
 import LaunchArgument from "./LaunchArgument";
 import LaunchAssociations from "./LaunchAssociations";
@@ -41,18 +34,24 @@ import LaunchNodeInfo from "./LaunchNodeInfo";
 import LaunchNodeReply from "./LaunchNodeReply";
 import LaunchPublishMessage from "./LaunchPublishMessage";
 import LaunchReturnStatus from "./LaunchReturnStatus";
-import ProviderLaunchConfiguration from "./ProviderLaunchConfiguration";
-// Screen related imports
-import ScreensMapping from "./ScreensMapping";
-// Other structs
-import { ActionEvent } from "./ActionEvent";
-import { ActionGoalRequest } from "./ActionGoalRequest";
-import { ActionIntrospectionEvent } from "./ActionIntrospectionEvent";
-import Composable from "./Composable";
 import LifecycleState, { TLifecycleTransition } from "./LifecycleState";
 import LogEvent, { LoggingLevel } from "./LogEvent";
 import LoggerConfig, { LogLevelType } from "./LoggerConfig";
+import PathEvent, { PATH_EVENT_TYPE } from "./PathEvent";
+import PathItem from "./PathItem";
+import ProviderLaunchConfiguration from "./ProviderLaunchConfiguration";
 import Result from "./Result";
+import RosDuration from "./RosDuration";
+import RosNode, { RosNodeStatus, RosNodeStatusInfo } from "./RosNode";
+import RosPackage from "./RosPackage";
+import RosParameter, { RosParameterRange, RosParameterValue } from "./RosParameter";
+import RosQos from "./RosQos";
+import RosService from "./RosService";
+import RosTopic, { EndpointInfo, IncompatibleQos } from "./RosTopic";
+import RosTopicId from "./RosTopicId";
+// Screen related imports
+import ScreensMapping from "./ScreensMapping";
+import ServiceExtendedInfo, { TServiceNodeInfo } from "./ServiceExtendedInfo";
 import { ServiceIntrospectionEvent } from "./ServiceIntrospectionEvent";
 import { ServiceIntrospectionRequest } from "./ServiceIntrospectionRequest";
 import SubscriberEvent, { TSubscriberEventExt } from "./SubscriberEvent";
@@ -61,8 +60,26 @@ import SubscriberNode from "./SubscriberNode";
 import SystemWarning from "./SystemWarning";
 import SystemWarningGroup from "./SystemWarningGroup";
 import { TLogPathItem, TReplyLogPathItems } from "./TLogPathItem";
+import TopicExtendedInfo from "./TopicExtendedInfo";
 import URI from "./uris";
 
+export type {
+  ActionEvent,
+  ActionGoalRequest,
+  ActionIntrospectionEvent,
+  EndpointInfo,
+  IncompatibleQos,
+  RosParameterRange,
+  RosParameterValue,
+  ServiceIntrospectionEvent,
+  ServiceIntrospectionRequest,
+  TLifecycleTransition,
+  TLogPathItem,
+  TReplyLogPathItems,
+  TRosMessageStruct,
+  TServiceNodeInfo,
+  TSubscriberEventExt,
+};
 export {
   Composable,
   DaemonVersion,
@@ -74,6 +91,12 @@ export {
   DiagnosticStatus,
   FileItem,
   FileLanguageAssociations,
+  getBaseName,
+  getDiagnosticLevelName,
+  getFileAbb,
+  getFileExtension,
+  getFileName,
+  getMaxDiagnosticLevel,
   LaunchArgument,
   LaunchAssociations,
   LaunchCallService,
@@ -93,9 +116,9 @@ export {
   LaunchReturnStatus,
   LifecycleState,
   LogEvent,
-  LogLevelType,
   LoggerConfig,
   LoggingLevel,
+  LogLevelType,
   PATH_EVENT_TYPE,
   PathEvent,
   PathItem,
@@ -111,6 +134,7 @@ export {
   RosService,
   RosTopic,
   RosTopicId,
+  rosMessageStructToString,
   ScreensMapping,
   ServiceExtendedInfo,
   SubscriberEvent,
@@ -120,30 +144,4 @@ export {
   SystemWarningGroup,
   TopicExtendedInfo,
   URI,
-  getBaseName,
-  getDiagnosticLevelName,
-  getFileAbb,
-  getFileExtension,
-  getFileName,
-  getMaxDiagnosticLevel,
-  rosMessageStructToString
 };
-
-  export type {
-    ActionEvent,
-    ActionGoalRequest,
-    ActionIntrospectionEvent,
-    EndpointInfo,
-    IncompatibleQos,
-    RosParameterRange,
-    RosParameterValue,
-    ServiceIntrospectionEvent,
-    ServiceIntrospectionRequest,
-    TLifecycleTransition,
-    TLogPathItem,
-    TReplyLogPathItems,
-    TRosMessageStruct,
-    TServiceNodeInfo,
-    TSubscriberEventExt
-  };
-

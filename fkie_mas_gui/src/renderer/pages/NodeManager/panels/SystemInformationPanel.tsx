@@ -1,8 +1,8 @@
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Box, Button, Stack, Tooltip, Typography } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCustomEventListener } from "react-custom-events";
 import JsonView from "react18-json-view";
-
 import CopyButton from "@/renderer/components/UI/CopyButton";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import Tag from "@/renderer/components/UI/Tag";
@@ -13,11 +13,10 @@ import { useSetting } from "@/renderer/hooks/useSetting";
 import { SystemWarning } from "@/renderer/models";
 import { envFromSystemEnv } from "@/renderer/models/ProviderLaunchConfiguration";
 import { Provider } from "@/renderer/providers";
-import { EVENT_PROVIDER_WARNINGS } from "@/renderer/providers/eventTypes";
 import { EventProviderWarnings } from "@/renderer/providers/events";
+import { EVENT_PROVIDER_WARNINGS } from "@/renderer/providers/eventTypes";
 import { generateUniqueId, tsStr } from "@/renderer/utils";
 import { envEntryToStr, JSONObject, TSystemInfo } from "@/types";
-import { useCustomEventListener } from "react-custom-events";
 
 interface SystemInformationPanelProps {
   providerId?: string;

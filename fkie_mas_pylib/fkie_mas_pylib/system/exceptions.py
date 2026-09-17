@@ -8,7 +8,7 @@
 
 
 class ListSelectionRequest(Exception):
-    ''' '''
+    """ """
 
     def __init__(self, choices, error):
         Exception.__init__(self)
@@ -39,7 +39,6 @@ class StartException(Exception):
 
 
 class AlreadyOpenException(Exception):
-
     def __init__(self, path, error):
         Exception.__init__(self)
         self.path = path
@@ -57,7 +56,6 @@ class ResourceNotFound(AlreadyOpenException):
 
 
 class RemoteException(Exception):
-
     def __init__(self, code, error):
         Exception.__init__(self)
         self.code = code
@@ -71,7 +69,6 @@ class RemoteException(Exception):
 
 
 class ConnectionException(Exception):
-
     def __init__(self, remote, error):
         Exception.__init__(self)
         self.remote = remote
@@ -82,5 +79,3 @@ class ConnectionException(Exception):
 
     def __str__(self):
         return self.error
-
-

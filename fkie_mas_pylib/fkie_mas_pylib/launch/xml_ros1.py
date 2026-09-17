@@ -1,4 +1,3 @@
-
 # ****************************************************************************
 #
 # Copyright (c) 2014-2024 Fraunhofer FKIE
@@ -7,23 +6,29 @@
 #
 # ****************************************************************************
 
-from typing import Dict
-from typing import List
-
 import os
 import re
 import sys
 from xml.dom import minidom
 
 from fkie_mas_pylib import ros_pkg
-from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.defines import SEARCH_IN_EXT
+from fkie_mas_pylib.logging.logging import Log
 
 
-class IncludedFile():
-
-    def __init__(self, path_or_str: str, line_number: int, inc_path: str, exists: bool, raw_inc_path: str, rec_depth: int, args: Dict[str, str], size: int = 0):
-        '''
+class IncludedFile:
+    def __init__(
+        self,
+        path_or_str: str,
+        line_number: int,
+        inc_path: str,
+        exists: bool,
+        raw_inc_path: str,
+        rec_depth: int,
+        args: dict[str, str],
+        size: int = 0,
+    ):
+        """
         Representation of an included file found in given string or path of a file.
 
         :param str path_or_str: path of file or content where to search. If it is a path, the content will be read from file.
@@ -33,7 +38,7 @@ class IncludedFile():
         :param str raw_inc_path: representation of included file without resolved arg and find statements.
         :param int rec_depth: depth of recursion. if `unique` is True the depth is zero
         :param dict(str:str) args: a dictionary with arguments forwarded within include tag for 'inc_path'.
-        '''
+        """
         self.path_or_str = path_or_str
         self.line_number = line_number
         self.inc_path = inc_path
@@ -58,15 +63,14 @@ class IncludedFile():
         return result
 
 
-def _replace_opt_env(content: str) -> Dict[str, str]:
-    '''
+def _replace_opt_env(content: str) -> dict[str, str]:
+    """
     Searches in the content string for package include patterns.
     Returns a dictionary with package name and path suffix.
-    '''
+    """
     result = content
-    pattern = [r"\$\(optenv (.*?)\)",
-               r"\$\(env (.*?)\)/([^ \"']*)"]
-    env_pattern = re.compile('|'.join(pattern))
+    pattern = [r"\$\(optenv (.*?)\)", r"\$\(env (.*?)\)/([^ \"']*)"]
+    env_pattern = re.compile("|".join(pattern))
     groups = env_pattern.findall(content)
     for group in groups:
         for index in range(0, len(group)):
@@ -80,31 +84,33 @@ def _replace_opt_env(content: str) -> Dict[str, str]:
     return result
 
 
-def _find_include_tuple(content: str) -> Dict[str, str]:
-    '''
+def _find_include_tuple(content: str) -> dict[str, str]:
+    """
     Searches in the content string for package include patterns.
     Returns a dictionary with package name and path suffix.
-    '''
+    """
     result = {}
-    pattern = [r"\$\(find (.*?)\)/([^ \"']*)",
-               r"\$\(find-pkg-share (.*?)\)/([^ \"']*)",
-               r"pkg:\/\/(.*?)/([^ \"']*)",
-               r"package:\/\/(.*?)/([^ \"']*)"]
-    pkg_pattern = re.compile('|'.join(pattern))
+    pattern = [
+        r"\$\(find (.*?)\)/([^ \"']*)",
+        r"\$\(find-pkg-share (.*?)\)/([^ \"']*)",
+        r"pkg:\/\/(.*?)/([^ \"']*)",
+        r"package:\/\/(.*?)/([^ \"']*)",
+    ]
+    pkg_pattern = re.compile("|".join(pattern))
     groups = pkg_pattern.findall(_replace_opt_env(content))
     for group in groups:
         for index in range(0, len(group), 2):
             pkg_name = group[index]
             if pkg_name:
-                path_suffix = ''
+                path_suffix = ""
                 if index + 1 < len(group):
                     path_suffix = group[index + 1]
                 result[pkg_name] = path_suffix
     return result
 
 
-def interpret_path(path: str, pwd: str = '.') -> str:
-    '''
+def interpret_path(path: str, pwd: str = ".") -> str:
+    """
     Tries to determine the path of included file. The statement of $(find 'package') will be resolved.
 
     :param str path: the sting which contains the included path
@@ -112,31 +118,29 @@ def interpret_path(path: str, pwd: str = '.') -> str:
     :return: `$(find 'package')` will be resolved. The prefixes `file://`, `package://` or `pkg://` are also resolved.
              Otherwise the parameter itself normalized by :py:func:`os.path.normpath` will be returned.
     :rtype: str
-    '''
+    """
     result = path.strip().replace("$(dirname)", pwd)
     groups = _find_include_tuple(path)
-    full_path_not_exists = ''
+    full_path_not_exists = ""
     for pkg_name, path_suffix in groups.items():
         path_suffix_stripped = path_suffix.strip(os.path.sep)
         # try to find the specific path in share
         try:
-            paths = ros_pkg.get_share_files_path_from_package(
-                pkg_name, path_suffix_stripped)
+            paths = ros_pkg.get_share_files_path_from_package(pkg_name, path_suffix_stripped)
             if paths and os.path.exists(paths[0]):
                 return paths[0]
         except Exception:
             import traceback
-            Log.warn(
-                f"search in install/devel space failed: {traceback.format_exc()}")
+
+            Log.warn(f"search in install/devel space failed: {traceback.format_exc()}")
 
         pkg_path = ros_pkg.get_path(pkg_name)
         Log.debug(f"{result} got path for '{pkg_name}': {pkg_path}")
         # try to find first using ROS find_resource methods
-        path_res = ros_pkg.get_ros_resource_from_package(
-            pkg_path, path_suffix_stripped)
+        path_res = ros_pkg.get_ros_resource_from_package(pkg_path, path_suffix_stripped)
         if path_res and os.path.exists(path_res):
             return path_res
-        if path_suffix.startswith('//'):
+        if path_suffix.startswith("//"):
             path_suffix = path_suffix[2:]
         full_path = os.path.normpath(os.path.join(pkg_path, path_suffix))
         if os.path.exists(full_path):
@@ -144,20 +148,21 @@ def interpret_path(path: str, pwd: str = '.') -> str:
         elif full_path:
             full_path_not_exists = full_path
 
-    if path.startswith('file://'):
+    if path.startswith("file://"):
         result = path[7:]
     elif full_path_not_exists:
         return full_path_not_exists
     return os.path.normpath(os.path.join(pwd, result))
 
 
-def replace_paths(text: str, pwd: str = '.') -> str:
-    '''
+def replace_paths(text: str, pwd: str = ".") -> str:
+    """
     Like meth:interpret_path(), but replaces all matches in the text and retain other text.
-    '''
+    """
     result = text
     path_pattern = re.compile(
-        r"(\$\(dirname\)/)|(\$\(find-pkg-share .*?\)/)|(\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
+        r"(\$\(dirname\)/)|(\$\(find-pkg-share .*?\)/)|(\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)"
+    )
     for groups in path_pattern.finditer(text):
         for index in range(groups.lastindex):
             path = groups.groups()[index]
@@ -169,49 +174,50 @@ def replace_paths(text: str, pwd: str = '.') -> str:
     return result
 
 
-def get_internal_args(content: str, path: str = '', resolve_args: Dict[str, str] = {}, only_default: bool = False) -> Dict[str, str]:
-    '''
+def get_internal_args(
+    content: str, path: str = "", resolve_args: dict[str, str] = {}, only_default: bool = False
+) -> dict[str, str]:
+    """
     Load the content with xml parser, search for arg-nodes.
     :return: a dictionary with detected arguments
     :rtype: {str: str}
-    '''
+    """
     new_content = content
     try:
         resolve_args_intern = {}
         if sys.version_info < (3, 0):
-            new_content = new_content.encode('utf-8')
-        xml_nodes = minidom.parseString(
-            new_content).getElementsByTagName('launch')
+            new_content = new_content.encode("utf-8")
+        xml_nodes = minidom.parseString(new_content).getElementsByTagName("launch")
         for node in xml_nodes:
             for child in node.childNodes:
-                if child.localName == 'arg' or child.localName == 'let' and child.hasAttributes():
-                    aname = ''
-                    aval = ''
+                if child.localName == "arg" or child.localName == "let" and child.hasAttributes():
+                    aname = ""
+                    aval = ""
                     add_arg = True
                     for argi in range(child.attributes.length):
                         arg_attr = child.attributes.item(argi)
-                        if arg_attr.localName == 'name':
+                        if arg_attr.localName == "name":
                             aname = arg_attr.value
-                        elif arg_attr.localName in ['value', 'default']:
+                        elif arg_attr.localName in ["value", "default"]:
                             aval = arg_attr.value
                             # do not add this argument to the result list if value is set and 'only_default' is True
-                            if only_default and arg_attr.localName == 'value':
+                            if only_default and arg_attr.localName == "value":
                                 add_arg = False
                     if aname and add_arg:
                         resolve_args_intern[aname] = replace_arg(aval, resolve_args)
-    except Exception as err:
+    except Exception:
         import traceback
-        Log.debug(
-            f"error while get_internal_args for {path}: {traceback.format_exc()}")
+
+        Log.debug(f"error while get_internal_args for {path}: {traceback.format_exc()}")
 
     return resolve_args_intern
 
 
-def get_arg_names(content: str) -> List[str]:
-    '''
+def get_arg_names(content: str) -> list[str]:
+    """
     Searches for $(arg <name>) statements and returns a list with <name>.
     :rtype: [str]
-    '''
+    """
     result = []
     re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
     for arg in re_if.findall(content):
@@ -219,65 +225,61 @@ def get_arg_names(content: str) -> List[str]:
     return result
 
 
-def replace_arg(content: str, resolve_args: Dict[str, str]) -> str:
+def replace_arg(content: str, resolve_args: dict[str, str]) -> str:
     # test for if statement
     result = content
     re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
     for arg in re_if.findall(content):
         if arg in resolve_args:
-            result = result.replace('$(arg %s)' % arg, resolve_args[arg])
-    if content.startswith('$(eval'):
+            result = result.replace("$(arg %s)" % arg, resolve_args[arg])
+    if content.startswith("$(eval"):
         # resolve args in eval statement
         re_if = re.compile(r"arg\(\'(?P<name>.*?)\'\)")
         for arg in re_if.findall(content):
             if arg in resolve_args:
-                result = result.replace("arg('%s')" %
-                                        arg, f"'{resolve_args[arg]}'")
-        re_items = '|'.join(
-            [f"({item})" for item in list(resolve_args.keys())])
+                result = result.replace("arg('%s')" % arg, f"'{resolve_args[arg]}'")
+        re_items = "|".join([f"({item})" for item in list(resolve_args.keys())])
         re_if = re.compile(re_items)
         for matches in re_if.findall(content):
             for arg in matches:
                 if arg:
                     if arg in resolve_args:
-                        result = result.replace(
-                            "%s" % arg, f"\'{resolve_args[arg]}\'")
-        result = result.replace('$(eval', '').rstrip(')')
-        result = 'true' if eval(result) else 'false'
+                        result = result.replace("%s" % arg, f"'{resolve_args[arg]}'")
+        result = result.replace("$(eval", "").rstrip(")")
+        result = "true" if eval(result) else "false"
     return result
 
 
-def __get_internal_include_args(content: str, resolve_args: Dict[str, str]) -> List[str]:
+def __get_internal_include_args(content: str, resolve_args: dict[str, str]) -> list[str]:
     included_files = []
     try:
-        xml_nodes = minidom.parseString(
-            content).getElementsByTagName('include')
+        xml_nodes = minidom.parseString(content).getElementsByTagName("include")
         for node in xml_nodes:
             if node.nodeType == node.ELEMENT_NODE and node.hasAttributes():
-                filename = ''
+                filename = ""
                 for ai in range(node.attributes.length):
                     attr = node.attributes.item(ai)
-                    if attr.localName == 'file':
+                    if attr.localName == "file":
                         filename = attr.value
-                inc_args = node.getElementsByTagName('arg')
+                inc_args = node.getElementsByTagName("arg")
                 resolved_inc_args = {}
                 for inc_arg in inc_args:
                     if inc_arg.nodeType == node.ELEMENT_NODE and inc_arg.hasAttributes():
-                        aname = ''
-                        aval = ''
+                        aname = ""
+                        aval = ""
                         skip = False
                         for argi in range(inc_arg.attributes.length):
                             arg_attr = inc_arg.attributes.item(argi)
-                            if arg_attr.localName == 'name':
+                            if arg_attr.localName == "name":
                                 aname = arg_attr.value
-                            elif arg_attr.localName in ['value', 'default']:
+                            elif arg_attr.localName in ["value", "default"]:
                                 aval = replace_arg(arg_attr.value, resolve_args)
-                            elif arg_attr.localName == 'if':
+                            elif arg_attr.localName == "if":
                                 val = replace_arg(arg_attr.value, resolve_args)
-                                skip = val in ['false', '0']
-                            elif arg_attr.localName == 'unless':
+                                skip = val in ["false", "0"]
+                            elif arg_attr.localName == "unless":
                                 val = replace_arg(arg_attr.value, resolve_args)
-                                skip = val in ['true', '1']
+                                skip = val in ["true", "1"]
                         if aname and not skip:
                             aval = replace_paths(aval)
                             resolved_inc_args[aname] = aval
@@ -289,15 +291,17 @@ def __get_internal_include_args(content: str, resolve_args: Dict[str, str]) -> L
     return included_files
 
 
-def find_included_files(string: str,
-                        recursive: bool = True,
-                        unique: bool = False,
-                        search_in_ext: List[str] = SEARCH_IN_EXT,
-                        resolve_args: Dict[str, str] = {},
-                        unique_files: List[str] = None,
-                        rec_depth: int = 0,
-                        filename: str = None) -> List[IncludedFile]:
-    '''
+def find_included_files(
+    string: str,
+    recursive: bool = True,
+    unique: bool = False,
+    search_in_ext: list[str] = SEARCH_IN_EXT,
+    resolve_args: dict[str, str] = {},
+    unique_files: list[str] = None,
+    rec_depth: int = 0,
+    filename: str = None,
+) -> list[IncludedFile]:
+    """
     If the `string` parameter is a valid file the content of this file will be parsed.
     In other case the `string` is parsed to find included files.
 
@@ -310,56 +314,55 @@ def find_included_files(string: str,
     :type resolve_args: {str, str}
     :return: Returns an iterator with IncludedFile-class
     :rtype: iterator with IncludedFile
-    '''
-    pattern = [r"\s*(\$\(find-pkg-share .*?\)[^\n\t\"]*)",
-               r"\s*(\$\(find .*?\)[^\n\t\"]*)",
-               r"\s*(\$\(dirname\)[^\n\t\"]*)",
-               r"\s*(pkg:\/\/.*?/[^\n\t\"]*)",
-               r"\s*(package:\/\/.*?/[^\n\t\"]*)",
-               r"textfile=\"(.*?)\n\t\"",
-               r"binfile=\"(.*?)\n\t\"",
-               r"file=\"(.*?)\n\t\""]
-    re_filelist = re.compile('|'.join(pattern))
-    pwd = '.'
+    """
+    pattern = [
+        r"\s*(\$\(find-pkg-share .*?\)[^\n\t\"]*)",
+        r"\s*(\$\(find .*?\)[^\n\t\"]*)",
+        r"\s*(\$\(dirname\)[^\n\t\"]*)",
+        r"\s*(pkg:\/\/.*?/[^\n\t\"]*)",
+        r"\s*(package:\/\/.*?/[^\n\t\"]*)",
+        r"textfile=\"(.*?)\n\t\"",
+        r"binfile=\"(.*?)\n\t\"",
+        r"file=\"(.*?)\n\t\"",
+    ]
+    re_filelist = re.compile("|".join(pattern))
+    pwd = "."
     content = string
-    content_info = 'content'
+    content_info = "content"
     # read file content if file exists
     if os.path.exists(string) and not os.path.isdir(string):
         pwd = os.path.dirname(string)
         content_info = string
-        with open(string, 'r') as f:
+        with open(string) as f:
             content = f.read()
             # replace XML comments by the same count of NEWLINES
             comment_pattern = re.compile(r"<!--.*?-->", re.DOTALL)
             match = comment_pattern.search(content)
             while match is not None:
-                count_nl = content[match.start():match.end()].count('\n')
-                content = content[:match.start()] + '\n' * \
-                    count_nl + content[match.end():]
+                count_nl = content[match.start() : match.end()].count("\n")
+                content = content[: match.start()] + "\n" * count_nl + content[match.end() :]
                 match = comment_pattern.search(content, match.start())
             # HACK: if we found the include pattern in YAML file....
             comment_pattern = re.compile(r"\s*(#.*?[^\n\t\"]*)", re.DOTALL)
             match = comment_pattern.search(content)
             while match is not None:
-                tt = content[match.start():match.end()]
-                count_nl = content[match.start():match.end()].count('\n')
-                content = content[:match.start()] + '\n' * \
-                    count_nl + content[match.end():]
+                tt = content[match.start() : match.end()]
+                count_nl = content[match.start() : match.end()].count("\n")
+                content = content[: match.start()] + "\n" * count_nl + content[match.end() :]
                 match = comment_pattern.search(content, match.start())
     # use dirname if given filename if valid
     if filename is not None:
         pwd = os.path.dirname(filename)
-        if '://' in pwd:
+        if "://" in pwd:
             pwd = re.sub(r"^.*://[^/]*", "", pwd)
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
     internal_args = {}
-    if (string.endswith('.launch') or string.find('.launch.') > 0):
+    if string.endswith(".launch") or string.find(".launch.") > 0:
         # intern args use only internal
         internal_args = get_internal_args(content, filename, resolve_args, True)
         # determine args wich are forwarded
-        inc_files_forward_args = __get_internal_include_args(
-            content, resolve_args)
+        inc_files_forward_args = __get_internal_include_args(content, resolve_args)
     my_unique_files = unique_files if unique_files is not None else list()
     # search for include pattern in the content without comments
     for groups in re_filelist.finditer(content):
@@ -380,25 +383,23 @@ def find_included_files(string: str,
                         # try to resolve path
                         fname = replace_arg(fname, resolve_args_all)
                         fname = replace_arg(fname, internal_args)
-                        if fname.find('$(var ') == -1 and fname.find('$(arg ') == -1:
+                        if fname.find("$(var ") == -1 and fname.find("$(arg ") == -1:
                             # do not try to resolve if not all args are replaced
                             fname = interpret_path(fname, pwd)
                     except Exception as err:
                         Log.warn(f"Interpret file failed: {err}")
                     if os.path.isdir(fname):
-                        fname = ''
+                        fname = ""
                     exists = os.path.isfile(fname)
                     if fname:
-                        publish = not unique or (
-                            unique and fname not in my_unique_files)
+                        publish = not unique or (unique and fname not in my_unique_files)
                         if publish:
                             my_unique_files.append(fname)
                             # transform found position to line number
                             content_tmp = content
                             if sys.version_info < (3, 0):
-                                content_tmp = content.decode('utf-8')
-                            position = content_tmp.count(
-                                "\n", 0, groups.start()) + 1
+                                content_tmp = content.decode("utf-8")
+                            position = content_tmp.count("\n", 0, groups.start()) + 1
                             yield IncludedFile(string, position, fname, exists, rawname, rec_depth, forward_args)
                     # for recursive search
                     if exists:
@@ -406,19 +407,23 @@ def find_included_files(string: str,
                             try:
                                 ext = os.path.splitext(fname)
                                 if ext[1] in search_in_ext:
-                                    for res_item in find_included_files(fname, recursive, False, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1, filename=fname):
-                                        publish = not unique or (
-                                            unique and res_item.inc_path not in my_unique_files)
+                                    for res_item in find_included_files(
+                                        fname,
+                                        recursive,
+                                        False,
+                                        search_in_ext,
+                                        resolve_args_all,
+                                        rec_depth=rec_depth + 1,
+                                        filename=fname,
+                                    ):
+                                        publish = not unique or (unique and res_item.inc_path not in my_unique_files)
                                         if publish:
-                                            my_unique_files.append(
-                                                res_item.inc_path)
+                                            my_unique_files.append(res_item.inc_path)
                                             yield res_item
                             except Exception as e:
-                                Log.warn(
-                                    f"Error while recursive search for include pattern in {fname}: {e}")
+                                Log.warn(f"Error while recursive search for include pattern in {fname}: {e}")
                 except Exception as e:
-                    Log.warn(
-                        f"Error while parse {content_info} for include pattern: {e}")
+                    Log.warn(f"Error while parse {content_info} for include pattern: {e}")
 
 
 def remove_after_space(filename: str) -> str:
@@ -427,9 +432,9 @@ def remove_after_space(filename: str) -> str:
         idx_whitespace = -1
         idx = len(filename) - 1
         for c in reversed(filename):
-            if c == '.':
+            if c == ".":
                 break
-            elif c == ' ':
+            elif c == " ":
                 idx_whitespace = idx
             idx -= 1
         if idx > -1 and idx_whitespace > -1:

@@ -7,7 +7,7 @@ import {
   AuUpdateErrorCallback,
   TAutoUpdateManager,
 } from "./AutoUpdateManager";
-import { CmdType, cmdTypeFromString, CmdTypes } from "./CmdType";
+import { CmdType, CmdTypes, cmdTypeFromString } from "./CmdType";
 import { CommandExecutorEvents, TCommandExecutor } from "./CommandExecutor";
 import { CommandLineEvents, TCommandLine } from "./CommandLine";
 import { DialogManagerEvents, TDialogManager } from "./DialogManager";
@@ -43,23 +43,6 @@ import { TRosMessageStruct } from "./TRosMessageStruct";
 import { TSystemInfo } from "./TSystemInfo";
 import { TTag } from "./TTag";
 
-export {
-  AutoUpdateManagerEvents,
-  cmdTypeFromString,
-  CmdTypes,
-  CommandExecutorEvents,
-  CommandLineEvents,
-  DialogManagerEvents,
-  EditorManagerEvents,
-  envEntryToExportStr,
-  envEntryToStr,
-  InfoStateLevel,
-  PublishManagerEvents,
-  ServiceManagerEvents,
-  ShutdownManagerEvents,
-  SubscriberManagerEvents,
-  TerminalManagerEvents
-};
 export type {
   AuCheckingForUpdateCallback,
   AuDownloadProgressCallback,
@@ -101,6 +84,22 @@ export type {
   TSubscriberManager,
   TSystemInfo,
   TTag,
-  TTerminalManager
+  TTerminalManager,
 };
-
+export {
+  AutoUpdateManagerEvents,
+  CmdTypes,
+  CommandExecutorEvents,
+  CommandLineEvents,
+  cmdTypeFromString,
+  DialogManagerEvents,
+  EditorManagerEvents,
+  envEntryToExportStr,
+  envEntryToStr,
+  InfoStateLevel,
+  PublishManagerEvents,
+  ServiceManagerEvents,
+  ShutdownManagerEvents,
+  SubscriberManagerEvents,
+  TerminalManagerEvents,
+};

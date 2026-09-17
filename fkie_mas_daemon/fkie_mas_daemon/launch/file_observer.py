@@ -7,27 +7,18 @@
 # ****************************************************************************
 
 import errno
-import resource
 import os
 import queue
+import resource
 import threading
 import time
 import traceback
+from collections.abc import Callable, Iterable
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import FrozenSet
-from typing import Iterable
-from typing import List
-from typing import Optional
-from typing import Set
-from typing import Tuple
-
-from watchdog.events import FileSystemEvent
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 
 from fkie_mas_pylib.logging.logging import Log
+from watchdog.events import FileSystemEvent, FileSystemEventHandler
+from watchdog.observers import Observer
 
 _INOTIFY_SYSFS = "/proc/sys/fs/inotify"
 
@@ -105,13 +96,13 @@ _WAKEUP = _ControlMessage("WAKEUP")
 # ----------------------------------------------------------------------------
 
 # Environment variables containing colon separated prefix paths.
-_PREFIX_PATH_VARS: Tuple[str, ...] = (
+_PREFIX_PATH_VARS: tuple[str, ...] = (
     "COLCON_PREFIX_PATH",
     "AMENT_PREFIX_PATH",
 )
 
 # Marker files identifying a colcon/ament install prefix.
-_PREFIX_MARKERS: Tuple[str, ...] = (
+_PREFIX_MARKERS: tuple[str, ...] = (
     "local_setup.bash",
     "setup.bash",
     ".colcon_install_layout",
@@ -137,7 +128,7 @@ def _collapse_prefix(path: str) -> str:
     return path
 
 
-def ros_distro_lib_root() -> Optional[str]:
+def ros_distro_lib_root() -> str | None:
     """
     Return <ros_prefix>/lib of the system installation.
 
@@ -170,8 +161,8 @@ def default_watch_roots(
     include_build: bool = True,
     include_ros: bool = True,
     exclude_prefixes: Iterable[str] = (),
-    env_vars: Iterable[str] = _PREFIX_PATH_VARS
-) -> Tuple[str, ...]:
+    env_vars: Iterable[str] = _PREFIX_PATH_VARS,
+) -> tuple[str, ...]:
     """
     Derive recursive watch roots from the ROS/colcon environment.
 
@@ -194,11 +185,9 @@ def default_watch_roots(
     :return:
         Existing directories, nested entries removed, shortest path first.
     """
-    excluded = tuple(
-        FileObserverRegistry._normalize_path(path)
-        for path in exclude_prefixes or ())
+    excluded = tuple(FileObserverRegistry._normalize_path(path) for path in exclude_prefixes or ())
 
-    candidates: List[str] = []
+    candidates: list[str] = []
 
     def _append(path: str) -> None:
         """Add a path and its real path once, keeping the insertion order."""
@@ -211,8 +200,7 @@ def default_watch_roots(
             if not entry:
                 continue
 
-            prefix = _collapse_prefix(
-                FileObserverRegistry._normalize_path(entry))
+            prefix = _collapse_prefix(FileObserverRegistry._normalize_path(entry))
 
             if not os.path.isdir(prefix):
                 continue
@@ -220,7 +208,7 @@ def default_watch_roots(
             _append(prefix)
 
             # Directories located next to the install prefix of a workspace.
-            sibling_dirs: List[str] = []
+            sibling_dirs: list[str] = []
 
             if include_sources:
                 sibling_dirs.append("src")
@@ -238,20 +226,14 @@ def default_watch_roots(
 
     _append(ros_distro_lib_root())
 
-    roots: List[str] = []
+    roots: list[str] = []
 
     # Shortest first, so a parent is kept and all its children are dropped.
     for candidate in sorted(candidates, key=len):
-        if any(
-            candidate == skip or candidate.startswith(skip + os.sep)
-            for skip in excluded
-        ):
+        if any(candidate == skip or candidate.startswith(skip + os.sep) for skip in excluded):
             continue
 
-        if any(
-            candidate == root or candidate.startswith(root + os.sep)
-            for root in roots
-        ):
+        if any(candidate == root or candidate.startswith(root + os.sep) for root in roots):
             continue
 
         roots.append(candidate)
@@ -273,13 +255,7 @@ class _DirectoryWatch:
 
     __slots__ = ("watch", "count", "generation", "recursive")
 
-    def __init__(
-        self,
-        watch: Any,
-        count: int,
-        generation: int,
-        recursive: bool = False
-    ) -> None:
+    def __init__(self, watch: Any, count: int, generation: int, recursive: bool = False) -> None:
         self.watch = watch
         self.count = count
         self.generation = generation
@@ -290,7 +266,8 @@ class _DirectoryWatch:
             f"<_DirectoryWatch count={self.count} "
             f"generation={self.generation} "
             f"recursive={self.recursive} "
-            f"scheduled={self.watch is not None}>")
+            f"scheduled={self.watch is not None}>"
+        )
 
 
 class FileObserverHandler(FileSystemEventHandler):
@@ -306,21 +283,22 @@ class FileObserverHandler(FileSystemEventHandler):
     a contained file also triggers a modification of its directory.
     """
 
-    IGNORED_EVENT_TYPES = frozenset({
-        'opened',
-        'closed',
-        'closed_no_write',
-    })
+    IGNORED_EVENT_TYPES = frozenset(
+        {
+            "opened",
+            "closed",
+            "closed_no_write",
+        }
+    )
 
-    FORWARDED_DIRECTORY_EVENT_TYPES = frozenset({
-        'deleted',
-        'moved',
-    })
+    FORWARDED_DIRECTORY_EVENT_TYPES = frozenset(
+        {
+            "deleted",
+            "moved",
+        }
+    )
 
-    def __init__(
-        self,
-        callback: Callable[[str, str, Optional[str], bool], None]
-    ) -> None:
+    def __init__(self, callback: Callable[[str, str, str | None, bool], None]) -> None:
         """
         :param callback:
             Called with event type, source path, optional destination path and
@@ -330,11 +308,7 @@ class FileObserverHandler(FileSystemEventHandler):
         self._callback = callback
 
     def _forward(
-        self,
-        event_type: str,
-        src_path: str,
-        dest_path: Optional[str] = None,
-        is_directory: bool = False
+        self, event_type: str, src_path: str, dest_path: str | None = None, is_directory: bool = False
     ) -> None:
         """
         Forward one event to the registry.
@@ -345,48 +319,27 @@ class FileObserverHandler(FileSystemEventHandler):
         if event_type in self.IGNORED_EVENT_TYPES:
             return
 
-        if (
-            is_directory
-            and event_type not in self.FORWARDED_DIRECTORY_EVENT_TYPES
-        ):
+        if is_directory and event_type not in self.FORWARDED_DIRECTORY_EVENT_TYPES:
             return
 
         try:
             self._callback(event_type, src_path, dest_path, is_directory)
         except Exception:
-            Log.warn(
-                f"{self.__class__.__name__}: error while handling "
-                f"{event_type} event:\n{traceback.format_exc()}")
+            Log.warn(f"{self.__class__.__name__}: error while handling {event_type} event:\n{traceback.format_exc()}")
 
     def on_modified(self, event: FileSystemEvent) -> None:
-        self._forward(
-            event.event_type,
-            event.src_path,
-            None,
-            event.is_directory)
+        self._forward(event.event_type, event.src_path, None, event.is_directory)
 
     def on_created(self, event: FileSystemEvent) -> None:
-        self._forward(
-            event.event_type,
-            event.src_path,
-            None,
-            event.is_directory)
+        self._forward(event.event_type, event.src_path, None, event.is_directory)
 
     def on_deleted(self, event: FileSystemEvent) -> None:
-        self._forward(
-            event.event_type,
-            event.src_path,
-            None,
-            event.is_directory)
+        self._forward(event.event_type, event.src_path, None, event.is_directory)
 
     def on_moved(self, event: FileSystemEvent) -> None:
-        dest_path = getattr(event, 'dest_path', None)
+        dest_path = getattr(event, "dest_path", None)
 
-        self._forward(
-            event.event_type,
-            event.src_path,
-            dest_path,
-            event.is_directory)
+        self._forward(event.event_type, event.src_path, dest_path, event.is_directory)
 
 
 class FileObserverRegistry:
@@ -457,9 +410,9 @@ class FileObserverRegistry:
 
     def __init__(
         self,
-        on_change: Callable[[str, str, FrozenSet[str]], None],
+        on_change: Callable[[str, str, frozenset[str]], None],
         min_event_interval: float = 1.0,
-        watch_roots: Optional[Iterable[str]] = None
+        watch_roots: Iterable[str] | None = None,
     ) -> None:
         """
         :param on_change:
@@ -479,8 +432,7 @@ class FileObserverRegistry:
             <ws>/install -> <ws>/src are covered as well.
         """
         if min_event_interval < 0.0:
-            raise ValueError(
-                "min_event_interval must not be negative")
+            raise ValueError("min_event_interval must not be negative")
 
         self._on_change = on_change
         self._min_event_interval = min_event_interval
@@ -497,55 +449,49 @@ class FileObserverRegistry:
 
         # Recursive watch roots, longest path first so that the most specific
         # root wins when roots are nested.
-        self._watch_roots: Tuple[str, ...] = self._prepare_watch_roots(
-            watch_roots)
+        self._watch_roots: tuple[str, ...] = self._prepare_watch_roots(watch_roots)
 
         if self._watch_roots:
-            Log.debug(
-                f"{self.__class__.__name__}: recursive watch roots: "
-                f"{', '.join(self._watch_roots)}")
+            Log.debug(f"{self.__class__.__name__}: recursive watch roots: {', '.join(self._watch_roots)}")
 
         # Queue and worker thread decoupling the watchdog thread from user
         # callbacks.
-        self._queue: "queue.Queue[Any]" = queue.Queue()
-        self._worker: Optional[threading.Thread] = None
+        self._queue: queue.Queue[Any] = queue.Queue()
+        self._worker: threading.Thread | None = None
 
         # Monotonically increasing generation for directory watch entries.
         self._watch_generation = 0
 
         # Logical observed path -> reference count.
-        self._file_refs: Dict[str, int] = {}
+        self._file_refs: dict[str, int] = {}
 
         # Logical observed path -> real path and observed directories.
-        self._path_info: Dict[
-            str,
-            Tuple[str, Tuple[str, ...]]
-        ] = {}
+        self._path_info: dict[str, tuple[str, tuple[str, ...]]] = {}
 
         # Real path -> all logical paths referring to that real path.
-        self._real_paths: Dict[str, Set[str]] = {}
+        self._real_paths: dict[str, set[str]] = {}
 
         # Observed directory -> reference count. Only used for diagnostics,
         # several directories can share one watch target.
-        self._dir_refs: Dict[str, int] = {}
+        self._dir_refs: dict[str, int] = {}
 
         # Watch target (directory or recursive root) -> reference counted
         # watch.
-        self._dir_watches: Dict[str, _DirectoryWatch] = {}
+        self._dir_watches: dict[str, _DirectoryWatch] = {}
 
         # Launch file -> logical observed paths belonging to it.
-        self._launch_files: Dict[str, Tuple[str, ...]] = {}
+        self._launch_files: dict[str, tuple[str, ...]] = {}
 
         # Logical observed path -> launch files referencing it. This reverse
         # index avoids scanning all launch files for every event.
-        self._launch_by_path: Dict[str, Set[str]] = {}
+        self._launch_by_path: dict[str, set[str]] = {}
 
         # Logical observed path -> timestamp of the last forwarded event.
-        self._last_event: Dict[str, float] = {}
+        self._last_event: dict[str, float] = {}
 
         # Logical observed path -> (event type, timestamp when the collapsed
         # event has to be forwarded).
-        self._pending_events: Dict[str, Tuple[str, float]] = {}
+        self._pending_events: dict[str, tuple[str, float]] = {}
 
     # -- path helpers -----------------------------------------------------
 
@@ -560,12 +506,13 @@ class FileObserverRegistry:
                 for target, entry in self._dir_watches.items()
             }
 
-        Log.info(f"{self.__class__.__name__}: {len(entries)} watch targets, "
-                 f"process inotify instances={_count_inotify_instances()}")
+        Log.info(
+            f"{self.__class__.__name__}: {len(entries)} watch targets, "
+            f"process inotify instances={_count_inotify_instances()}"
+        )
 
         for target, (recursive, count, scheduled) in sorted(entries.items()):
-            Log.info(f"  {target} recursive={recursive} refs={count} "
-                     f"scheduled={scheduled}")
+            Log.info(f"  {target} recursive={recursive} refs={count} scheduled={scheduled}")
 
     @staticmethod
     def _normalize_path(path: str) -> str:
@@ -578,10 +525,7 @@ class FileObserverRegistry:
         return os.path.abspath(os.path.normpath(os.fspath(path)))
 
     @classmethod
-    def _prepare_watch_roots(
-        cls,
-        watch_roots: Optional[Iterable[str]]
-    ) -> Tuple[str, ...]:
+    def _prepare_watch_roots(cls, watch_roots: Iterable[str] | None) -> tuple[str, ...]:
         """
         Normalize the configured watch roots.
 
@@ -591,7 +535,7 @@ class FileObserverRegistry:
         watch already covers the whole subtree. Roots are returned longest
         first, so the most specific root is selected during lookup.
         """
-        candidates: List[str] = []
+        candidates: list[str] = []
 
         for root in watch_roots or ():
             normalized = cls._normalize_path(root)
@@ -600,20 +544,17 @@ class FileObserverRegistry:
                 if candidate and candidate not in candidates:
                     candidates.append(candidate)
 
-        collapsed: List[str] = []
+        collapsed: list[str] = []
 
         for candidate in sorted(candidates, key=len):
-            if any(
-                candidate == root or candidate.startswith(root + os.sep)
-                for root in collapsed
-            ):
+            if any(candidate == root or candidate.startswith(root + os.sep) for root in collapsed):
                 continue
 
             collapsed.append(candidate)
 
         return tuple(sorted(collapsed, key=len, reverse=True))
 
-    def _watch_target(self, directory: str) -> Tuple[str, bool]:
+    def _watch_target(self, directory: str) -> tuple[str, bool]:
         """
         Return the path to schedule for a directory and its recursive flag.
 
@@ -628,10 +569,7 @@ class FileObserverRegistry:
         return directory, False
 
     @classmethod
-    def _path_details(
-        cls,
-        path: str
-    ) -> Tuple[str, Tuple[str, ...]]:
+    def _path_details(cls, path: str) -> tuple[str, tuple[str, ...]]:
         """
         Return the real path and all directories that need to be observed.
 
@@ -668,8 +606,7 @@ class FileObserverRegistry:
                 return
 
             if self._stopping:
-                raise RuntimeError(
-                    "Cannot start the file observer while it is stopping")
+                raise RuntimeError("Cannot start the file observer while it is stopping")
 
             if self._observer_stopped:
                 self._observer = Observer()
@@ -681,10 +618,7 @@ class FileObserverRegistry:
             # the previous stop().
             self._queue = queue.Queue()
 
-            worker = threading.Thread(
-                target=self._run_worker,
-                name="FileObserverCallbacks",
-                daemon=True)
+            worker = threading.Thread(target=self._run_worker, name="FileObserverCallbacks", daemon=True)
 
             self._worker = worker
             observer = self._observer
@@ -697,9 +631,7 @@ class FileObserverRegistry:
             with self._lock:
                 self._observer_started = True
         except Exception:
-            Log.error(
-                f"{self.__class__.__name__}: cannot start observer:\n"
-                f"{traceback.format_exc()}")
+            Log.error(f"{self.__class__.__name__}: cannot start observer:\n{traceback.format_exc()}")
 
             with self._lock:
                 self._running = False
@@ -749,37 +681,27 @@ class FileObserverRegistry:
             try:
                 observer.unschedule_all()
             except Exception:
-                Log.debug(
-                    f"{self.__class__.__name__}: unscheduling observer failed:\n"
-                    f"{traceback.format_exc()}")
+                Log.debug(f"{self.__class__.__name__}: unscheduling observer failed:\n{traceback.format_exc()}")
 
             try:
                 observer.stop()
             except Exception:
-                Log.debug(
-                    f"{self.__class__.__name__}: stopping observer failed:\n"
-                    f"{traceback.format_exc()}")
+                Log.debug(f"{self.__class__.__name__}: stopping observer failed:\n{traceback.format_exc()}")
 
             if observer_started:
                 try:
                     observer.join(timeout=timeout)
                 except Exception:
-                    Log.debug(
-                        f"{self.__class__.__name__}: joining observer failed:\n"
-                        f"{traceback.format_exc()}")
+                    Log.debug(f"{self.__class__.__name__}: joining observer failed:\n{traceback.format_exc()}")
 
             if worker is not None:
                 try:
                     worker.join(timeout=timeout)
                 except Exception:
-                    Log.debug(
-                        f"{self.__class__.__name__}: joining callback worker "
-                        f"failed:\n{traceback.format_exc()}")
+                    Log.debug(f"{self.__class__.__name__}: joining callback worker failed:\n{traceback.format_exc()}")
 
                 if worker.is_alive():
-                    Log.debug(
-                        f"{self.__class__.__name__}: callback worker did not "
-                        f"terminate within {timeout} seconds")
+                    Log.debug(f"{self.__class__.__name__}: callback worker did not terminate within {timeout} seconds")
         finally:
             with self._lock:
                 self._observer_started = False
@@ -793,8 +715,7 @@ class FileObserverRegistry:
         The lock must be held.
         """
         if self._stopping:
-            raise RuntimeError(
-                "Cannot modify the file observer while it is stopping")
+            raise RuntimeError("Cannot modify the file observer while it is stopping")
 
         if self._observer_stopped:
             self._observer = Observer()
@@ -803,10 +724,7 @@ class FileObserverRegistry:
     # -- watchdog operations ----------------------------------------------
 
     def _reserve_directory_locked(
-        self,
-        directory: str,
-        count: int,
-        pending_schedule: List[Tuple[Any, str, int, bool]]
+        self, directory: str, count: int, pending_schedule: list[tuple[Any, str, int, bool]]
     ) -> None:
         """
         Add references for one directory and record a required schedule call.
@@ -830,26 +748,16 @@ class FileObserverRegistry:
 
         if recursive:
             Log.debug(
-                f"{self.__class__.__name__}: observe directory {directory} "
-                f"through recursive watch root: {target}")
+                f"{self.__class__.__name__}: observe directory {directory} through recursive watch root: {target}"
+            )
         else:
-            Log.debug(
-                f"{self.__class__.__name__}: observe directory: {directory}")
+            Log.debug(f"{self.__class__.__name__}: observe directory: {directory}")
 
-        self._dir_watches[target] = _DirectoryWatch(
-            None,
-            count,
-            self._watch_generation,
-            recursive)
+        self._dir_watches[target] = _DirectoryWatch(None, count, self._watch_generation, recursive)
 
-        pending_schedule.append(
-            (self._observer, target, self._watch_generation, recursive))
+        pending_schedule.append((self._observer, target, self._watch_generation, recursive))
 
-    def _release_directory_locked(
-        self,
-        directory: str,
-        pending_unschedule: List[Tuple[Any, str, Any]]
-    ) -> None:
+    def _release_directory_locked(self, directory: str, pending_unschedule: list[tuple[Any, str, Any]]) -> None:
         """
         Remove one directory reference and record a required unschedule call.
 
@@ -876,21 +784,16 @@ class FileObserverRegistry:
 
         del self._dir_watches[target]
 
-        Log.debug(
-            f"{self.__class__.__name__}: remove directory from observer: "
-            f"{target}")
+        Log.debug(f"{self.__class__.__name__}: remove directory from observer: {target}")
 
         if entry.watch is not None:
-            pending_unschedule.append(
-                (self._observer, target, entry.watch))
+            pending_unschedule.append((self._observer, target, entry.watch))
         # If the watch is still pending, _flush_watch_operations() detects the
         # missing entry through the generation check and unschedules it there.
 
     def _flush_watch_operations(
-        self,
-        pending_schedule: List[Tuple[Any, str, int, bool]],
-        pending_unschedule: List[Tuple[Any, str, Any]]
-    ) -> List[Tuple[str, BaseException]]:
+        self, pending_schedule: list[tuple[Any, str, int, bool]], pending_unschedule: list[tuple[Any, str, Any]]
+    ) -> list[tuple[str, BaseException]]:
         """
         Execute all pending watchdog operations without holding the lock.
 
@@ -901,50 +804,37 @@ class FileObserverRegistry:
             List of watch targets that could not be scheduled together with the
             raised exception.
         """
-        failures: List[Tuple[str, BaseException]] = []
+        failures: list[tuple[str, BaseException]] = []
 
         for observer, target, watch in pending_unschedule:
             with self._lock:
                 # The target may have been referenced again in the meantime.
                 entry = self._dir_watches.get(target)
-                still_referenced = (
-                    entry is not None
-                    and observer is self._observer)
+                still_referenced = entry is not None and observer is self._observer
 
             if still_referenced:
                 Log.debug(
-                    f"{self.__class__.__name__}: keep directory {target}, "
-                    f"it was referenced again before unscheduling")
+                    f"{self.__class__.__name__}: keep directory {target}, it was referenced again before unscheduling"
+                )
                 continue
 
             try:
                 observer.unschedule(watch)
             except Exception:
-                Log.debug(
-                    f"{self.__class__.__name__}: unschedule {target} "
-                    f"failed:\n{traceback.format_exc()}")
+                Log.debug(f"{self.__class__.__name__}: unschedule {target} failed:\n{traceback.format_exc()}")
 
         for observer, target, generation, recursive in pending_schedule:
             try:
-                watch = observer.schedule(
-                    self._handler,
-                    target,
-                    recursive=recursive)
+                watch = observer.schedule(self._handler, target, recursive=recursive)
             except Exception as error:
                 with self._lock:
                     entry = self._dir_watches.get(target)
 
-                    if (
-                        entry is not None
-                        and entry.generation == generation
-                        and entry.watch is None
-                    ):
+                    if entry is not None and entry.generation == generation and entry.watch is None:
                         # Drop the reservation, there is no usable watch.
                         del self._dir_watches[target]
 
-                Log.debug(
-                    f"{self.__class__.__name__}: schedule {target} "
-                    f"failed:\n{traceback.format_exc()}")
+                Log.debug(f"{self.__class__.__name__}: schedule {target} failed:\n{traceback.format_exc()}")
 
                 failures.append((target, error))
                 continue
@@ -954,11 +844,7 @@ class FileObserverRegistry:
             with self._lock:
                 entry = self._dir_watches.get(target)
 
-                if (
-                    entry is not None
-                    and entry.generation == generation
-                    and observer is self._observer
-                ):
+                if entry is not None and entry.generation == generation and observer is self._observer:
                     entry.watch = watch
                 else:
                     # The reservation is gone or belongs to another generation
@@ -971,7 +857,8 @@ class FileObserverRegistry:
                 except Exception:
                     Log.debug(
                         f"{self.__class__.__name__}: unschedule obsolete watch "
-                        f"for {target} failed:\n{traceback.format_exc()}")
+                        f"for {target} failed:\n{traceback.format_exc()}"
+                    )
 
         return failures
 
@@ -991,8 +878,8 @@ class FileObserverRegistry:
         """
         logical_path = self._normalize_path(path)
 
-        pending_schedule: List[Tuple[Any, str, int, bool]] = []
-        pending_unschedule: List[Tuple[Any, str, Any]] = []
+        pending_schedule: list[tuple[Any, str, int, bool]] = []
+        pending_unschedule: list[tuple[Any, str, Any]] = []
 
         with self._lock:
             self._prepare_observer_locked()
@@ -1006,30 +893,19 @@ class FileObserverRegistry:
                 real_path, directories = self._path_details(logical_path)
 
                 if not directories:
-                    raise OSError(
-                        f"no existing directory available for observation: "
-                        f"{logical_path}"
-                    )
+                    raise OSError(f"no existing directory available for observation: {logical_path}")
 
-                self._path_info[logical_path] = (
-                    real_path,
-                    directories)
+                self._path_info[logical_path] = (real_path, directories)
 
-                self._real_paths.setdefault(real_path, set()).add(
-                    logical_path)
+                self._real_paths.setdefault(real_path, set()).add(logical_path)
 
             self._file_refs[logical_path] = existing_count + 1
             print(f"ADD OBSERVE: {logical_path}")
 
             for directory in directories:
-                self._reserve_directory_locked(
-                    directory,
-                    1,
-                    pending_schedule)
+                self._reserve_directory_locked(directory, 1, pending_schedule)
 
-        failures = self._flush_watch_operations(
-            pending_schedule,
-            pending_unschedule)
+        failures = self._flush_watch_operations(pending_schedule, pending_unschedule)
 
         if not failures:
             return
@@ -1048,28 +924,29 @@ class FileObserverRegistry:
             f"user={_count_inotify_instances_of_user()}, "
             f"limit={_read_inotify_limit('max_user_instances')}; "
             f"open fds={_open_fd_count()}, "
-            f"soft fd limit={resource.getrlimit(resource.RLIMIT_NOFILE)[0]}")
+            f"soft fd limit={resource.getrlimit(resource.RLIMIT_NOFILE)[0]}"
+        )
 
         if watch_roots:
             hint = (
                 "Increase the limit with: "
                 "sudo sysctl -w fs.inotify.max_user_instances=1024, "
-                "raise ulimit -n, or reduce the number of watch roots.")
+                "raise ulimit -n, or reduce the number of watch roots."
+            )
         else:
             hint = (
                 "Increase the limit with: "
                 "sudo sysctl -w fs.inotify.max_user_instances=1024, "
-                "raise ulimit -n, or configure recursive watch roots.")
+                "raise ulimit -n, or configure recursive watch roots."
+            )
 
         # Roll back the complete registration, otherwise the file would be
         # registered without a working watch.
-        rollback_unschedule: List[Tuple[Any, str, Any]] = []
+        rollback_unschedule: list[tuple[Any, str, Any]] = []
 
         with self._lock:
             for directory in directories:
-                self._release_directory_locked(
-                    directory,
-                    rollback_unschedule)
+                self._release_directory_locked(directory, rollback_unschedule)
 
             self._remove_file_reference_locked(logical_path)
 
@@ -1079,11 +956,10 @@ class FileObserverRegistry:
 
         if isinstance(error, OSError) and error.errno == errno.EMFILE:
             raise OSError(
-                f"inotify instance or fd limit reached while observing "
-                f"{target} ({diagnostics}). {hint}") from error
+                f"inotify instance or fd limit reached while observing {target} ({diagnostics}). {hint}"
+            ) from error
 
-        raise OSError(
-            f"cannot observe directory {target} for {logical_path}: {error}")
+        raise OSError(f"cannot observe directory {target} for {logical_path}: {error}")
 
     def remove_file(self, path: str) -> None:
         """
@@ -1093,25 +969,21 @@ class FileObserverRegistry:
         """
         logical_path = self._normalize_path(path)
 
-        pending_unschedule: List[Tuple[Any, str, Any]] = []
+        pending_unschedule: list[tuple[Any, str, Any]] = []
 
         with self._lock:
             if logical_path not in self._file_refs:
                 return
 
-            Log.debug(
-                f"{self.__class__.__name__}: stop observe path: "
-                f"{logical_path}")
+            Log.debug(f"{self.__class__.__name__}: stop observe path: {logical_path}")
 
             path_info = self._path_info.get(logical_path)
 
             if path_info is None:
                 # Inconsistent state: the file reference must still be dropped,
                 # otherwise the path could never be released again.
-                Log.debug(
-                    f"{self.__class__.__name__}: no path info for "
-                    f"{logical_path}, dropping reference only")
-                directories: Tuple[str, ...] = ()
+                Log.debug(f"{self.__class__.__name__}: no path info for {logical_path}, dropping reference only")
+                directories: tuple[str, ...] = ()
             else:
                 _real_path, directories = path_info
 
@@ -1120,9 +992,7 @@ class FileObserverRegistry:
             # Every add_file() call added one reference per directory, so one
             # reference per directory is released here.
             for directory in directories:
-                self._release_directory_locked(
-                    directory,
-                    pending_unschedule)
+                self._release_directory_locked(directory, pending_unschedule)
 
         self._flush_watch_operations([], pending_unschedule)
 
@@ -1153,11 +1023,7 @@ class FileObserverRegistry:
 
     # -- launch files -----------------------------------------------------
 
-    def register_launch(
-        self,
-        launch_file: str,
-        paths: Iterable[str]
-    ) -> List[str]:
+    def register_launch(self, launch_file: str, paths: Iterable[str]) -> list[str]:
         """
         Observe a launch file and all of its included files.
 
@@ -1168,14 +1034,11 @@ class FileObserverRegistry:
         :return:
             List of error messages for files that cannot be observed.
         """
-        errors: List[str] = []
-        added: List[str] = []
+        errors: list[str] = []
+        added: list[str] = []
 
         # dict.fromkeys() removes duplicates and preserves the order.
-        unique_paths = list(
-            dict.fromkeys(
-                self._normalize_path(path)
-                for path in paths))
+        unique_paths = list(dict.fromkeys(self._normalize_path(path) for path in paths))
 
         for logical_path in unique_paths:
             try:
@@ -1183,9 +1046,7 @@ class FileObserverRegistry:
                 added.append(logical_path)
             except Exception as error:
                 errors.append(f"{logical_path}: {error}")
-                Log.error(
-                    f"{self.__class__.__name__}: cannot observe "
-                    f"{logical_path}: {error}")
+                Log.error(f"{self.__class__.__name__}: cannot observe {logical_path}: {error}")
 
         with self._lock:
             previous = self._launch_files.get(launch_file, ())
@@ -1202,8 +1063,7 @@ class FileObserverRegistry:
                         self._launch_by_path.pop(logical_path, None)
 
             for logical_path in added:
-                self._launch_by_path.setdefault(
-                    logical_path, set()).add(launch_file)
+                self._launch_by_path.setdefault(logical_path, set()).add(launch_file)
 
             self._launch_files[launch_file] = tuple(added)
 
@@ -1214,8 +1074,8 @@ class FileObserverRegistry:
                 self.remove_file(logical_path)
             except Exception:
                 Log.error(
-                    f"{self.__class__.__name__}: remove {logical_path} from "
-                    f"observer failed:\n{traceback.format_exc()}")
+                    f"{self.__class__.__name__}: remove {logical_path} from observer failed:\n{traceback.format_exc()}"
+                )
 
         return errors
 
@@ -1240,8 +1100,8 @@ class FileObserverRegistry:
                 self.remove_file(logical_path)
             except Exception:
                 Log.error(
-                    f"{self.__class__.__name__}: remove {logical_path} from "
-                    f"observer failed:\n{traceback.format_exc()}")
+                    f"{self.__class__.__name__}: remove {logical_path} from observer failed:\n{traceback.format_exc()}"
+                )
 
     # -- queries ----------------------------------------------------------
 
@@ -1254,7 +1114,7 @@ class FileObserverRegistry:
         with self._lock:
             return logical_path in self._file_refs
 
-    def affected_launch_files(self, path: str) -> FrozenSet[str]:
+    def affected_launch_files(self, path: str) -> frozenset[str]:
         """
         Return launch files that directly reference the given logical path.
         """
@@ -1263,20 +1123,16 @@ class FileObserverRegistry:
         with self._lock:
             return self._affected_launch_files(logical_path)
 
-    def _affected_launch_files(
-        self,
-        logical_path: str
-    ) -> FrozenSet[str]:
+    def _affected_launch_files(self, logical_path: str) -> frozenset[str]:
         """
         Return affected launch files.
 
         The lock must be held. The lookup uses the reverse index and therefore
         does not depend on the number of registered launch files.
         """
-        return frozenset(
-            self._launch_by_path.get(logical_path, ()))
+        return frozenset(self._launch_by_path.get(logical_path, ()))
 
-    def statistics(self) -> Dict[str, int]:
+    def statistics(self) -> dict[str, int]:
         """
         Return registry statistics.
 
@@ -1290,24 +1146,20 @@ class FileObserverRegistry:
         """
         with self._lock:
             return {
-                'files': len(self._file_refs),
-                'file_references': sum(self._file_refs.values()),
-                'aliases': sum(
-                    len(paths)
-                    for paths in self._real_paths.values()),
-                'observed_directories': len(self._dir_refs),
-                'watches': len(self._dir_watches),
-                'directories': len(self._dir_watches),
-                'watch_roots': len(self._watch_roots),
-                'recursive_watches': sum(
-                    1 for e in self._dir_watches.values() if e.recursive),
-                'scheduled_watches': sum(
-                    1 for e in self._dir_watches.values() if e.watch is not None),
-                'launch_files': len(self._launch_files),
-                'pending_events': len(self._pending_events),
-                'queued_events': self._queue.qsize(),
-                'inotify_max_user_instances': _read_inotify_limit('max_user_instances'),
-                'inotify_max_user_watches': _read_inotify_limit('max_user_watches'),
+                "files": len(self._file_refs),
+                "file_references": sum(self._file_refs.values()),
+                "aliases": sum(len(paths) for paths in self._real_paths.values()),
+                "observed_directories": len(self._dir_refs),
+                "watches": len(self._dir_watches),
+                "directories": len(self._dir_watches),
+                "watch_roots": len(self._watch_roots),
+                "recursive_watches": sum(1 for e in self._dir_watches.values() if e.recursive),
+                "scheduled_watches": sum(1 for e in self._dir_watches.values() if e.watch is not None),
+                "launch_files": len(self._launch_files),
+                "pending_events": len(self._pending_events),
+                "queued_events": self._queue.qsize(),
+                "inotify_max_user_instances": _read_inotify_limit("max_user_instances"),
+                "inotify_max_user_watches": _read_inotify_limit("max_user_watches"),
             }
 
     def log_statistics(self) -> None:
@@ -1327,7 +1179,8 @@ class FileObserverRegistry:
             f"inotify process={_count_inotify_instances()}, "
             f"user={_count_inotify_instances_of_user()}/"
             f"{stats['inotify_max_user_instances']}, "
-            f"fds={_open_fd_count()}")
+            f"fds={_open_fd_count()}"
+        )
 
     # -- callback worker --------------------------------------------------
 
@@ -1339,8 +1192,7 @@ class FileObserverRegistry:
         Blocking callbacks therefore never block the file system event
         processing and never hold the watchdog observer lock.
         """
-        Log.debug(
-            f"{self.__class__.__name__}: callback worker started")
+        Log.debug(f"{self.__class__.__name__}: callback worker started")
 
         while True:
             timeout = self._next_pending_timeout()
@@ -1352,8 +1204,7 @@ class FileObserverRegistry:
                 continue
 
             if item is _SHUTDOWN:
-                Log.debug(
-                    f"{self.__class__.__name__}: callback worker stopped")
+                Log.debug(f"{self.__class__.__name__}: callback worker stopped")
                 return
 
             if item is _WAKEUP:
@@ -1362,7 +1213,7 @@ class FileObserverRegistry:
 
             self._invoke_callback(item)
 
-    def _next_pending_timeout(self) -> Optional[float]:
+    def _next_pending_timeout(self) -> float | None:
         """
         Return the time until the next collapsed event has to be forwarded.
 
@@ -1373,9 +1224,7 @@ class FileObserverRegistry:
             if not self._pending_events:
                 return None
 
-            deadline = min(
-                stamp
-                for _event_type, stamp in self._pending_events.values())
+            deadline = min(stamp for _event_type, stamp in self._pending_events.values())
 
         return max(0.0, deadline - time.monotonic())
 
@@ -1383,7 +1232,7 @@ class FileObserverRegistry:
         """
         Forward all collapsed events whose interval has elapsed.
         """
-        callbacks: List[Tuple[str, str, FrozenSet[str]]] = []
+        callbacks: list[tuple[str, str, frozenset[str]]] = []
 
         with self._lock:
             if not self._running:
@@ -1407,15 +1256,13 @@ class FileObserverRegistry:
                         event_type,
                         logical_path,
                         self._affected_launch_files(logical_path),
-                    ))
+                    )
+                )
 
         for item in callbacks:
             self._invoke_callback(item)
 
-    def _invoke_callback(
-        self,
-        item: Tuple[str, str, FrozenSet[str]]
-    ) -> None:
+    def _invoke_callback(self, item: tuple[str, str, frozenset[str]]) -> None:
         """
         Call the change callback and log all exceptions.
         """
@@ -1424,9 +1271,7 @@ class FileObserverRegistry:
         try:
             self._on_change(event_type, logical_path, affected)
         except Exception:
-            Log.warn(
-                f"{self.__class__.__name__}: change callback for "
-                f"{logical_path} failed:\n{traceback.format_exc()}")
+            Log.warn(f"{self.__class__.__name__}: change callback for {logical_path} failed:\n{traceback.format_exc()}")
 
     def _enqueue(self, item: Any) -> None:
         """
@@ -1434,9 +1279,7 @@ class FileObserverRegistry:
         """
         with self._lock:
             if self._worker is None:
-                Log.debug(
-                    f"{self.__class__.__name__}: no callback worker, "
-                    f"dropping {item!r}")
+                Log.debug(f"{self.__class__.__name__}: no callback worker, dropping {item!r}")
                 return
 
             self._queue.put(item)
@@ -1444,11 +1287,7 @@ class FileObserverRegistry:
     # -- event dispatching ------------------------------------------------
 
     def _dispatch(
-        self,
-        event_type: str,
-        src_path: str,
-        dest_path: Optional[str] = None,
-        is_directory: bool = False
+        self, event_type: str, src_path: str, dest_path: str | None = None, is_directory: bool = False
     ) -> None:
         """
         Dispatch a watchdog event.
@@ -1461,28 +1300,19 @@ class FileObserverRegistry:
         lock. Watchdog operations and user callbacks are executed afterwards
         without the lock.
         """
-        pending_schedule: List[Tuple[Any, str, int, bool]] = []
-        pending_unschedule: List[Tuple[Any, str, Any]] = []
-        callbacks: List[Tuple[str, str, FrozenSet[str]]] = []
+        pending_schedule: list[tuple[Any, str, int, bool]] = []
+        pending_unschedule: list[tuple[Any, str, Any]] = []
+        callbacks: list[tuple[str, str, frozenset[str]]] = []
         wake_worker = False
 
         with self._lock:
             if not self._running:
                 return
 
-            paths = self._resolve_paths_locked(
-                src_path,
-                is_directory,
-                pending_schedule,
-                pending_unschedule)
+            paths = self._resolve_paths_locked(src_path, is_directory, pending_schedule, pending_unschedule)
 
             if dest_path is not None:
-                paths.update(
-                    self._resolve_paths_locked(
-                        dest_path,
-                        is_directory,
-                        pending_schedule,
-                        pending_unschedule))
+                paths.update(self._resolve_paths_locked(dest_path, is_directory, pending_schedule, pending_unschedule))
 
             now = time.monotonic()
 
@@ -1511,11 +1341,10 @@ class FileObserverRegistry:
                         event_type,
                         logical_path,
                         self._affected_launch_files(logical_path),
-                    ))
+                    )
+                )
 
-        self._flush_watch_operations(
-            pending_schedule,
-            pending_unschedule)
+        self._flush_watch_operations(pending_schedule, pending_unschedule)
 
         for item in callbacks:
             self._enqueue(item)
@@ -1526,8 +1355,8 @@ class FileObserverRegistry:
     def _refresh_path_locked(
         self,
         logical_path: str,
-        pending_schedule: List[Tuple[Any, str, int, bool]],
-        pending_unschedule: List[Tuple[Any, str, Any]]
+        pending_schedule: list[tuple[Any, str, int, bool]],
+        pending_unschedule: list[tuple[Any, str, Any]],
     ) -> None:
         """
         Refresh the real target of a logical path.
@@ -1545,10 +1374,7 @@ class FileObserverRegistry:
         old_real_path, old_directories = path_info
         new_real_path, new_directories = self._path_details(logical_path)
 
-        if (
-            old_real_path == new_real_path
-            and old_directories == new_directories
-        ):
+        if old_real_path == new_real_path and old_directories == new_directories:
             return
 
         if not new_directories:
@@ -1556,31 +1382,24 @@ class FileObserverRegistry:
             # target directory was removed. The old watches are kept so that a
             # recreation of the path is still detected.
             Log.debug(
-                f"{self.__class__.__name__}: no observable directory for "
-                f"{logical_path}, keeping previous watches")
+                f"{self.__class__.__name__}: no observable directory for {logical_path}, keeping previous watches"
+            )
             return
 
-        Log.debug(
-            f"{self.__class__.__name__}: refresh path {logical_path}: "
-            f"{old_real_path} -> {new_real_path}")
+        Log.debug(f"{self.__class__.__name__}: refresh path {logical_path}: {old_real_path} -> {new_real_path}")
 
         for directory in new_directories:
             if directory in old_directories:
                 continue
 
-            self._reserve_directory_locked(
-                directory,
-                reference_count,
-                pending_schedule)
+            self._reserve_directory_locked(directory, reference_count, pending_schedule)
 
         for directory in old_directories:
             if directory in new_directories:
                 continue
 
             for _ in range(reference_count):
-                self._release_directory_locked(
-                    directory,
-                    pending_unschedule)
+                self._release_directory_locked(directory, pending_unschedule)
 
         old_aliases = self._real_paths.get(old_real_path)
 
@@ -1590,22 +1409,17 @@ class FileObserverRegistry:
             if not old_aliases:
                 self._real_paths.pop(old_real_path, None)
 
-        self._real_paths.setdefault(new_real_path, set()).add(
-            logical_path
-        )
+        self._real_paths.setdefault(new_real_path, set()).add(logical_path)
 
-        self._path_info[logical_path] = (
-            new_real_path,
-            new_directories
-        )
+        self._path_info[logical_path] = (new_real_path, new_directories)
 
     def _resolve_paths_locked(
         self,
         event_path: str,
         is_directory: bool = False,
-        pending_schedule: Optional[List[Tuple[Any, str, int, bool]]] = None,
-        pending_unschedule: Optional[List[Tuple[Any, str, Any]]] = None
-    ) -> Set[str]:
+        pending_schedule: list[tuple[Any, str, int, bool]] | None = None,
+        pending_unschedule: list[tuple[Any, str, Any]] | None = None,
+    ) -> set[str]:
         """
         Resolve an event path to all matching logical observed paths.
 
@@ -1624,34 +1438,26 @@ class FileObserverRegistry:
             pending_unschedule = []
 
         normalized_path = self._normalize_path(event_path)
-        resolved_paths: Set[str] = set()
+        resolved_paths: set[str] = set()
 
         # Refresh symlink targets when the logical path itself changed.
         if normalized_path in self._file_refs:
-            self._refresh_path_locked(
-                normalized_path,
-                pending_schedule,
-                pending_unschedule)
+            self._refresh_path_locked(normalized_path, pending_schedule, pending_unschedule)
             resolved_paths.add(normalized_path)
 
         # Resolve events from the physical target directory.
         real_path = os.path.realpath(normalized_path)
-        resolved_paths.update(
-            self._real_paths.get(real_path, set())
-        )
+        resolved_paths.update(self._real_paths.get(real_path, set()))
 
         if is_directory:
             # A deleted or moved directory affects all observed files inside.
             for observed_path, (path_real, _dirs) in self._path_info.items():
-                if (
-                    os.path.dirname(observed_path) == normalized_path
-                    or os.path.dirname(path_real) == normalized_path
-                ):
+                if os.path.dirname(observed_path) == normalized_path or os.path.dirname(path_real) == normalized_path:
                     resolved_paths.add(observed_path)
 
         return resolved_paths
 
-    def _resolve(self, src_path: str) -> Optional[str]:
+    def _resolve(self, src_path: str) -> str | None:
         """
         Return one resolved logical path for compatibility with older callers.
 
@@ -1659,19 +1465,13 @@ class FileObserverRegistry:
         sorted path is returned. Internal dispatch uses _resolve_paths_locked()
         and therefore notifies all aliases.
         """
-        pending_schedule: List[Tuple[Any, str, int, bool]] = []
-        pending_unschedule: List[Tuple[Any, str, Any]] = []
+        pending_schedule: list[tuple[Any, str, int, bool]] = []
+        pending_unschedule: list[tuple[Any, str, Any]] = []
 
         with self._lock:
-            paths = self._resolve_paths_locked(
-                src_path,
-                False,
-                pending_schedule,
-                pending_unschedule)
+            paths = self._resolve_paths_locked(src_path, False, pending_schedule, pending_unschedule)
 
-        self._flush_watch_operations(
-            pending_schedule,
-            pending_unschedule)
+        self._flush_watch_operations(pending_schedule, pending_unschedule)
 
         if not paths:
             return None

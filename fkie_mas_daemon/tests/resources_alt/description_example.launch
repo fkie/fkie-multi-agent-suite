@@ -97,7 +97,7 @@
   <node machine="control station" name="map" pkg="rostopic" type="rostopic" args="pub /description_example/base std_msgs/String -r 1 'map'">
     <param name="capability_group" value="Map"/>
   </node>
-  
+
   </group>
 
 </launch>

@@ -6,10 +6,10 @@
 #
 # ****************************************************************************
 
-class LaunchDescription:
 
-    def __init__(self, path='', masteruri='', host='', nodes=[], robot_descriptions=[], nodelets={}, associations={}):
-        '''
+class LaunchDescription:
+    def __init__(self, path="", masteruri="", host="", nodes=[], robot_descriptions=[], nodelets={}, associations={}):
+        """
         Description of the robot configured by this launch file.
 
          :param str path: path of the launch file.
@@ -24,7 +24,7 @@ class LaunchDescription:
          :type nodelets: {str: [str]}
          :param associations: a dictionary with associations of nodes
          :type associations: {str: [str]}
-        '''
+        """
         self.path = path
         self.masteruri = masteruri
         self.host = host
@@ -36,18 +36,23 @@ class LaunchDescription:
         self.associations = associations if associations else {}
 
     def __repr__(self):
-        return "<%s[%s, masteruri: %s, host: %s], with %d nodes>" % (self.__class__, self.path, self.masteruri, self.host, len(self.nodes))
+        return "<%s[%s, masteruri: %s, host: %s], with %d nodes>" % (
+            self.__class__,
+            self.path,
+            self.masteruri,
+            self.host,
+            len(self.nodes),
+        )
 
     def __str__(self):
         if self.nodes:
-            return "%s [%s]" % (self.__repr__(), ','.join([str(node) for node in self.nodes]))
+            return "%s [%s]" % (self.__repr__(), ",".join([str(node) for node in self.nodes]))
         return self.__repr__()
 
 
 class RobotDescription:
-
-    def __init__(self, machine='', robot_name='', robot_type='', robot_images=[], robot_descr='', capabilities=[]):
-        '''
+    def __init__(self, machine="", robot_name="", robot_type="", robot_images=[], robot_descr="", capabilities=[]):
+        """
         Description of the robot configured by this launch file.
 
          :param str machine: the address of the host.
@@ -58,7 +63,7 @@ class RobotDescription:
          :param str robot_descr: some description.
          :param capabilities: a list of capabilities :message:Capability.
          :type capabilities: [Capability]
-        '''
+        """
         self.machine = machine
         self.robot_name = robot_name
         self.robot_type = robot_type
@@ -69,18 +74,22 @@ class RobotDescription:
         self.capabilities = capabilities if capabilities else []
 
     def __repr__(self):
-        return "<%s[%s], machine=%s, with %d capabilities>" % (self.__class__, self.robot_name, self.machine, len(self.capabilities))
+        return "<%s[%s], machine=%s, with %d capabilities>" % (
+            self.__class__,
+            self.robot_name,
+            self.machine,
+            len(self.capabilities),
+        )
 
     def __str__(self):
         if self.capabilities:
-            return "%s [%s]" % (self.__repr__(), ','.join([str(cap) for cap in self.capabilities]))
+            return "%s [%s]" % (self.__repr__(), ",".join([str(cap) for cap in self.capabilities]))
         return self.__repr__()
 
 
 class Capability:
-
-    def __init__(self, name='', namespace='', cap_type='', images=[], description='', nodes=[]):
-        '''
+    def __init__(self, name="", namespace="", cap_type="", images=[], description="", nodes=[]):
+        """
         Capabilities defined in launch file.
 
         :param str namespace: the ROS namespace of the capability.
@@ -91,7 +100,7 @@ class Capability:
         :param str description: the description of the capability.
         :param nodes: a list of nodes assigned to this group. The nodes are described by full ROS name (with namesspace).
         :type nodes: [str]
-        '''
+        """
         self.namespace = namespace
         self.name = name
         self.type = cap_type
@@ -106,5 +115,5 @@ class Capability:
 
     def __str__(self):
         if self.nodes:
-            return "%s [%s]" % (self.__repr__(), ','.join([str(node) for node in self.nodes]))
+            return "%s [%s]" % (self.__repr__(), ",".join([str(node) for node in self.nodes]))
         return self.__repr__()

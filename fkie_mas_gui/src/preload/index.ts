@@ -1,4 +1,7 @@
 // import { electronAPI } from "@electron-toolkit/preload";
+
+import { contextBridge, ipcRenderer } from "electron";
+import { ConnectConfig } from "ssh2";
 import {
   AuCheckingForUpdateCallback,
   AuDownloadProgressCallback,
@@ -42,8 +45,6 @@ import {
 } from "@/types";
 import { TServiceConfig } from "@/types/ServiceManager";
 import { TTerminalConfig } from "@/types/TerminalManager";
-import { contextBridge, ipcRenderer } from "electron";
-import { ConnectConfig } from "ssh2";
 
 // Custom APIs for renderer
 // const api = {};

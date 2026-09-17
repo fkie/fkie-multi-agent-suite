@@ -30,7 +30,7 @@ services:
       VITE_ROS_VERSION: "2"
       USE_PROXY: "$USE_PROXY"
       HTTPS_PROXY: "$HTTPS_PROXY"
-    devices: 
+    devices:
       - /dev/dri:/dev/dri
     volumes:
       - "/tmp/.X11-unix:/tmp/.X11-unix:rw"

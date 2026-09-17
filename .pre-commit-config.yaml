@@ -87,7 +87,6 @@ repos:
     rev: v2.4.3
     hooks:
       - id: codespell
-        additional_dependencies: [tomli]
         exclude: ^fkie_mas_gui/package-lock\.json$
 
   # --------------------------------------------------------------- secrets

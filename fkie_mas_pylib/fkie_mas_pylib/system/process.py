@@ -1,9 +1,7 @@
 import psutil
-from typing import List
-from typing import Tuple
 
 
-def get_child_pid(pid: int) -> Tuple[int, str, List[int]]:
+def get_child_pid(pid: int) -> tuple[int, str, list[int]]:
     # try to determine the process id of the node inside the screen
     found_deep = -1
     found_pid = -1
@@ -26,7 +24,7 @@ def get_child_pid(pid: int) -> Tuple[int, str, List[int]]:
                 found_pid = process.pid
                 found_name = process.name()
                 parents2kill = parents
-    except Exception as error:
+    except Exception:
         # fallback for psutil versions (<5.6.0) without Process.parents()
         current_pid = pid
         new_pid = current_pid

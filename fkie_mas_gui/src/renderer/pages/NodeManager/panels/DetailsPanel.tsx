@@ -16,6 +16,8 @@ import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import {
+  getDiagnosticLevelName,
+  getFileName,
   LifecycleState,
   RosNode,
   RosNodeStatus,
@@ -23,17 +25,15 @@ import {
   RosTopic,
   RosTopicId,
   TLogPathItem,
-  getDiagnosticLevelName,
-  getFileName,
 } from "@/renderer/models";
 import { envFromSystemEnv } from "@/renderer/models/ProviderLaunchConfiguration";
+import { TEventNodeDiagnostic, TEventNodeLifecycle } from "@/renderer/providers/events";
 import {
   EVENT_NODE_DIAGNOSTIC,
   EVENT_NODE_LIFECYCLE,
   EVENT_PROVIDER_ROS_SERVICES,
   EVENT_PROVIDER_ROS_TOPICS,
 } from "@/renderer/providers/eventTypes";
-import { TEventNodeDiagnostic, TEventNodeLifecycle } from "@/renderer/providers/events";
 import { generateUniqueId } from "@/renderer/utils";
 import { envEntryToStr } from "@/types";
 import SystemInformationPanel from "./SystemInformationPanel";

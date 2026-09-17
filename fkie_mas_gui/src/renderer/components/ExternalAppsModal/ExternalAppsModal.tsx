@@ -1,4 +1,3 @@
-import { generateUniqueId } from "@/renderer/utils";
 import AppsIcon from "@mui/icons-material/Apps";
 import {
   Button,
@@ -19,9 +18,9 @@ import {
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
-
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
+import { generateUniqueId } from "@/renderer/utils";
 import DraggablePaper from "../UI/DraggablePaper";
 
 const headers = [
@@ -253,11 +252,7 @@ export default function ExternalAppsModal(): JSX.Element {
           </Button>
         </DialogActions>
       </Dialog>
-      <Tooltip
-        title="External Apps"
-        placement="right"
-        disableInteractive
-      >
+      <Tooltip title="External Apps" placement="right" disableInteractive>
         <IconButton
           sx={{
             padding: "0em",

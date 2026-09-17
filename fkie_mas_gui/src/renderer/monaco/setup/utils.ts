@@ -15,9 +15,11 @@ export async function resolveValue(defaultValue: string) {
 function sanitizeSnippetValue(text: string): string {
   if (!text) return "";
 
-  return text
-    .trim()
-    .replace(/\r?\n/g, " ")
-    // Monaco snippet syntax: escape backslash first, then metacharacters
-    .replace(/[\\$}]/g, (ch) => `\\${ch}`);
+  return (
+    text
+      .trim()
+      .replace(/\r?\n/g, " ")
+      // Monaco snippet syntax: escape backslash first, then metacharacters
+      .replace(/[\\$}]/g, (ch) => `\\${ch}`)
+  );
 }

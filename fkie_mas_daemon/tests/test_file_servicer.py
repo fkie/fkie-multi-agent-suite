@@ -6,27 +6,27 @@
 #
 # ****************************************************************************
 
-from io import FileIO
+import json
 import os
 import unittest
-import json
+from io import FileIO
 from types import SimpleNamespace
 
 TEST_ROS1 = True
 try:
     from fkie_mas_pylib.launch import xml_ros1 as xml
+
     TEST_ROS1 = os.environ["ROS_DISTRO"] == "noetic"
     from fkie_mas_daemon.file_servicer import FileServicer
 except ModuleNotFoundError:
     TEST_ROS1 = False
     from fkie_mas_pylib.launch import xml
 
-PKG = 'fkie_mas_daemon'
+PKG = "fkie_mas_daemon"
 
 
 class TestFileServiceServicer(unittest.TestCase):
-    '''
-    '''
+    """ """
 
     @classmethod
     def tearDownClass(cls):
@@ -34,14 +34,13 @@ class TestFileServiceServicer(unittest.TestCase):
 
     def setUp(self):
         self.current_pose = 0
-        path = xml.interpret_path(
-            '$(find fkie_mas_daemon)/../../../build')
+        path = xml.interpret_path("$(find fkie_mas_daemon)/../../../build")
         if not os.path.exists(path):
             os.mkdir(path)
-        self.test_get_content_path = '%s/tmp_get_content_test.txt' % path
-        self.test_save_content_path = '%s/tmp_save_content_test.txt' % path
-        self.test_rename_from_file = '%s/tmp_rename_from_dummy.launch' % path
-        self.test_rename_to_file = '%s/tmp_rename_to_dummy.launch' % path
+        self.test_get_content_path = "%s/tmp_get_content_test.txt" % path
+        self.test_save_content_path = "%s/tmp_save_content_test.txt" % path
+        self.test_rename_from_file = "%s/tmp_rename_from_dummy.launch" % path
+        self.test_rename_to_file = "%s/tmp_rename_to_dummy.launch" % path
 
     def tearDown(self):
         try:
@@ -63,14 +62,16 @@ class TestFileServiceServicer(unittest.TestCase):
 
     def test_list_path(self):
         fs = FileServicer(loop=None, test_env=True)
-        root_paths = set(os.getenv('ROS_PACKAGE_PATH').split(':'))
-#        launch_response = fs.ListPath(fmsg.ListPathRequest(path=''), DummyContext())
-#        self.assertEqual(len(root_paths), len(launch_response.items), 'ROS root paths are not equal, expected: %s, got: %s' % (root_paths, launch_response.items))
+        root_paths = set(os.getenv("ROS_PACKAGE_PATH").split(":"))
+        #        launch_response = fs.ListPath(fmsg.ListPathRequest(path=''), DummyContext())
+        #        self.assertEqual(len(root_paths), len(launch_response.items), 'ROS root paths are not equal, expected: %s, got: %s' % (root_paths, launch_response.items))
         launch_response = fs.getPathList(inputPath=os.getcwd())
-        launch_response = json.loads(
-            launch_response, object_hook=lambda d: SimpleNamespace(**d))
-        self.assertEqual(len(os.listdir(os.getcwd())), len(launch_response),
-                         'reported different count of items in working directory: %s' % os.getcwd())
+        launch_response = json.loads(launch_response, object_hook=lambda d: SimpleNamespace(**d))
+        self.assertEqual(
+            len(os.listdir(os.getcwd())),
+            len(launch_response),
+            "reported different count of items in working directory: %s" % os.getcwd(),
+        )
         # # test cache
         # launch_response = fs.ListPath(fmsg.ListPathRequest(
         #     path='%s/../..' % os.getcwd()), DummyContext())
@@ -103,27 +104,38 @@ class TestFileServiceServicer(unittest.TestCase):
         # self.assertEqual(next(content_response).status.code, fmsg.ReturnStatus.StatusType.Value(
         #     'IO_ERROR'), 'wrong status code if path not exists')
         # create a test file
-        test_data = 'This is a test file for get content test.'
-        with FileIO(self.test_get_content_path, 'w') as testfile:
+        test_data = "This is a test file for get content test."
+        with FileIO(self.test_get_content_path, "w") as testfile:
             testfile.write(test_data.encode())
-        content_response = fs.getFileContent(
-            requestPath=self.test_get_content_path)
-        content_response = json.loads(
-            content_response, object_hook=lambda d: SimpleNamespace(**d)
+        content_response = fs.getFileContent(requestPath=self.test_get_content_path)
+        content_response = json.loads(content_response, object_hook=lambda d: SimpleNamespace(**d))
+        self.assertEqual(content_response.path, self.test_get_content_path, "wrong returned path in file content")
+        self.assertGreater(
+            content_response.mtime,
+            0,
+            "wrong returned file mtime in file GetFileContentReply: %.1f, expected: >0" % content_response.mtime,
         )
         self.assertEqual(
-            content_response.path, self.test_get_content_path, 'wrong returned path in file content')
-        self.assertGreater(
-            content_response.mtime, 0, 'wrong returned file mtime in file GetFileContentReply: %.1f, expected: >0' % content_response.mtime)
-        self.assertEqual(content_response.size, len(
-            test_data), 'wrong returned file size in file GetFileContentReply: %d, expected: %d' % (content_response.size, len(test_data)))
-        self.assertEqual(len(content_response.value), len(
-            test_data), 'wrong returned length of data in file GetFileContentReply: %d, expected: %d' % (len(content_response.value), len(test_data)))
-        self.assertEqual(content_response.value, test_data, 'wrong returned data in file GetFileContentReply: %s, expected: %s' % (
-            content_response.value, test_data))
+            content_response.size,
+            len(test_data),
+            "wrong returned file size in file GetFileContentReply: %d, expected: %d"
+            % (content_response.size, len(test_data)),
+        )
+        self.assertEqual(
+            len(content_response.value),
+            len(test_data),
+            "wrong returned length of data in file GetFileContentReply: %d, expected: %d"
+            % (len(content_response.value), len(test_data)),
+        )
+        self.assertEqual(
+            content_response.value,
+            test_data,
+            "wrong returned data in file GetFileContentReply: %s, expected: %s" % (content_response.value, test_data),
+        )
         os.remove(self.test_get_content_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import rosunit
+
     rosunit.unitrun(PKG, os.path.basename(__file__), TestFileServiceServicer)

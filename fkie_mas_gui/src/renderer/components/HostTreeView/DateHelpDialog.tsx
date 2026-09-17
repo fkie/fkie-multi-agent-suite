@@ -21,12 +21,7 @@ export default function DateHelpDialog(props: DateHelpDialogProps): JSX.Element 
   `;
 
   return (
-    <Dialog
-      sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }}
-      maxWidth="md"
-      open={open}
-      {...other}
-    >
+    <Dialog sx={{ "& .MuiDialog-paper": { width: "80%", maxHeight: 435 } }} maxWidth="md" open={open} {...other}>
       <DialogTitle className="draggable-dialog-title" id="draggable-dialog-title">
         Set time
       </DialogTitle>

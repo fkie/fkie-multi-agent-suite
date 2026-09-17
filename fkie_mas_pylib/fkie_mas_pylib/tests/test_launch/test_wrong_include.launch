@@ -2,9 +2,9 @@
 
    <arg name="robot_ns" default="packbot"/>
    <arg name="tf_carto" default="tf_carto" />
-   
+
    <param name="tf_prefix" value="$(arg robot_ns)" />
-	
+
 	<group ns="$(arg robot_ns)">
 	  <node name="fkie_mas_pylib" pkg="fkie_mas_pylib"
 	        type="fkie_mas_pylib" args="
@@ -13,7 +13,7 @@
 	        output="screen">
 	    	 <param name="capability_group" value="localization_cartographer" />
 	      <remap from="scan" to="base_scan" />
-	      
+
 	      <remap from="/tf" to="$(arg tf_carto)"/>
 	      <remap from="/tf_static" to="$(arg tf_carto)_static"/>
 	  </node>

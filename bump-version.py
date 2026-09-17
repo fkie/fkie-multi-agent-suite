@@ -1,10 +1,10 @@
-import xml.etree.ElementTree as ET
 import argparse
-import re
-from datetime import datetime
-import subprocess
-import os
 import json
+import os
+import re
+import subprocess
+import xml.etree.ElementTree as ET
+from datetime import datetime
 
 # packages that collect all repository changes (prefixed with the package name)
 ALL_CHANGES_PACKAGES = {"fkie_mas_gui"}
@@ -22,9 +22,7 @@ FIELD_SEP = "\x1f"
 def run_git(args, cwd=None, check=True):
     """Run a git command and return stdout (or None on error)."""
     try:
-        return subprocess.check_output(
-            ["git"] + args, stderr=subprocess.STDOUT, cwd=cwd
-        ).decode("utf-8").strip()
+        return subprocess.check_output(["git"] + args, stderr=subprocess.STDOUT, cwd=cwd).decode("utf-8").strip()
     except subprocess.CalledProcessError as e:
         if check:
             print(f"git {' '.join(args)} failed:", e.output.decode().strip())
@@ -44,10 +42,7 @@ def git_pull(repo_root):
 
 def get_last_version_tag(repo_root):
     """Return the most recent tag reachable from HEAD that looks like a version."""
-    out = run_git(
-        ["tag", "--merged", "HEAD", "--sort=-creatordate"],
-        cwd=repo_root, check=False
-    )
+    out = run_git(["tag", "--merged", "HEAD", "--sort=-creatordate"], cwd=repo_root, check=False)
     if not out:
         print("No tags found, using complete history.")
         return None
@@ -130,7 +125,9 @@ def collect_all_changes(since_ref, repo_root, package_dirs, skip_name=None):
     Entries are prefixed with the affected package names, except for 'skip_name'.
     """
     args = [
-        "log", "--no-merges", "--name-only",
+        "log",
+        "--no-merges",
+        "--name-only",
         f"--pretty=format:{RECORD_SEP}%s{FIELD_SEP}",
     ]
     if since_ref:
@@ -171,31 +168,30 @@ def collect_all_changes(since_ref, repo_root, package_dirs, skip_name=None):
 # --------------------------------------------------------------------------
 def update_package_json(new_version, current_version):
     """Update the version in package.json if it exists, preserving formatting."""
-    package_json_path = 'package.json'
+    package_json_path = "package.json"
     if os.path.exists(package_json_path):
-        with open(package_json_path, 'r', encoding='utf-8') as json_file:
+        with open(package_json_path, encoding="utf-8") as json_file:
             package_data = json.load(json_file)
 
-        package_data['version'] = new_version
+        package_data["version"] = new_version
 
-        with open(package_json_path, 'w', encoding='utf-8') as json_file:
-            json.dump(package_data, json_file, indent=2, separators=(',', ': '))
-            json_file.write('\n')
+        with open(package_json_path, "w", encoding="utf-8") as json_file:
+            json.dump(package_data, json_file, indent=2, separators=(",", ": "))
+            json_file.write("\n")
 
         print(f"Version updated in {package_json_path}.")
         return True
 
-    elif os.getcwd().endswith('fkie_mas_daemon'):
-        gui_file_path = '../fkie_mas_gui/src/renderer/context/SettingsContext.tsx'
-        content = ''
-        with open(gui_file_path, 'r', encoding='utf-8') as gui_file:
+    elif os.getcwd().endswith("fkie_mas_daemon"):
+        gui_file_path = "../fkie_mas_gui/src/renderer/context/SettingsContext.tsx"
+        content = ""
+        with open(gui_file_path, encoding="utf-8") as gui_file:
             content = gui_file.read()
             content = content.replace(
-                f'MIN_VERSION_DAEMON = "{current_version}"',
-                f'MIN_VERSION_DAEMON = "{new_version}"'
+                f'MIN_VERSION_DAEMON = "{current_version}"', f'MIN_VERSION_DAEMON = "{new_version}"'
             )
         if content:
-            with open(gui_file_path, 'w', encoding='utf-8') as gui_file:
+            with open(gui_file_path, "w", encoding="utf-8") as gui_file:
                 gui_file.write(content)
                 print(f"MIN_VERSION_DAEMON updated in {gui_file_path}.")
     return False
@@ -203,7 +199,7 @@ def update_package_json(new_version, current_version):
 
 def update_changelog_md(new_version, changes):
     """Update CHANGELOG.md if it exists."""
-    changelog_path = 'CHANGELOG.md'
+    changelog_path = "CHANGELOG.md"
     if not os.path.exists(changelog_path):
         return
 
@@ -212,18 +208,15 @@ def update_changelog_md(new_version, changes):
     else:
         bullet_list = "- No changes found"
 
-    changelog_entry = (
-        f"## {new_version} - {datetime.now().strftime('%d.%m.%Y')}\n\n"
-        f"{bullet_list}\n\n"
-    )
+    changelog_entry = f"## {new_version} - {datetime.now().strftime('%d.%m.%Y')}\n\n{bullet_list}\n\n"
 
-    with open(changelog_path, 'r', encoding='utf-8') as changelog_file:
+    with open(changelog_path, encoding="utf-8") as changelog_file:
         lines = changelog_file.readlines()
 
     insert_index = 2 if len(lines) >= 2 else len(lines)
     lines.insert(insert_index, changelog_entry)
 
-    with open(changelog_path, 'w', encoding='utf-8') as changelog_file:
+    with open(changelog_path, "w", encoding="utf-8") as changelog_file:
         changelog_file.writelines(lines)
 
     print(f"Entry added to {changelog_path}.")
@@ -231,7 +224,7 @@ def update_changelog_md(new_version, changes):
 
 def update_changelog_rst(new_version, changes):
     """Update CHANGELOG.rst if it exists, inserting after the package title block."""
-    changelog_path = 'CHANGELOG.rst'
+    changelog_path = "CHANGELOG.rst"
     if not os.path.exists(changelog_path):
         return
 
@@ -245,7 +238,7 @@ def update_changelog_rst(new_version, changes):
 
     changelog_entry = f"{title}\n{underline}\n{bullet_list}\n\n"
 
-    with open(changelog_path, 'r', encoding='utf-8') as changelog_file:
+    with open(changelog_path, encoding="utf-8") as changelog_file:
         lines = changelog_file.readlines()
 
     insert_index = 0
@@ -259,7 +252,7 @@ def update_changelog_rst(new_version, changes):
 
     lines.insert(insert_index, changelog_entry)
 
-    with open(changelog_path, 'w', encoding='utf-8') as changelog_file:
+    with open(changelog_path, "w", encoding="utf-8") as changelog_file:
         changelog_file.writelines(lines)
 
     print(f"Entry added to {changelog_path}.")
@@ -286,39 +279,36 @@ def bump_version(package_path, version_part):
 
     os.chdir(abs_package_path)
     try:
-        tree = ET.parse('package.xml')
+        tree = ET.parse("package.xml")
         root = tree.getroot()
 
-        version_tag = root.find('version')
-        name_tag = root.find('name')
+        version_tag = root.find("version")
+        name_tag = root.find("name")
         if version_tag is None:
             print("No <version> tag found.")
             return
 
         current_version = version_tag.text.strip()
         package_name = (
-            name_tag.text.strip() if name_tag is not None and name_tag.text
-            else os.path.basename(abs_package_path)
+            name_tag.text.strip() if name_tag is not None and name_tag.text else os.path.basename(abs_package_path)
         )
         print(f"Package: {package_name}, current version: {current_version}")
 
         try:
-            major, minor, patch = map(int, current_version.split('.'))
+            major, minor, patch = map(int, current_version.split("."))
         except ValueError:
             print("Error parsing the version.")
             return
 
-        if version_part == 'major':
+        if version_part == "major":
             major, minor, patch = major + 1, 0, 0
-        elif version_part == 'minor':
+        elif version_part == "minor":
             minor, patch = minor + 1, 0
         else:
             patch += 1
 
         if package_name in ALL_CHANGES_PACKAGES:
-            changes = collect_all_changes(
-                since_ref, repo_root, package_dirs, skip_name=package_name
-            )
+            changes = collect_all_changes(since_ref, repo_root, package_dirs, skip_name=package_name)
             print(f"Collected {len(changes)} repository-wide changes.")
         else:
             changes = collect_package_changes(since_ref, repo_root, rel_package_path)
@@ -328,9 +318,9 @@ def bump_version(package_path, version_part):
         version_tag.text = new_version
         print(f"New version: {new_version}")
 
-        tree.write('package.xml', encoding='utf-8', xml_declaration=True)
-        with open('package.xml', 'a', encoding='utf-8') as xml_file:
-            xml_file.write('\n')
+        tree.write("package.xml", encoding="utf-8", xml_declaration=True)
+        with open("package.xml", "a", encoding="utf-8") as xml_file:
+            xml_file.write("\n")
         print("Version updated in package.xml.")
 
         update_package_json(new_version, current_version)
@@ -342,15 +332,13 @@ def bump_version(package_path, version_part):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description='Bump the version of a ROS package and update changelog files.'
-    )
-    parser.add_argument('package_path', type=str, help='Path to the package')
+    parser = argparse.ArgumentParser(description="Bump the version of a ROS package and update changelog files.")
+    parser.add_argument("package_path", type=str, help="Path to the package")
     parser.add_argument(
-        'version_part',
+        "version_part",
         type=str,
-        choices=['major', 'minor', 'patch'],
-        help="Part of the version to increase: 'major', 'minor', or 'patch'"
+        choices=["major", "minor", "patch"],
+        help="Part of the version to increase: 'major', 'minor', or 'patch'",
     )
 
     args = parser.parse_args()

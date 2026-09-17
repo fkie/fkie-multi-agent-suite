@@ -12,8 +12,9 @@ import re
 import threading
 import time
 from collections import OrderedDict
+from collections.abc import Callable, Hashable
 from functools import lru_cache
-from typing import Any, Callable, Dict, Hashable, List, Optional, Tuple
+from typing import Any, Optional
 
 from fkie_mas_pylib.logging.logging import Log
 
@@ -27,7 +28,7 @@ class _Missing:
 
 MISSING = _Missing()
 
-FileFingerprint = Optional[Tuple[int, int, int, int]]
+FileFingerprint = Optional[tuple[int, int, int, int]]
 
 
 def normalize_path(path: str) -> str:
@@ -103,7 +104,7 @@ class LruTtlCache:
         self._lock = threading.Lock()
 
         # key -> (value, fingerprint, insertion timestamp)
-        self._entries: "OrderedDict[Hashable, Tuple[Any, Any, float]]" = OrderedDict()
+        self._entries: OrderedDict[Hashable, tuple[Any, Any, float]] = OrderedDict()
 
         self._hits = 0
         self._misses = 0
@@ -122,11 +123,7 @@ class LruTtlCache:
         if self._ttl <= 0.0:
             return
 
-        expired_keys = [
-            key
-            for key, (_value, _fingerprint, stamp) in self._entries.items()
-            if now - stamp >= self._ttl
-        ]
+        expired_keys = [key for key, (_value, _fingerprint, stamp) in self._entries.items() if now - stamp >= self._ttl]
 
         for key in expired_keys:
             if self._entries.pop(key, None) is not None:
@@ -185,9 +182,7 @@ class LruTtlCache:
                 self._entries.popitem(last=False)
                 self._evictions += 1
 
-    def get_or_create(
-        self, key: Hashable, factory: Callable[[], Any], fingerprint: Any = None
-    ) -> Any:
+    def get_or_create(self, key: Hashable, factory: Callable[[], Any], fingerprint: Any = None) -> Any:
         """
         Return a cached value or create it using factory.
 
@@ -206,10 +201,7 @@ class LruTtlCache:
         if value is MISSING:
             # MISSING is reserved as "no value" marker and must never be
             # stored, otherwise it could not be distinguished from a miss.
-            Log.debug(
-                f"{self._name}: factory for {key!r} returned MISSING, "
-                f"result is not cached"
-            )
+            Log.debug(f"{self._name}: factory for {key!r} returned MISSING, result is not cached")
             return value
 
         self.put(key, value, fingerprint)
@@ -263,7 +255,7 @@ class LruTtlCache:
             self._invalidations += removed
             return removed
 
-    def statistics(self) -> Dict[str, Any]:
+    def statistics(self) -> dict[str, Any]:
         """
         Return cache statistics.
 
@@ -337,9 +329,7 @@ class FileContentCache:
         """
         return os.path.realpath(normalize_path(path))
 
-    def get_content(
-        self, path: str, encoding: str = "utf-8", default: Any = MISSING
-    ) -> Any:
+    def get_content(self, path: str, encoding: str = "utf-8", default: Any = MISSING) -> Any:
         """
         Return the text content of a file.
 
@@ -377,10 +367,7 @@ class FileContentCache:
         if self.fingerprint(normalized_path) == fingerprint:
             self._cache.put(cache_key, content, fingerprint)
         else:
-            Log.debug(
-                f"FileContentCache: {normalized_path} changed while reading, "
-                f"result is not cached"
-            )
+            Log.debug(f"FileContentCache: {normalized_path} changed while reading, result is not cached")
 
         return content
 
@@ -390,7 +377,7 @@ class FileContentCache:
         Read a text file using strict decoding.
         """
         try:
-            with open(path, "r", encoding=encoding) as file_object:
+            with open(path, encoding=encoding) as file_object:
                 return file_object.read()
         except (OSError, UnicodeError, LookupError) as error:
             Log.debug(f"FileContentCache: cannot read {path}: {error}")
@@ -405,11 +392,7 @@ class FileContentCache:
         """
         cache_path = self._cache_path(path)
 
-        return self._cache.invalidate_if(
-            lambda key: (
-                isinstance(key, tuple) and len(key) >= 1 and key[0] == cache_path
-            )
-        )
+        return self._cache.invalidate_if(lambda key: isinstance(key, tuple) and len(key) >= 1 and key[0] == cache_path)
 
     def clear(self) -> None:
         """
@@ -417,7 +400,7 @@ class FileContentCache:
         """
         self._cache.clear()
 
-    def statistics(self) -> Dict[str, Any]:
+    def statistics(self) -> dict[str, Any]:
         """
         Return cache statistics.
         """
@@ -448,8 +431,8 @@ class MessageStructCache:
         self,
         kind: str,
         type_name: str,
-        factory: Callable[[], List[Dict[str, Any]]],
-    ) -> List[Dict[str, Any]]:
+        factory: Callable[[], list[dict[str, Any]]],
+    ) -> list[dict[str, Any]]:
         """
         Return a mutable copy of the cached message structure.
         """
@@ -465,7 +448,7 @@ class MessageStructCache:
         """
         self._cache.clear()
 
-    def statistics(self) -> Dict[str, Any]:
+    def statistics(self) -> dict[str, Any]:
         """
         Return cache statistics.
         """
@@ -492,7 +475,7 @@ FILE_CONTENT_CACHE = FileContentCache()
 MESSAGE_STRUCT_CACHE = MessageStructCache()
 
 
-def cache_statistics() -> Dict[str, Any]:
+def cache_statistics() -> dict[str, Any]:
     """
     Return statistics for all process-wide caches.
     """

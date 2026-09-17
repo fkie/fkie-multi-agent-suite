@@ -1,5 +1,5 @@
-import { TFileRange, TParameterRequest } from "@/types";
 import { editor } from "monaco-editor";
+import { TFileRange, TParameterRequest } from "@/types";
 
 export type TParameterInsert = {
   range: TFileRange; // range to replace (empty range => plain insert)
@@ -194,12 +194,12 @@ function pythonValue(value: string | undefined, type: string | undefined): strin
 /* ------------------------------- XML launch ------------------------------- */
 
 export type TXmlNodeBlock = {
-  tag: string;        // "node" | "composable_node" | ...
-  tagStart: number;   // index of "<"
-  tagEnd: number;     // exclusive end of the opening tag (== bodyStart)
+  tag: string; // "node" | "composable_node" | ...
+  tagStart: number; // index of "<"
+  tagEnd: number; // exclusive end of the opening tag (== bodyStart)
   bodyStart: number;
-  bodyEnd: number;    // index of "</tag>" or bodyStart if self-closing
-  blockEnd: number;   // exclusive end including the closing tag
+  bodyEnd: number; // index of "</tag>" or bodyStart if self-closing
+  blockEnd: number; // exclusive end including the closing tag
   selfClosing: boolean;
 };
 
@@ -215,8 +215,7 @@ function ignoredRanges(text: string): Array<[number, number]> {
   return ranges;
 }
 
-const inRanges = (ranges: Array<[number, number]>, i: number) =>
-  ranges.some(([a, b]) => i >= a && i < b);
+const inRanges = (ranges: Array<[number, number]>, i: number) => ranges.some(([a, b]) => i >= a && i < b);
 
 /** Quote-aware scan for the end of an opening tag starting at `from` ("<"). */
 function openTagEnd(text: string, from: number): { end: number; selfClosing: boolean } | null {
@@ -227,15 +226,18 @@ function openTagEnd(text: string, from: number): { end: number; selfClosing: boo
       if (ch === quote) quote = null;
       continue;
     }
-    if (ch === '"' || ch === "'") { quote = ch; continue; }
-    if (ch === "<") return null;              // malformed: new tag started
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      continue;
+    }
+    if (ch === "<") return null; // malformed: new tag started
     if (ch === ">") {
       let j = i - 1;
-      while (j > from && /\s/.test(text[j])) j--;  // allow "/ >"
+      while (j > from && /\s/.test(text[j])) j--; // allow "/ >"
       return { end: i + 1, selfClosing: text[j] === "/" };
     }
   }
-  return null;                                 // unterminated tag
+  return null; // unterminated tag
 }
 
 /** Find the matching close tag with depth counting. */
@@ -243,7 +245,7 @@ function matchingClose(
   text: string,
   tag: string,
   bodyStart: number,
-  ignored: Array<[number, number]>,
+  ignored: Array<[number, number]>
 ): { bodyEnd: number; blockEnd: number } | null {
   const re = new RegExp(`<${escapeRe(tag)}(?=[\\s/>])|</${escapeRe(tag)}\\s*>`, "g");
   re.lastIndex = bodyStart;
@@ -254,9 +256,9 @@ function matchingClose(
       if (--depth === 0) return { bodyEnd: m.index, blockEnd: m.index + m[0].length };
     } else {
       const open = openTagEnd(text, m.index);
-      if (!open) break;                        // malformed
+      if (!open) break; // malformed
       if (!open.selfClosing) depth++;
-      re.lastIndex = open.end;                 // don't rescan attributes
+      re.lastIndex = open.end; // don't rescan attributes
     }
   }
   return null;
@@ -265,7 +267,7 @@ function matchingClose(
 export function xmlNodeBlockAt(
   text: string,
   offset: number,
-  tagNames: readonly string[] = NODE_TAG_NAMES,
+  tagNames: readonly string[] = NODE_TAG_NAMES
 ): TXmlNodeBlock | null {
   if (offset < 0 || offset > text.length || tagNames.length === 0) return null;
 
@@ -290,7 +292,7 @@ export function xmlNodeBlockAt(
 
     if (!open.selfClosing) {
       const close = matchingClose(text, tag, bodyStart, ignored);
-      if (!close) continue;                    // unclosed element -> not a valid block
+      if (!close) continue; // unclosed element -> not a valid block
       bodyEnd = close.bodyEnd;
       blockEnd = close.blockEnd;
     }

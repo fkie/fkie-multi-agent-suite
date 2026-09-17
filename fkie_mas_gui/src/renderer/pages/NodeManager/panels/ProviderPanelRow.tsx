@@ -1,10 +1,3 @@
-import {
-  EventProviderActivity,
-  EventProviderDelay,
-  EventProviderState,
-  EventProviderWarnings,
-  TEventDiagnostics,
-} from "@/renderer/providers/events";
 import CheckIcon from "@mui/icons-material/Check";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import DeveloperBoardIcon from "@mui/icons-material/DeveloperBoard";
@@ -33,7 +26,6 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import semver from "semver";
-
 import { LAYOUT_TABS } from "@/renderer/components/layout";
 import { useAutoUpdateContext } from "@/renderer/context/AutoUpdateContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
@@ -42,6 +34,13 @@ import { useSetting } from "@/renderer/hooks/useSetting";
 import { useSettingsContext } from "@/renderer/hooks/useSettingsContext";
 import { RosNode } from "@/renderer/models";
 import { ConnectionState, Provider } from "@/renderer/providers";
+import {
+  EventProviderActivity,
+  EventProviderDelay,
+  EventProviderState,
+  EventProviderWarnings,
+  TEventDiagnostics,
+} from "@/renderer/providers/events";
 import {
   EVENT_PROVIDER_ACTIVITY,
   EVENT_PROVIDER_DELAY,
@@ -61,7 +60,6 @@ type TDiagStatus = {
   hardware_id: string;
   values: TDiagValue[];
 };
-
 
 function diagValue(status: TDiagStatus, key: string): string | undefined {
   return status.values?.find((v) => v.key === key)?.value;

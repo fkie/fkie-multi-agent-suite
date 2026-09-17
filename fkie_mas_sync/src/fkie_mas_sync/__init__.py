@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # ****************************************************************************
 #
 # Copyright (c) 2014-2024 Fraunhofer FKIE
@@ -19,42 +18,43 @@ PROCESS_NAME = "mas_sync"
 
 
 def set_terminal_name(name):
-    '''
+    """
     Change the terminal name.
     @param name: New name of the terminal
     @type name:  C{str}
-    '''
+    """
     sys.stdout.write("\x1b]2;%s\x07" % name)
 
 
 def set_process_name(name):
-    '''
+    """
     Change the process name.
     @param name: New process name
     @type name:  C{str}
-    '''
+    """
     try:
-        from ctypes import cdll, byref, create_string_buffer
-        libc = cdll.LoadLibrary('libc.so.6')
+        from ctypes import byref, cdll, create_string_buffer
+
+        libc = cdll.LoadLibrary("libc.so.6")
         buff = create_string_buffer(len(name) + 1)
         buff.value = name
         libc.prctl(15, byref(buff), 0, 0, 0)
     except Exception:
         try:
             import setproctitle
+
             setproctitle.setproctitle(name)
         except Exception:
             pass
 
 
 def main():
-    '''
+    """
     Creates and runs the ROS node.
-    '''
+    """
     # setup the loglevel
     try:
-        log_level = getattr(rospy, rospy.get_param(
-            '/%s/log_level' % PROCESS_NAME, "INFO"))
+        log_level = getattr(rospy, rospy.get_param("/%s/log_level" % PROCESS_NAME, "INFO"))
     except Exception as e:
         print("Error while set the log level: %s\n->INFO level will be used!" % e)
         log_level = rospy.INFO

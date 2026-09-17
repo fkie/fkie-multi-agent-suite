@@ -7,15 +7,13 @@
 # ****************************************************************************
 
 
-import re
 import os
 import platform
+import re
 import socket
 import sys
 import threading
 from urllib.parse import urlparse
-from typing import List
-from typing import Union
 
 # cache for performance reasons
 _local_addrs = None
@@ -26,20 +24,20 @@ ROS_HOSTNAME = "ROS_HOSTNAME"
 IP4_PATTERN = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
 
 HOSTS_CACHE = dict()
-''' :var HOSTS_CACHE: the cache directory to store the results of tests for local hosts. :meth:`is_local` '''
+""" :var HOSTS_CACHE: the cache directory to store the results of tests for local hosts. :meth:`is_local` """
 
 _LOCK = threading.RLock()
 
 
-def get_hostname(url: str) -> Union[str, None]:
-    '''
+def get_hostname(url: str) -> str | None:
+    """
     Extracts the hostname from given url.
 
     :param str url: the url to parse
     :return: the hostname or `None`, if the url is `None` or `invalid`
     :rtype: str
     :ref: http://docs.python.org/library/urlparse.html
-    '''
+    """
     if url is None:
         return None
     if not url:
@@ -47,49 +45,49 @@ def get_hostname(url: str) -> Union[str, None]:
     o = urlparse(url)
     hostname = o.hostname
     if hostname is None:
-        res = url.split(':')
+        res = url.split(":")
         if len(res) == 2:
             return res[0]
         return url
     return hostname
 
 
-def subdomain(hostname: str) -> Union[str, None]:
-    '''
+def subdomain(hostname: str) -> str | None:
+    """
     :return: the name with first subdomain
-    '''
+    """
     if hostname is None:
         return None
     if IP4_PATTERN.match(hostname):
         return hostname
-    return hostname.split('.')[0]
+    return hostname.split(".")[0]
 
 
-def ros_host_suffix(hostname: str='') -> str:
-    '''
+def ros_host_suffix(hostname: str = "") -> str:
+    """
     Creates a suffix from hostname. If hostname is empty use the result of :meth:get_host_name().
-    '''
+    """
     addr = hostname
     if not addr:
         addr = get_host_name()
     addr = subdomain(addr)
-    addr = addr.replace('.', '_').replace('-', '_')
+    addr = addr.replace(".", "_").replace("-", "_")
     return addr
 
 
 def get_ros_hostname(url: str, host: str = None) -> str:
-    '''
+    """
     Returns the host name used in a url, if it is a name. If it is an IP an
     empty string will be returned.
 
     :return: host or '' if url is an IP or invalid
     :rtype:  str
-    '''
+    """
     hostname = get_hostname(url)
     if hostname is not None:
-        if 'localhost' not in [hostname, host]:
-            if '.' not in hostname and ':' not in hostname:
-                local_hostname = 'localhost'
+        if "localhost" not in [hostname, host]:
+            if "." not in hostname and ":" not in hostname:
+                local_hostname = "localhost"
                 try:
                     # ROS resolves the 'localhost' to local hostname
                     local_hostname = socket.gethostname()
@@ -97,18 +95,18 @@ def get_ros_hostname(url: str, host: str = None) -> str:
                     pass
                 if local_hostname not in [hostname, host]:
                     return hostname
-    return ''
+    return ""
 
 
-def is_local(hostname: str, wait: bool=True) -> bool:
-    '''
+def is_local(hostname: str, wait: bool = True) -> bool:
+    """
     Test whether the given host name is the name of the local host or not.
 
     :param str hostname: the name or IP of the host
     :return: `True` if the hostname is local or None
     :rtype: bool
     :raise Exception: on errors while resolving host
-    '''
+    """
     if not hostname:
         return True
     global HOSTS_CACHE
@@ -120,14 +118,13 @@ def is_local(hostname: str, wait: bool=True) -> bool:
             return HOSTS_CACHE[hostname]
     try:
         socket.inet_aton(hostname)
-        local_addresses = ['localhost'] + get_local_addresses()
+        local_addresses = ["localhost"] + get_local_addresses()
         # check 127/8 and local addresses
-        result = hostname.startswith(
-            '127.') or hostname == '::1' or hostname in local_addresses
+        result = hostname.startswith("127.") or hostname == "::1" or hostname in local_addresses
         with _LOCK:
             HOSTS_CACHE[hostname] = result
         return result
-    except socket.error:
+    except OSError:
         # the hostname must be resolved => do it in a thread
         if wait:
             result = __is_local(hostname)
@@ -142,31 +139,33 @@ def is_local(hostname: str, wait: bool=True) -> bool:
 
 
 def __is_local(hostname: str) -> bool:
-    '''
+    """
     Test the hostname whether it is local or not. Uses socket.gethostbyname().
-    '''
+    """
     global HOSTS_CACHE
     global _LOCK
     try:
         # If Python has ipv6 disabled but machine.address can be resolved somehow to an ipv6 address, then host[4][0] will be int
-        machine_ips = [host[4][0] for host in socket.getaddrinfo(
-            hostname, 0, 0, 0, socket.SOL_TCP) if isinstance(host[4][0], str)]
+        machine_ips = [
+            host[4][0] for host in socket.getaddrinfo(hostname, 0, 0, 0, socket.SOL_TCP) if isinstance(host[4][0], str)
+        ]
     except socket.gaierror:
         with _LOCK:
-            #Log.debug("host::HOSTS_CACHE resolve %s failed" % hostname)
+            # Log.debug("host::HOSTS_CACHE resolve %s failed" % hostname)
             HOSTS_CACHE[hostname] = False
         return False
-    local_addresses = ['localhost'] + get_local_addresses()
+    local_addresses = ["localhost"] + get_local_addresses()
     # check 127/8 and local addresses
-    result = ([ip for ip in machine_ips if (ip.startswith('127.') or ip == '::1')] != [
-    ]) or (set(machine_ips) & set(local_addresses) != set())
+    result = ([ip for ip in machine_ips if (ip.startswith("127.") or ip == "::1")] != []) or (
+        set(machine_ips) & set(local_addresses) != set()
+    )
     with _LOCK:
-        #Log.debug("host::HOSTS_CACHE add %s:%s" % (hostname, result))
+        # Log.debug("host::HOSTS_CACHE add %s:%s" % (hostname, result))
         HOSTS_CACHE[hostname] = result
     return result
 
 
-def get_address_override() -> Union[str, None]:
+def get_address_override() -> str | None:
     """
     :returns: ROS_IP/ROS_HOSTNAME override or None, ``str``
     :raises: :exc:`ValueError` If ROS_IP/ROS_HOSTNAME/__ip/__hostname are invalidly specified
@@ -174,45 +173,43 @@ def get_address_override() -> Union[str, None]:
     # #998: check for command-line remappings first
     # TODO IPV6: check for compatibility
     for arg in sys.argv:
-        if arg.startswith('__hostname:=') or arg.startswith('__ip:='):
+        if arg.startswith("__hostname:=") or arg.startswith("__ip:="):
             try:
-                _, val = arg.split(':=')
+                _, val = arg.split(":=")
                 return val
             except:  # split didn't unpack properly
-                raise ValueError(
-                    "invalid ROS command-line remapping argument '%s'" % arg)
+                raise ValueError("invalid ROS command-line remapping argument '%s'" % arg)
 
     # check ROS_HOSTNAME and ROS_IP environment variables, which are
     # aliases for each other
     if ROS_HOSTNAME in os.environ:
         hostname = os.environ[ROS_HOSTNAME]
-        if hostname == '':
-            raise ValueError('invalid ROS_HOSTNAME (an empty string)')
+        if hostname == "":
+            raise ValueError("invalid ROS_HOSTNAME (an empty string)")
         else:
             parts = urlparse(hostname)
             if parts.scheme:
-                msg = 'invalid ROS_HOSTNAME (protocol ' + (
-                    'and port ' if parts.port else '') + 'should not be included)'
-                raise ValueError('invalid ROS_HOSTNAME (protocol ' +
-                                 ('and port ' if parts.port else '') + 'should not be included)')
-            elif hostname.find(':') != -1:
+                msg = (
+                    "invalid ROS_HOSTNAME (protocol " + ("and port " if parts.port else "") + "should not be included)"
+                )
+                raise ValueError(
+                    "invalid ROS_HOSTNAME (protocol " + ("and port " if parts.port else "") + "should not be included)"
+                )
+            elif hostname.find(":") != -1:
                 # this can not be checked with urlparse()
                 # since it does not extract the port for a hostname like "foo:1234"
-                raise ValueError(
-                    'invalid ROS_HOSTNAME (port should not be included)')
+                raise ValueError("invalid ROS_HOSTNAME (port should not be included)")
         return hostname
     elif ROS_IP in os.environ:
         ip = os.environ[ROS_IP]
-        if ip == '':
-            raise ValueError('invalid ROS_IP (an empty string)')
-        elif ip.find('://') != -1:
-            raise ValueError(
-                'invalid ROS_IP (protocol should not be included)')
-        elif ip.find('.') != -1 and ip.rfind(':') > ip.rfind('.'):
-            raise ValueError('invalid ROS_IP (port should not be included)')
-        elif ip.find('.') == -1 and ip.find(':') == -1:
-            raise ValueError(
-                'invalid ROS_IP (must be a valid IPv4 or IPv6 address)')
+        if ip == "":
+            raise ValueError("invalid ROS_IP (an empty string)")
+        elif ip.find("://") != -1:
+            raise ValueError("invalid ROS_IP (protocol should not be included)")
+        elif ip.find(".") != -1 and ip.rfind(":") > ip.rfind("."):
+            raise ValueError("invalid ROS_IP (port should not be included)")
+        elif ip.find(".") == -1 and ip.find(":") == -1:
+            raise ValueError("invalid ROS_IP (must be a valid IPv4 or IPv6 address)")
         return ip
     return None
 
@@ -248,16 +245,16 @@ def get_local_address() -> str:
         return addrs[0]
     for addr in addrs:
         # pick first non 127/8 address
-        if not addr.startswith('127.') and not addr == '::1':
+        if not addr.startswith("127.") and not addr == "::1":
             return addr
     # loopback
     if use_ipv6():
-        return '::1'
+        return "::1"
     else:
-        return '127.0.0.1'
+        return "127.0.0.1"
 
 
-def get_local_addresses() -> List[str]:
+def get_local_addresses() -> list[str]:
     """
     :returns: known local addresses. Not affected by ROS_IP/ROS_HOSTNAME, ``[str]``
     """
@@ -267,11 +264,12 @@ def get_local_addresses() -> List[str]:
         return _local_addrs
 
     local_addrs = None
-    if platform.system() in ['Linux', 'FreeBSD', 'Darwin']:
+    if platform.system() in ["Linux", "FreeBSD", "Darwin"]:
         # unix-only branch
         v4addrs = []
         v6addrs = []
         import netifaces
+
         for iface in netifaces.interfaces():
             try:
                 ifaddrs = netifaces.ifaddresses(iface)
@@ -281,11 +279,9 @@ def get_local_addresses() -> List[str]:
                 # https://bugs.launchpad.net/ubuntu/+source/netifaces/+bug/753009
                 continue
             if socket.AF_INET in ifaddrs:
-                v4addrs.extend([addr['addr']
-                                for addr in ifaddrs[socket.AF_INET]])
+                v4addrs.extend([addr["addr"] for addr in ifaddrs[socket.AF_INET]])
             if socket.AF_INET6 in ifaddrs:
-                v6addrs.extend([addr['addr']
-                                for addr in ifaddrs[socket.AF_INET6]])
+                v6addrs.extend([addr["addr"] for addr in ifaddrs[socket.AF_INET6]])
         if use_ipv6():
             local_addrs = v6addrs + v4addrs
         else:
@@ -293,15 +289,15 @@ def get_local_addresses() -> List[str]:
     else:
         # cross-platform branch, can only resolve one address
         if use_ipv6():
-            local_addrs = [host[4][0] for host in socket.getaddrinfo(
-                socket.gethostname(), 0, 0, 0, socket.SOL_TCP)]
+            local_addrs = [host[4][0] for host in socket.getaddrinfo(socket.gethostname(), 0, 0, 0, socket.SOL_TCP)]
         else:
-            local_addrs = [host[4][0] for host in socket.getaddrinfo(
-                socket.gethostname(), 0, socket.AF_INET, 0, socket.SOL_TCP)]
+            local_addrs = [
+                host[4][0] for host in socket.getaddrinfo(socket.gethostname(), 0, socket.AF_INET, 0, socket.SOL_TCP)
+            ]
     if local_addrs:
         local_addrs_wo_127 = []
         for addr in local_addrs:
-            if not addr.startswith('127.') and not addr == '::1':
+            if not addr.startswith("127.") and not addr == "::1":
                 local_addrs_wo_127.append(addr)
         local_addrs = local_addrs_wo_127
     _local_addrs = local_addrs
@@ -309,11 +305,11 @@ def get_local_addresses() -> List[str]:
 
 
 def use_ipv6() -> bool:
-    return ROS_IPV6 in os.environ and os.environ[ROS_IPV6] == 'on'
+    return ROS_IPV6 in os.environ and os.environ[ROS_IPV6] == "on"
 
 
 # #528: semi-complicated logic for determining XML-RPC URI
-def get_host_name() -> Union[str, None]:
+def get_host_name() -> str | None:
     """
     Determine host-name for use in host-name-based addressing (e.g. XML-RPC URIs):
      - if ROS_IP/ROS_HOSTNAME is set, use that address
@@ -326,6 +322,6 @@ def get_host_name() -> Union[str, None]:
             hostname = socket.gethostname()
         except:
             pass
-        if not hostname or hostname == 'localhost' or hostname.startswith('127.'):
+        if not hostname or hostname == "localhost" or hostname.startswith("127."):
             hostname = get_local_address()
     return hostname

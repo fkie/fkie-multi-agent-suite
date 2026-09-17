@@ -12,13 +12,10 @@ import signal
 import threading
 import time
 import traceback
-from typing import Dict, List, Optional, Tuple, Union
 
 from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.interface.runtime_interface import DelayRosUpdateState
-from fkie_mas_pylib.interface.runtime_interface import ScreensMapping
+from fkie_mas_pylib.interface.runtime_interface import DelayRosUpdateState, ScreensMapping
 from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.system import process
 from fkie_mas_pylib.system import screen
 from fkie_mas_pylib.websocket.server import WebSocketServer
 
@@ -28,7 +25,6 @@ DEFAULT_KILL_SIGNAL = getattr(signal, "SIGKILL", signal.SIGTERM)
 
 
 class ScreenServicer:
-
     def __init__(self, websocket: WebSocketServer):
         Log.info("Create ROS2 screen servicer")
         self._is_running = True
@@ -39,17 +35,17 @@ class ScreenServicer:
         self._screen_check_force_after_default = 10
         self._screen_check_force_after = self._screen_check_force_after_default
         self._screen_do_check = True
-        self._screen_thread: Optional[threading.Thread] = None
+        self._screen_thread: threading.Thread | None = None
         self._screen_thread_lock = threading.RLock()
         self._screens_set = set()
         self._screen_nodes_set = set()
-        self._screen_json_msg: List[ScreensMapping] = []
+        self._screen_json_msg: list[ScreensMapping] = []
         self._force_refresh = False
         self.websocket = websocket
         websocket.register("ros.screen.kill_node", self.kill_node)
         websocket.register("ros.screen.get_list", self.get_screen_list)
         websocket.subscribe("ros.daemon.delay_update_state", self.delay_update_state)
-        self._thread_notify: Optional[threading.Timer] = None
+        self._thread_notify: threading.Timer | None = None
 
     def start(self):
         if self._screen_thread is not None and self._screen_thread.is_alive():
@@ -70,7 +66,7 @@ class ScreenServicer:
         with self._screen_thread_lock:
             self._thread_notify = None
         if time.time() >= self._ts_delay_until:
-            self.websocket.publish('ros.nodes.changed', {"timestamp": time.time()})
+            self.websocket.publish("ros.nodes.changed", {"timestamp": time.time()})
 
     def _check_screens(self):
         interval = 1.0 / self._screen_check_rate
@@ -93,7 +89,7 @@ class ScreenServicer:
                 screens = screen.get_active_screens()
                 new_screens_set = set()
                 new_screen_nodes_set = set()
-                screen_dict: Dict[str, ScreensMapping] = {}
+                screen_dict: dict[str, ScreensMapping] = {}
                 for session_name, node_name in screens.items():
                     if node_name in screen_dict:
                         screen_dict[node_name].screens.append(session_name)
@@ -107,13 +103,12 @@ class ScreenServicer:
                     div_screen_nodes = self._screen_nodes_set ^ new_screen_nodes_set
                     div_screens = self._screens_set ^ new_screens_set
                     if div_screen_nodes or div_screens:
-                        json_msg: List[ScreensMapping] = list(screen_dict.values())
+                        json_msg: list[ScreensMapping] = list(screen_dict.values())
                         # add nodes without screens sent by the last message
                         for node_name in self._screen_nodes_set - new_screen_nodes_set:
                             json_msg.append(ScreensMapping(name=node_name, screens=[]))
-                        Log.debug(
-                            f"{self.__class__.__name__}: publish ros.screen.list with {len(json_msg)} nodes.")
-                        self.websocket.publish('ros.screen.list', {"screens": json_msg})
+                        Log.debug(f"{self.__class__.__name__}: publish ros.screen.list with {len(json_msg)} nodes.")
+                        self.websocket.publish("ros.screen.list", {"screens": json_msg})
                         self._screen_json_msg = json_msg
                         self._screen_nodes_set = new_screen_nodes_set
                         self._screens_set = new_screens_set
@@ -127,7 +122,7 @@ class ScreenServicer:
     def system_change(self) -> None:
         self._screen_do_check = True
 
-    def _resolve_signal(self, sig: Union[int, str, signal.Signals, None]) -> signal.Signals:
+    def _resolve_signal(self, sig: int | str | signal.Signals | None) -> signal.Signals:
         """Convert a signal given as name, number or enum into signal.Signals."""
         if sig is None:
             return DEFAULT_KILL_SIGNAL
@@ -145,19 +140,19 @@ class ScreenServicer:
                 pass
         Log.warn(
             f"{self.__class__.__name__}: unknown signal '{sig}' provided. "
-            f"Use default {DEFAULT_KILL_SIGNAL.name} instead")
+            f"Use default {DEFAULT_KILL_SIGNAL.name} instead"
+        )
         return DEFAULT_KILL_SIGNAL
 
-    def kill_node(self, name: str, sig: Union[int, str, None] = None) -> str:
+    def kill_node(self, name: str, sig: int | str | None = None) -> str:
         sig_obj = self._resolve_signal(sig)
         Log.info(f"{self.__class__.__name__}: Kill node '{name}'; signal: {sig_obj.name}")
         success = False
-        errors: List[str] = []
+        errors: list[str] = []
 
         screens = screen.get_active_screens(name)
         if not screens:
-            return json.dumps(
-                {'result': False, 'message': 'Node does not have an active screen'}, cls=SelfEncoder)
+            return json.dumps({"result": False, "message": "Node does not have an active screen"}, cls=SelfEncoder)
 
         for session_name, _node_name in screens.items():
             pid_screen, session_name = screen.split_session_name(session_name)
@@ -166,13 +161,14 @@ class ScreenServicer:
                 try:
                     Log.debug(
                         f"{self.__class__.__name__}: Kill process '{found_name}' with process id "
-                        f"'{found_pid}' using signal {sig_obj.name}")
+                        f"'{found_pid}' using signal {sig_obj.name}"
+                    )
                     os.kill(found_pid, sig_obj)
                     # kill all parents, to handle the case if respawn script is used
                     if sig_obj == DEFAULT_KILL_SIGNAL:
                         Log.debug(
-                            f"{self.__class__.__name__}: Kill all parents '{parents2kill}' "
-                            f"using signal {sig_obj.name}")
+                            f"{self.__class__.__name__}: Kill all parents '{parents2kill}' using signal {sig_obj.name}"
+                        )
                         # keep only parents created after the screen process (do not kill the screen itself)
                         for parent_pid in sorted(parents2kill, reverse=True):
                             if parent_pid < pid_screen:
@@ -188,14 +184,15 @@ class ScreenServicer:
                 try:
                     Log.debug(
                         f"{self.__class__.__name__}: Kill screen '{session_name}' with process id "
-                        f"'{pid_screen}' using signal {sig_obj.name}")
+                        f"'{pid_screen}' using signal {sig_obj.name}"
+                    )
                     os.kill(pid_screen, sig_obj)
                     success_cur = True
                     # print(f"kill screen time {time.time() - now}")
                 except Exception:
                     errors.append(
-                        f"Error while try to kill screen with session name "
-                        f"'{session_name}': {traceback.format_exc()}")
+                        f"Error while try to kill screen with session name '{session_name}': {traceback.format_exc()}"
+                    )
             success = success or success_cur
 
         if success:
@@ -205,7 +202,7 @@ class ScreenServicer:
                     self._thread_notify.daemon = True
                     self._thread_notify.start()
         self._screen_do_check = True
-        return json.dumps({'result': success, 'message': "\n".join(errors)}, cls=SelfEncoder)
+        return json.dumps({"result": success, "message": "\n".join(errors)}, cls=SelfEncoder)
 
     def get_screen_list(self, force: False) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.screen.get_list]")

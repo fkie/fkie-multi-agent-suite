@@ -9,18 +9,17 @@ import signal
 import sys
 import time
 import traceback
-from typing import List
 
 import rclpy
+from fkie_mas_pylib.defines import ros2_action_introspection_nodename_tuple
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket.client import WebSocketClient
 from rosidl_runtime_py.utilities import get_message
 
-from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.defines import ros2_action_introspection_nodename_tuple
-from fkie_mas_pylib.websocket.client import WebSocketClient
-from fkie_mas_pylib.logging.logging import Log
 import fkie_mas_daemon as nmd
-from .msg_encoder import MsgEncoder
 
+from .msg_encoder import MsgEncoder
 
 # service_msgs/msg/ServiceEventInfo
 EVENT_TYPE_MAP = {
@@ -41,14 +40,13 @@ PHASE_BY_SUFFIX = {
 class ActionIntrospectionEvent:
     """Sent as JSON via WebSocket."""
 
-    def __init__(self, action_name, phase, event_type, sequence_number,
-                 client_gid, data, timestamp):
+    def __init__(self, action_name, phase, event_type, sequence_number, client_gid, data, timestamp):
         self.action_name = action_name
-        self.phase = phase                    # send_goal | get_result | cancel_goal
-        self.event_type = event_type          # REQUEST_SENT ...
+        self.phase = phase  # send_goal | get_result | cancel_goal
+        self.event_type = event_type  # REQUEST_SENT ...
         self.sequence_number = sequence_number
         self.client_gid = client_gid
-        self.data = data                       # request/response payload or None
+        self.data = data  # request/response payload or None
         self.timestamp = timestamp
 
 
@@ -64,10 +62,8 @@ class RosActionIntrospectionLauncher:
         if parsed_args.help:
             return None
 
-        self.namespace, self.name = ros2_action_introspection_nodename_tuple(
-            f"{parsed_args.action_name}"
-        )
-        print('\33]0;%s\a' % (self.name), end='', flush=True)
+        self.namespace, self.name = ros2_action_introspection_nodename_tuple(f"{parsed_args.action_name}")
+        print("\33]0;%s\a" % (self.name), end="", flush=True)
 
         self._port = parsed_args.ws_port
         self._action_name = parsed_args.action_name
@@ -75,7 +71,7 @@ class RosActionIntrospectionLauncher:
         self._on_shutdown = False
         self._subscriptions = []
 
-        if os.environ.get('ROS_DISTRO') != 'galactic':
+        if os.environ.get("ROS_DISTRO") != "galactic":
             signal.signal(signal.SIGTERM, self.exit_gracefully)
             signal.signal(signal.SIGINT, self.exit_gracefully)
 
@@ -94,7 +90,7 @@ class RosActionIntrospectionLauncher:
         self.stop()
 
     def stop(self):
-        if hasattr(self, 'wsClient') and self.wsClient:
+        if hasattr(self, "wsClient") and self.wsClient:
             self.wsClient.shutdown()
             self.wsClient = None
 
@@ -102,11 +98,11 @@ class RosActionIntrospectionLauncher:
         if self._on_shutdown:
             return
         self._on_shutdown = True
-        Log.info('shutdown action introspection')
+        Log.info("shutdown action introspection")
         self.stop()
         if rclpy.ok():
             rclpy.shutdown()
-        print('bye!')
+        print("bye!")
 
     def _on_ws_event(self, msg):
         """Handles cancel / no-more-subscribers events from the client."""
@@ -154,9 +150,8 @@ class RosActionIntrospectionLauncher:
         self._subscriptions.append((topic, sub))
         Log.info(f"subscribed introspection topic '{topic}' [{type_str}] ({phase})")
 
-
-    def _guid_arr_to_str(self, gid: List[int]) -> str:
-        return '.'.join('{:02X}'.format(c) for c in gid)
+    def _guid_arr_to_str(self, gid: list[int]) -> str:
+        return ".".join(f"{c:02X}" for c in gid)
 
     def _on_service_event(self, msg, phase: str):
         try:
@@ -173,8 +168,9 @@ class RosActionIntrospectionLauncher:
             content = request or response
             if content:
                 payload = json.loads(
-                    json.dumps(content[0], cls=MsgEncoder,
-                               **{"no_arr": False, "no_str": False, "array_items_count": 50})
+                    json.dumps(
+                        content[0], cls=MsgEncoder, **{"no_arr": False, "no_str": False, "array_items_count": 50}
+                    )
                 )
 
             event = ActionIntrospectionEvent(
@@ -195,12 +191,17 @@ class RosActionIntrospectionLauncher:
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--ws_port', nargs='?', type=int, required=True,
-                            help='Port for websocket server')
-        parser.add_argument('-a', '--action_name', nargs='?', required=True,
-                            help="Name of the ROS action (e.g. '/fibonacci')")
-        parser.add_argument('-t', '--action_type', nargs='?', required=True,
-                            help="Type of the action (e.g. 'example_interfaces/action/Fibonacci')")
+        parser.add_argument("--ws_port", nargs="?", type=int, required=True, help="Port for websocket server")
+        parser.add_argument(
+            "-a", "--action_name", nargs="?", required=True, help="Name of the ROS action (e.g. '/fibonacci')"
+        )
+        parser.add_argument(
+            "-t",
+            "--action_type",
+            nargs="?",
+            required=True,
+            help="Type of the action (e.g. 'example_interfaces/action/Fibonacci')",
+        )
         parser.set_defaults(help=False)
         return parser
 
@@ -214,9 +215,9 @@ class RosActionIntrospectionLauncher:
         except rclpy.executors.ExternalShutdownException:
             pass
         except RuntimeError as e:
-            if 'Context must be initialized' not in str(e):
+            if "Context must be initialized" not in str(e):
                 raise
         except Exception:
-            self.ros_node.get_logger().warning('Start failed: %s' % traceback.format_exc())
+            self.ros_node.get_logger().warning("Start failed: %s" % traceback.format_exc())
             sys.stdout.flush()
             self.exit_gracefully(-1, None)

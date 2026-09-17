@@ -1,7 +1,7 @@
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { Box, Card, CardActions, Collapse, IconButton, Paper, Stack, Typography } from "@mui/material";
-import { SnackbarContent, SnackbarKey, SnackbarMessage, VariantType, useSnackbar } from "notistack";
+import { SnackbarContent, SnackbarKey, SnackbarMessage, useSnackbar, VariantType } from "notistack";
 import React, { forwardRef, useCallback, useEffect, useMemo, useState } from "react";
 import JsonView from "react18-json-view";
 

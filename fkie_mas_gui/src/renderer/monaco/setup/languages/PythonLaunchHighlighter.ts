@@ -152,23 +152,23 @@ export const PythonLanguage: languages.IMonarchLanguage = {
     root: [
       // IMPORTS
       [/(\w+)(,)/, ["attribute.name", "delimiter"]],
-      [/\b(import|as|from)\b(\ \w+\.?\w+)/, ["tag", "attribute.name"]],
+      [/\b(import|as|from)\b( \w+\.?\w+)/, ["tag", "attribute.name"]],
 
       // for return values => return foo
-      [/(\breturn\b)(\ [a-z]\w+)/, ["tag", "attribute.name"]], // first character has to be lowercase
+      [/(\breturn\b)( [a-z]\w+)/, ["tag", "attribute.name"]], // first character has to be lowercase
 
       // for values => : foo
-      [/(\:)(\ ?[a-z]\w+)/, ["delimiter", "attribute.name"]], // first character has to be lowercase
+      [/(:)( ?[a-z]\w+)/, ["delimiter", "attribute.name"]], // first character has to be lowercase
 
       // for values => , foo but not , 'foo'
-      [/(,)(\ ?\b[a-zA-Z_]\w*\b)/, ["delimiter", "attribute.name"]],
+      [/(,)( ?\b[a-zA-Z_]\w*\b)/, ["delimiter", "attribute.name"]],
 
       { include: "@whitespace" },
       { include: "@numbers" },
       { include: "@strings" },
 
       [/[,:;]/, "delimiter"],
-      [/[{}\[\]()]/, "@brackets"],
+      [/[{}[\]()]/, "@brackets"],
 
       // for functions => foo(<content>)
       [
@@ -185,12 +185,12 @@ export const PythonLanguage: languages.IMonarchLanguage = {
       [/(\w+)(\()/, ["subst.arg", "delimiter"]],
 
       // for values => = bar
-      [/(=)(\ ?\w.+)/, ["delimiter", "attribute.name"]],
+      [/(=)( ?\w.+)/, ["delimiter", "attribute.name"]],
 
       // alternative regex: /(=)(\s?[a-zA-Z_]\w*)/
 
       // for values => foo =
-      [/(\w+)(\ ?=)/, ["attribute.name", "delimiter"]],
+      [/(\w+)( ?=)/, ["attribute.name", "delimiter"]],
 
       // alternative regex: /([a-zA-Z_]\w*\s?)(=)/
 
@@ -232,7 +232,7 @@ export const PythonLanguage: languages.IMonarchLanguage = {
     // Recognize hex, negatives, decimals, imaginaries, longs, and scientific notation
     numbers: [
       [/-?0x([abcdef]|[ABCDEF]|\d)+[lL]?/, "number.hex"],
-      [/-?(\d*\.)?\d+([eE][+\-]?\d+)?[jJ]?[lL]?/, "number"],
+      [/-?(\d*\.)?\d+([eE][+-]?\d+)?[jJ]?[lL]?/, "number"],
     ],
 
     // Recognize strings, including those broken across lines with \ (but not without)
@@ -245,9 +245,9 @@ export const PythonLanguage: languages.IMonarchLanguage = {
       [/"/, "string.escape", "@dblStringBody"],
     ],
     fStringBody: [
-      [/[^\\'\{\}]+$/, "string", "@popall"],
-      [/[^\\'\{\}]+/, "string"],
-      [/\{[^\}':!=]+/, "identifier", "@fStringDetail"],
+      [/[^\\'{}]+$/, "string", "@popall"],
+      [/[^\\'{}]+/, "string"],
+      [/\{[^}':!=]+/, "identifier", "@fStringDetail"],
       [/\\./, "string"],
       [/'/, "string.escape", "@popall"],
       [/\\$/, "string"],
@@ -260,9 +260,9 @@ export const PythonLanguage: languages.IMonarchLanguage = {
       [/\\$/, "string"],
     ],
     fDblStringBody: [
-      [/[^\\"\{\}]+$/, "string", "@popall"],
-      [/[^\\"\{\}]+/, "string"],
-      [/\{[^\}':!=]+/, "identifier", "@fStringDetail"],
+      [/[^\\"{}]+$/, "string", "@popall"],
+      [/[^\\"{}]+/, "string"],
+      [/\{[^}':!=]+/, "identifier", "@fStringDetail"],
       [/\\./, "string"],
       [/"/, "string.escape", "@popall"],
       [/\\$/, "string"],

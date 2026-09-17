@@ -1,7 +1,7 @@
-import { PopoutParams } from "@/types";
+import { join } from "node:path";
 import { is } from "@electron-toolkit/utils";
 import { BrowserWindow, ipcMain } from "electron";
-import { join } from "node:path";
+import { PopoutParams } from "@/types";
 
 import AutoUpdateManager from "./AutoUpdateManager";
 import DialogManager from "./DialogManager";
@@ -71,6 +71,5 @@ export {
   ServiceManager,
   ShutdownManager,
   SubscriberManager,
-  TerminalManager
+  TerminalManager,
 };
-

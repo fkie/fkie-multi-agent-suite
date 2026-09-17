@@ -1,6 +1,6 @@
-import { ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "@/types";
 import { app, BrowserWindow, ipcMain } from "electron";
 import log from "electron-log";
+import { ShutdownManagerEvents, TerminateCallback, TShutdownManager } from "@/types";
 import CommandLine from "./CommandLine";
 
 /**

@@ -24,13 +24,13 @@ import {
 } from "@mui/material";
 import { green, grey, orange, red } from "@mui/material/colors";
 import {
-  treeItemClasses,
   TreeItemSlotProps,
+  treeItemClasses,
   UseTreeItemContentSlotOwnProps,
   UseTreeItemIconContainerSlotOwnProps,
 } from "@mui/x-tree-view";
 import React, { useCallback, useEffect, useState } from "react";
-
+import { useCustomEventListener } from "react-custom-events";
 import { LAYOUT_TAB_SETS, LAYOUT_TABS } from "@/renderer/components/layout";
 import { emitOpenComponent } from "@/renderer/components/layout/events";
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
@@ -38,12 +38,11 @@ import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { RosNode, RosNodeStatus } from "@/renderer/models";
-import Provider from "@/renderer/providers/Provider";
-import { EVENT_SYSTEM_DIAGNOSTICS } from "@/renderer/providers/eventTypes";
 import { TEventDiagnostics } from "@/renderer/providers/events";
+import { EVENT_SYSTEM_DIAGNOSTICS } from "@/renderer/providers/eventTypes";
+import Provider from "@/renderer/providers/Provider";
 import { generateUniqueId } from "@/renderer/utils";
 import { CmdTypes, TTag } from "@/types";
-import { useCustomEventListener } from "react-custom-events";
 import Tag from "../UI/Tag";
 import DateHelpDialog from "./DateHelpDialog";
 import SetNTPDateDialog from "./SetNTPDateDialog";

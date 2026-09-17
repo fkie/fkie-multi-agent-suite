@@ -2,7 +2,7 @@ const EDITOR_PATH_SEP = "⏵";
 const PROVIDER_SEP = "@";
 const EDITOR_ID_PREFIX = "/editorId⏶";
 
-export function isEditorEditorId(editorId: string,): boolean {
+export function isEditorEditorId(editorId: string): boolean {
   return editorId.startsWith(EDITOR_ID_PREFIX);
 }
 
@@ -52,8 +52,7 @@ export function providerIdFromEditorId(editorId: string): string | undefined {
 
 export function pathFromEditorId(editorId: string): string | undefined {
   const sepIndex = editorId.indexOf(PROVIDER_SEP);
-  return sepIndex === -1 ? undefined : editorId.slice(0, sepIndex).replace(EDITOR_ID_PREFIX, '');
-
+  return sepIndex === -1 ? undefined : editorId.slice(0, sepIndex).replace(EDITOR_ID_PREFIX, "");
 }
 
 export function isUriPath(path: string): boolean {

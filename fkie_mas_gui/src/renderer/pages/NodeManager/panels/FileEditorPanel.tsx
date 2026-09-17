@@ -1,4 +1,3 @@
-import { useMonacoEditor } from "@/renderer/hooks/editor/useMonacoEditor";
 import * as Monaco from "@monaco-editor/react";
 import { Stack } from "@mui/material";
 import { useDebounceCallback } from "@react-hook/debounce";
@@ -6,13 +5,14 @@ import { editor } from "monaco-editor";
 import { ForwardedRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import SplitPane, { Pane, SashContent } from "split-pane-react";
+import { useMonacoEditor } from "@/renderer/hooks/editor/useMonacoEditor";
 import "split-pane-react/esm/themes/default.css";
 
 import { AlertsBar, EditorSidebar, EditorToolbar, THistoryModel } from "@/renderer/components/FileEditorPanel";
 import { PendingEditStyles } from "@/renderer/components/FileEditorPanel/PendingEditStyles";
 import {
-  emitCloseComponent,
   EVENT_EDITOR_SELECT_RANGE,
+  emitCloseComponent,
   TEventEditorSelectRange,
 } from "@/renderer/components/layout/events";
 import { useEditorKeyboard } from "@/renderer/hooks/editor/useEditorKeyboard";

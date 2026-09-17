@@ -1,7 +1,6 @@
 import os
 import threading
 import time
-from typing import Dict, List, Optional, Tuple
 
 # TTL for the cached /proc snapshot. Keep it short: process trees change fast.
 PROC_TABLE_TTL = 1.0
@@ -10,57 +9,54 @@ PROC_TABLE_TTL = 1.0
 class _ProcSnapshot:
     """Immutable snapshot of the process table plus a pre-built child index."""
 
-    __slots__ = ('table', 'children_of', 'timestamp')
+    __slots__ = ("table", "children_of", "timestamp")
 
-    def __init__(self, table: Dict[int, Tuple[int, str]], timestamp: float):
+    def __init__(self, table: dict[int, tuple[int, str]], timestamp: float):
         self.table = table
         self.timestamp = timestamp
-        children_of: Dict[int, List[int]] = {}
+        children_of: dict[int, list[int]] = {}
         for cpid, (ppid, _name) in table.items():
             children_of.setdefault(ppid, []).append(cpid)
         self.children_of = children_of
 
 
 class ProcessHelper:
-
     def __init__(self):
-        self._proc_snapshot: Optional[_ProcSnapshot] = None
+        self._proc_snapshot: _ProcSnapshot | None = None
         self._proc_lock = threading.Lock()
 
     # -- internals ---------------------------------------------------------
 
     @staticmethod
-    def _read_proc_table() -> Dict[int, Tuple[int, str]]:
+    def _read_proc_table() -> dict[int, tuple[int, str]]:
         """Read pid -> (ppid, name) for all processes in a single /proc sweep.
 
         Reads only /proc/<pid>/stat (one open+read per process, no psutil overhead).
         """
-        table: Dict[int, Tuple[int, str]] = {}
-        for entry in os.listdir('/proc'):
+        table: dict[int, tuple[int, str]] = {}
+        for entry in os.listdir("/proc"):
             if not entry.isdigit():
                 continue
             try:
-                with open(f'/proc/{entry}/stat', 'rb') as stat_file:
+                with open(f"/proc/{entry}/stat", "rb") as stat_file:
                     data = stat_file.read()
             except OSError:
                 continue  # process vanished or not accessible
             try:
                 # comm is wrapped in parentheses and may itself contain spaces/parens
-                rpar = data.rindex(b')')
-                name = data[data.index(b'(') + 1:rpar].decode('utf-8', 'replace')
-                ppid = int(data[rpar + 2:].split(b' ', 3)[1])
+                rpar = data.rindex(b")")
+                name = data[data.index(b"(") + 1 : rpar].decode("utf-8", "replace")
+                ppid = int(data[rpar + 2 :].split(b" ", 3)[1])
             except (ValueError, IndexError):
                 continue
             table[int(entry)] = (ppid, name)
         return table
 
-    def _get_snapshot(self, max_age: float = PROC_TABLE_TTL,
-                      force_refresh: bool = False) -> _ProcSnapshot:
+    def _get_snapshot(self, max_age: float = PROC_TABLE_TTL, force_refresh: bool = False) -> _ProcSnapshot:
         """Return a cached snapshot, refreshing it if older than max_age."""
         now = time.monotonic()
         snapshot = self._proc_snapshot
-        if (not force_refresh and snapshot is not None
-                and now - snapshot.timestamp <= max_age):
+        if not force_refresh and snapshot is not None and now - snapshot.timestamp <= max_age:
             snapshot.timestamp = now
             return snapshot
 
@@ -68,8 +64,7 @@ class ProcessHelper:
             # re-check inside the lock: another thread may have refreshed already
             snapshot = self._proc_snapshot
             now = time.monotonic()
-            if (not force_refresh and snapshot is not None
-                    and now - snapshot.timestamp <= max_age):
+            if not force_refresh and snapshot is not None and now - snapshot.timestamp <= max_age:
                 snapshot.timestamp = now
                 return snapshot
             snapshot = _ProcSnapshot(self._read_proc_table(), time.monotonic())
@@ -83,10 +78,9 @@ class ProcessHelper:
 
     # -- public API --------------------------------------------------------
 
-    def get_child_pid(self, pid: int,
-                      max_age: float = PROC_TABLE_TTL,
-                      force_refresh: bool = False
-                      ) -> Tuple[int, str, List[int]]:
+    def get_child_pid(
+        self, pid: int, max_age: float = PROC_TABLE_TTL, force_refresh: bool = False
+    ) -> tuple[int, str, list[int]]:
         """Find the deepest descendant of `pid` (the real node process).
 
         Returns (found_pid, found_name, parents2kill) where parents2kill contains
@@ -106,7 +100,7 @@ class ProcessHelper:
             table = snapshot.table
             children_of = snapshot.children_of
 
-        chain: List[int] = []
+        chain: list[int] = []
         current = pid
         # descend along the process chain; prefer the youngest (highest) pid on branches
         while True:
@@ -117,7 +111,7 @@ class ProcessHelper:
             chain.append(current)
 
         if not chain:
-            return -1, '', []
+            return -1, "", []
 
         found_pid = chain[-1]
         return found_pid, table[found_pid][1], chain[:-1]

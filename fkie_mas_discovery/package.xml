@@ -2,10 +2,10 @@
 <package format="3">
   <name>fkie_mas_discovery</name>
   <description>
-     Discover the running ROS Masters in local network. The 
-     discovering is done by sending an echo heartbeat messages to a defined 
+     Discover the running ROS Masters in local network. The
+     discovering is done by sending an echo heartbeat messages to a defined
      multicast group.
-     The alternative is to use a zeroconf/avahi daemon to register the ROS 
+     The alternative is to use a zeroconf/avahi daemon to register the ROS
      master as service and discover other ROS masters.
   </description>
   <version>5.3.0</version>

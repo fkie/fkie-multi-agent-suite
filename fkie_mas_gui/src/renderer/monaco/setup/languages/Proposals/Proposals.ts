@@ -1,6 +1,6 @@
-import { TFileRange } from "@/types/FileRange";
 import { Monaco } from "@monaco-editor/react";
 import { languages } from "monaco-editor";
+import { TFileRange } from "@/types/FileRange";
 import { resolveValue } from "../../utils";
 import { TTagAttributeProposals } from "./TTagAttributeProposals";
 

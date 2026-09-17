@@ -1,4 +1,3 @@
-
 # ****************************************************************************
 #
 # Copyright (c) 2014-2024 Fraunhofer FKIE
@@ -7,28 +6,23 @@
 #
 # ****************************************************************************
 
-from typing import Dict
-from typing import List
-from typing import Text
-from typing import Tuple
-from typing import Union
-
 import os
 
 from fkie_mas_pylib.defines import PACKAGE_FILE
 from fkie_mas_pylib.logging.logging import Log
 
 try:
-    from ament_index_python import get_resource
-    from ament_index_python import get_packages_with_prefixes
+    from ament_index_python import get_packages_with_prefixes, get_resource
     from ament_index_python.packages import get_package_share_directory
+
     AMENT_SUPPORTED = True
 except ImportError:
     AMENT_SUPPORTED = False
 
 try:
-    from catkin_pkg.package import parse_package
     from catkin.find_in_workspaces import find_in_workspaces
+    from catkin_pkg.package import parse_package
+
     CATKIN_SUPPORTED = True
 except ImportError:
     CATKIN_SUPPORTED = False
@@ -40,21 +34,23 @@ PACKAGE_CACHE = {}
 SOURCE_PATH_TO_PACKAGES = {}
 
 
-def get_cwd(cwd: Text, binary: Text = '') -> Text:
-    result = ''
-    if cwd == 'node':
+def get_cwd(cwd: str, binary: str = "") -> str:
+    result = ""
+    if cwd == "node":
         result = os.path.dirname(binary)
-    elif cwd == 'cwd':
+    elif cwd == "cwd":
         result = os.getcwd()
-    elif cwd == 'ros-root':
+    elif cwd == "ros-root":
         try:
             import rospkg
+
             result = rospkg.get_ros_root()
         except:
             pass
     else:
         try:
             import rospkg
+
             result = rospkg.get_ros_home()
         except:
             pass
@@ -67,7 +63,7 @@ def get_cwd(cwd: Text, binary: Text = '') -> Text:
     return result
 
 
-def get_packages(path: Union[Text, None]) -> Dict[Text, Text]:
+def get_packages(path: str | None) -> dict[str, str]:
     result = {}
     if path is None and AMENT_SUPPORTED:
         # we use ament to get the list of all packages
@@ -88,13 +84,13 @@ def get_packages(path: Union[Text, None]) -> Dict[Text, Text]:
     return result
 
 
-def get_name(path: Text) -> Tuple[Text, Text]:
-    '''
+def get_name(path: str) -> tuple[str, str]:
+    """
     The results are cached!
 
     :return: Returns for given directory a tuple of package name and package path.
     :rtype: tuple(str, str), empty strings if no package was found
-    '''
+    """
     if path and path != os.path.sep:
         dir_path = path
         if not os.path.isdir(dir_path):
@@ -105,52 +101,52 @@ def get_name(path: Text) -> Tuple[Text, Text]:
             fileList = os.listdir(dir_path)
             if CATKIN_SUPPORTED and PACKAGE_FILE in fileList:
                 try:
-                    pkg = parse_package(os.path.join(
-                        dir_path, os.path.join(dir_path, PACKAGE_FILE)))
+                    pkg = parse_package(os.path.join(dir_path, os.path.join(dir_path, PACKAGE_FILE)))
                     PACKAGE_CACHE[dir_path] = (pkg.name, dir_path)
                     return (pkg.name, dir_path)
                 except Exception:
-                    return ('', '')
+                    return ("", "")
             dir_path = os.path.dirname(dir_path)
             pname, pdir = get_name(dir_path)
             if pname:
                 PACKAGE_CACHE[dir_path] = (pname, pdir)
                 return (pname, pdir)
         except OSError:
-            return ('', '')
-    PACKAGE_CACHE[path] = ('', '')
-    return ('', '')
+            return ("", "")
+    PACKAGE_CACHE[path] = ("", "")
+    return ("", "")
 
 
-def is_package(file_list: List[Text]) -> bool:
+def is_package(file_list: list[str]) -> bool:
     return CATKIN_SUPPORTED and PACKAGE_FILE in file_list
 
 
-def get_path(package_name: Text) -> Text:
-    ''' :noindex: '''
+def get_path(package_name: str) -> str:
+    """:noindex:"""
     if AMENT_SUPPORTED:
-        _, package_path = get_resource('packages', package_name)
+        _, package_path = get_resource("packages", package_name)
         return package_path
     else:
         global _get_pkg_path_var
         if _get_pkg_path_var is None:
             try:
                 import rospkg
+
                 rp = rospkg.RosPack()
                 _get_pkg_path_var = rp.get_path
             except ImportError:
                 import roslib
+
                 _get_pkg_path_var = roslib.packages.get_pkg_dir
         return _get_pkg_path_var(package_name)
 
 
-def get_ros_resource_from_package(path: str, path_suffix: str) -> List[str]:
+def get_ros_resource_from_package(path: str, path_suffix: str) -> list[str]:
     try:
         import roslib
-        paths = roslib.packages._find_resource(
-            path, path_suffix)
-        Log.debug(
-            f" search for resource with roslib.packages._find_resource, suffix '{path_suffix}': {paths}")
+
+        paths = roslib.packages._find_resource(path, path_suffix)
+        Log.debug(f" search for resource with roslib.packages._find_resource, suffix '{path_suffix}': {paths}")
         if len(paths) > 0:
             # if more then one launch file is found, take the first one
             return paths[0]
@@ -159,7 +155,7 @@ def get_ros_resource_from_package(path: str, path_suffix: str) -> List[str]:
     return []
 
 
-def get_share_files_path_from_package(package_name: str, file_name: str) -> List[str]:
+def get_share_files_path_from_package(package_name: str, file_name: str) -> list[str]:
     """
     Return the full path to a file in the share directory of a package.
     For ROS2 functionality.
@@ -171,7 +167,7 @@ def get_share_files_path_from_package(package_name: str, file_name: str) -> List
     matching_file_paths = []
     if AMENT_SUPPORTED:
         package_share_directory = get_package_share_directory(package_name)
-        if (os.path.basename(file_name) != file_name):
+        if os.path.basename(file_name) != file_name:
             merged_file_name = os.path.join(package_share_directory, file_name)
             if os.path.exists(merged_file_name):
                 matching_file_paths.append(merged_file_name)
@@ -185,8 +181,13 @@ def get_share_files_path_from_package(package_name: str, file_name: str) -> List
         # which will search in install/devel space and the source folder of the package
         global SOURCE_PATH_TO_PACKAGES
         matching_file_paths = find_in_workspaces(
-            ['share'], project=package_name, path=file_name, first_matching_workspace_only=True,
-            first_match_only=True, source_path_to_packages=SOURCE_PATH_TO_PACKAGES)
+            ["share"],
+            project=package_name,
+            path=file_name,
+            first_matching_workspace_only=True,
+            first_match_only=True,
+            source_path_to_packages=SOURCE_PATH_TO_PACKAGES,
+        )
     return matching_file_paths
 
 

@@ -59,10 +59,13 @@ export function DirtyEditorGuardProvider({
     [monacoCtx]
   );
 
-  const requestCloseEditors = useCallback((model: Model, editorIds: string[], close?: (tabId: string) => void): void => {
-    const unique = Array.from(new Set(editorIds));
-    setPending(unique.map((editorId) => ({ editorId, model, close })));
-  }, []);
+  const requestCloseEditors = useCallback(
+    (model: Model, editorIds: string[], close?: (tabId: string) => void): void => {
+      const unique = Array.from(new Set(editorIds));
+      setPending(unique.map((editorId) => ({ editorId, model, close })));
+    },
+    []
+  );
 
   const closeDialog = useCallback(() => setPending([]), []);
 

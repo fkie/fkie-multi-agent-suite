@@ -1,5 +1,5 @@
-import ParameterRootTree from "./ParameterRootTree";
 import ParameterGroupTreeItem from "./ParameterGroupTreeItem";
+import ParameterRootTree from "./ParameterRootTree";
 import ParameterTreeItem from "./ParameterTreeItem";
 
-export { ParameterRootTree, ParameterGroupTreeItem, ParameterTreeItem };
+export { ParameterGroupTreeItem, ParameterRootTree, ParameterTreeItem };

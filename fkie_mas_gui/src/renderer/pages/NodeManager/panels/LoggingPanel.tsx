@@ -56,17 +56,12 @@ function exportLogs(logs: LogEvent[]): void {
 export default function LoggingPanel(): JSX.Element {
   const logCtx = useLoggingContext();
   const [backgroundColor] = useSetting<string>("backgroundColor");
-  const { value: logLevel, set: setLogLevel } = useAppState<LoggingLevel>(
-    "logging",
-    "level",
-    LoggingLevel.INFO,
-    {
-      version: 1,
-      migrateFrom: {
-        localStorageKey: "LoggingPanel:level",
-      },
-    }
-  );
+  const { value: logLevel, set: setLogLevel } = useAppState<LoggingLevel>("logging", "level", LoggingLevel.INFO, {
+    version: 1,
+    migrateFrom: {
+      localStorageKey: "LoggingPanel:level",
+    },
+  });
   const [showDetails, setShowDetails] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedIndex, setExpandedIndex] = useState(-1);

@@ -19,7 +19,7 @@ const StyledTreeItem = styled(TreeItem)(({ theme }) => ({
     },
     "&.Mui-selected": {
       backgroundColor: `var(--tree-view-bg-color, ${theme.palette.action.selected})`,
-      color: 'var(--tree-view-color)',
+      color: "var(--tree-view-color)",
     },
     [`& .${treeItemClasses.label}`]: {
       fontWeight: "inherit",

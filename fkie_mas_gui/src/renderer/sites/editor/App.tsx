@@ -1,12 +1,12 @@
 import {
-    Alert,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    Stack,
+  Alert,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Stack,
 } from "@mui/material";
 import * as monaco from "monaco-editor";
 import { useCallback, useEffect, useState } from "react";
@@ -66,7 +66,7 @@ export default function EditorApp(): JSX.Element {
     let fileRange: TFileRange | null = null;
     let launchArgs: TLaunchArg[] = [];
     let topLevelLaunchArgs: TLaunchArg[] = [];
-    let selectParameter: TParameterRequest | undefined = undefined;
+    let selectParameter: TParameterRequest | undefined;
     if (range) {
       fileRange = JSON.parse(range);
     }

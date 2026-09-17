@@ -9,21 +9,20 @@
 from fkie_mas_pylib.system.host import get_hostname
 
 
-class StartConfig():
-
+class StartConfig:
     def __init__(self, package, binary):
-        '''
+        """
         :param str host: master uri from host where to run the node. Masteruri is used for cases where NMD uri needed.
-        '''
+        """
         self.package = package
         self.binary = binary
-        self.config_path = ''
-        self.binary_path = ''
-        self.name = ''
-        self.namespace = ''
-        self.fullname = ''
-        self.prefix = ''
-        self.cwd = ''
+        self.config_path = ""
+        self.binary_path = ""
+        self.name = ""
+        self.namespace = ""
+        self.fullname = ""
+        self.prefix = ""
+        self.cwd = ""
         self.env = {}
         self.remaps = {}
         self.params = {}
@@ -31,8 +30,8 @@ class StartConfig():
         self.args = []
         self.masteruri = None
         self.host = None
-        self.loglevel = ''
-        self.logformat = ''
+        self.loglevel = ""
+        self.logformat = ""
         self.respawn = False
         self.respawn_delay = 30
         self.respawn_max = 0
@@ -53,18 +52,18 @@ class StartConfig():
 
     @property
     def hostname(self):
-        '''
+        """
         :return: host name from host_masteruri if it is not None.
-        '''
+        """
         if self.host:
             return get_hostname(self.host)
         return None
 
     @property
     def nmduri(self):
-        '''
+        """
         :return: the nmd uri where to launch the node from host_masteruri if it is not None.
-        '''
+        """
         return None
 
     # def _msg_type(self, value):
@@ -147,10 +146,8 @@ class StartConfig():
         startcfg.prefix = msg.prefix
         startcfg.cwd = msg.cwd
         startcfg.env = {env.name: env.value for env in msg.env}
-        startcfg.remaps = {
-            remap.from_name: remap.to_name for remap in msg.remaps}
-        startcfg.params = {param.name: cls._from_msg_type(
-            param.value, param.value_type) for param in msg.params}
+        startcfg.remaps = {remap.from_name: remap.to_name for remap in msg.remaps}
+        startcfg.params = {param.name: cls._from_msg_type(param.value, param.value_type) for param in msg.params}
         startcfg.clear_params = list(msg.clear_params)
         startcfg.args = list(msg.args)
         startcfg.masteruri = msg.masteruri

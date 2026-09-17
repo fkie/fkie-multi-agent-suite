@@ -160,7 +160,7 @@ export default function ProviderPanel(): JSX.Element {
     const doStart = cliCtx.getArgument("start") || false;
     const doJoin = cliCtx.getArgument("join") || false;
     // Headless electron window not needed unless --start specified
-    if (isElectron() && !!cliCtx.getArgument("headless") && !doStart) return;
+    if (isElectron() && cliCtx.getArgument("headless") && !doStart) return;
     const doJoinWs = (cliCtx.getArgument("join-ws") as string).split(",");
     if (doStart || doJoin) {
       const rosDomainId = Number.parseInt(`${cliCtx.getArgument("ros-domain-id") || rosCtx.rosInfo?.domainId}`);

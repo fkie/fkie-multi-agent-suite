@@ -3,7 +3,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import TypeSpecimenIcon from "@mui/icons-material/TypeSpecimen";
 import { Alert, AlertTitle, Box, IconButton, Stack, ToggleButton, Tooltip } from "@mui/material";
 import { useEffect, useMemo, useReducer, useState } from "react";
-
+import { useCustomEventListener } from "react-custom-events";
 import { ParameterRootTree } from "@/renderer/components/ParameterTreeView";
 import SearchBar from "@/renderer/components/UI/SearchBar";
 import { DEFAULT_BUG_TEXT } from "@/renderer/context/LoggingContext";
@@ -15,7 +15,6 @@ import { RosNode, RosNodeStatus, RosParameter } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
 import { EventProviderRosNodes } from "@/renderer/providers/events";
 import { EVENT_PROVIDER_ROS_NODES } from "@/renderer/providers/eventTypes";
-import { useCustomEventListener } from "react-custom-events";
 
 type TRootData = {
   provider: Provider;

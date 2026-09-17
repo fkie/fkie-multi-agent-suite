@@ -12,15 +12,14 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { treeItemClasses } from "@mui/x-tree-view";
 import React, { useEffect, useMemo, useState } from "react";
-
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useNavigationContext } from "@/renderer/hooks/useNavigationContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { useSetting } from "@/renderer/hooks/useSetting";
 import { RosParameter, RosParameterRange, RosParameterValue } from "@/renderer/models";
 import { Provider } from "@/renderer/providers";
-import { treeItemClasses } from "@mui/x-tree-view";
 import OverflowMenu from "../UI/OverflowMenu";
 import StyledTreeItem from "./StyledTreeItem";
 

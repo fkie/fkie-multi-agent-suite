@@ -1,19 +1,16 @@
 import argparse
 import json
-import os
 import signal
-import sys
 import time
 import traceback
-from typing import List
 
 import rclpy
+from fkie_mas_pylib.defines import ros2_service_introspection_nodename_tuple
+from fkie_mas_pylib.interface import SelfEncoder
+from fkie_mas_pylib.logging.logging import Log
+from fkie_mas_pylib.websocket.client import WebSocketClient
 from rosidl_runtime_py.utilities import get_message
 
-from fkie_mas_pylib.interface import SelfEncoder
-from fkie_mas_pylib.websocket.client import WebSocketClient
-from fkie_mas_pylib.logging.logging import Log
-from fkie_mas_pylib.defines import ros2_service_introspection_nodename_tuple
 from .msg_encoder import MsgEncoder
 
 EVENT_TYPE_MAP = {
@@ -35,14 +32,11 @@ class ServiceIntrospectionEvent:
 
 
 class RosServiceIntrospectionLauncher:
-
     def __init__(self):
         self.parser = self._init_arg_parser()
         parsed_args, remaining_args = self.parser.parse_known_args()
 
-        self.namespace, self.name = ros2_service_introspection_nodename_tuple(
-            parsed_args.service_name
-        )
+        self.namespace, self.name = ros2_service_introspection_nodename_tuple(parsed_args.service_name)
 
         self._port = parsed_args.ws_port
         self._service_name = parsed_args.service_name
@@ -66,7 +60,7 @@ class RosServiceIntrospectionLauncher:
         self.stop()
 
     def stop(self):
-        if hasattr(self, 'wsClient') and self.wsClient:
+        if hasattr(self, "wsClient") and self.wsClient:
             self.wsClient.shutdown()
             self.wsClient = None
 
@@ -74,7 +68,7 @@ class RosServiceIntrospectionLauncher:
         if self._on_shutdown:
             return
         self._on_shutdown = True
-        Log.info('shutdown service introspection')
+        Log.info("shutdown service introspection")
         self.stop()
         if rclpy.ok():
             rclpy.shutdown()
@@ -111,13 +105,11 @@ class RosServiceIntrospectionLauncher:
             Log.error(f"Could not resolve type '{type_str}' for '{topic}': {e}")
             return
 
-        self._subscription = self.ros_node.create_subscription(
-            msg_class, topic, self._on_service_event, 10
-        )
+        self._subscription = self.ros_node.create_subscription(msg_class, topic, self._on_service_event, 10)
         Log.info(f"subscribed introspection topic '{topic}' [{type_str}]")
 
-    def _guid_arr_to_str(self, gid: List[int]) -> str:
-        return '.'.join('{:02X}'.format(c) for c in gid)
+    def _guid_arr_to_str(self, gid: list[int]) -> str:
+        return ".".join(f"{c:02X}" for c in gid)
 
     def _on_service_event(self, msg):
         try:
@@ -134,9 +126,7 @@ class RosServiceIntrospectionLauncher:
             if content:
                 payload = json.loads(
                     json.dumps(
-                        content[0],
-                        cls=MsgEncoder,
-                        **{"no_arr": False, "no_str": False, "array_items_count": 50}
+                        content[0], cls=MsgEncoder, **{"no_arr": False, "no_str": False, "array_items_count": 50}
                     )
                 )
 
@@ -157,9 +147,9 @@ class RosServiceIntrospectionLauncher:
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
-        parser.add_argument('--ws_port', nargs='?', type=int, required=True)
-        parser.add_argument('-s', '--service_name', nargs='?', required=True)
-        parser.add_argument('-t', '--service_type', nargs='?', required=True)
+        parser.add_argument("--ws_port", nargs="?", type=int, required=True)
+        parser.add_argument("-s", "--service_name", nargs="?", required=True)
+        parser.add_argument("-t", "--service_type", nargs="?", required=True)
         return parser
 
     def spin(self):

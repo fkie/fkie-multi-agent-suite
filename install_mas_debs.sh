@@ -1,5 +1,3 @@
-#!/bin/bash
-
 SUPPORTED_OS_CODENAMES=(focal jammy noble resolute)
 SUPPORTED_ROS_DISTROS=(noetic galactic humble jazzy kilted lyrical)
 
@@ -320,7 +318,7 @@ function restart_mas() {
     echo -e "\e[32m🔄 Restart mas gui? (Y/n)\e[0m"
     read yn
     case "$yn" in
-        [yY]|"") 
+        [yY]|"")
             echo -e "\e[32mRestarting mas gui...\e[0m"
             echo -e "\033[36mscreen -dmS .mas-gui /bin/bash -c 'killall -q mas-gui && mas-gui'\e[0m"
             screen -dmS .mas-gui /bin/bash -c 'killall -q mas-gui && mas-gui'

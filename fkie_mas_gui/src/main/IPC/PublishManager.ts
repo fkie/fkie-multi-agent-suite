@@ -1,9 +1,9 @@
-import { PublishCloseCallback, PublishManagerEvents, TPublisherConfig, TPublishManager } from "@/types";
+import { join } from "node:path";
 import pubIcon from "@public/google_play_circle.png?asset";
 import { BrowserWindow, ipcMain } from "electron";
-import { join } from "node:path";
-import { openUrl } from ".";
+import { PublishCloseCallback, PublishManagerEvents, TPublisherConfig, TPublishManager } from "@/types";
 import windowStateKeeper from "../windowStateKeeper";
+import { openUrl } from ".";
 
 type TPublisher = {
   window: BrowserWindow;
