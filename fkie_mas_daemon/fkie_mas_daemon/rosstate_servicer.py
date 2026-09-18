@@ -237,7 +237,7 @@ class RosStateServicer:
                 if get_state:
                     lifecycle_state.state = get_state.current_state.label
             if lifecycle_state.state != "unknown":
-                # skip if the sate was not successful
+                # skip if the state was not successful
                 service_name = f"{node.name}/get_available_transitions"
                 service_available = False
                 with self._ros_service_state_mutex:
@@ -410,7 +410,7 @@ class RosStateServicer:
                         with self._lock_check:
                             self._ts_state_updated = time.time()
                 # If a change was detected by discovery node we received _on_msg_state().
-                # Therefor the self._ts_state_updated was updated.
+                # Therefore the self._ts_state_updated was updated.
                 # But we delay the check for changes by
                 update_ros_state = False
                 with self._lock_check:
@@ -481,7 +481,8 @@ class RosStateServicer:
                     w_time_jump.append(
                         SystemWarning(
                             msg="Timejump into past detected!",
-                            hint="Restart all ROS nodes, includes master_discovery, please! master_discovery shutting down in 5 seconds!",
+                            hint="Restart all ROS nodes, includes master_discovery, please!"
+                            "master_discovery shutting down in 5 seconds!",
                         )
                     )
                     if self.monitor_servicer is not None:
@@ -647,7 +648,7 @@ class RosStateServicer:
         loggerConfigs: list[LoggerConfig] = []
         # get logger names if loggers list is empty
         if not requested_loggers:
-            service_name = "%s/logger_list" % name
+            service_name = f"{name}/logger_list"
             try:
                 service_available = False
                 with self._ros_service_state_mutex:
@@ -665,7 +666,7 @@ class RosStateServicer:
             except Exception as e:
                 Log.warn(f"{self.__class__.__name__}: failed call service '{service_name}': {e}")
         # get current logger levels
-        service_name = "%s/get_logger_levels" % name
+        service_name = f"{name}/get_logger_levels"
         with self._ros_service_state_mutex:
             if service_name not in self._ros_service_name_set:
                 raise Exception(f"logger service '{service_name}' not found")
@@ -690,7 +691,7 @@ class RosStateServicer:
         if not HAS_LOGGER_INTERFACE:
             raise Exception("ros2 version on this client does not support logger interface!")
         # request the current logger
-        service_name_get = "%s/set_logger_levels" % name
+        service_name_get = f"{name}/set_logger_levels"
         with self._ros_service_state_mutex:
             if service_name_get not in self._ros_service_name_set:
                 raise Exception(f"logger service '{service_name_get}' not found")
@@ -750,7 +751,7 @@ class RosStateServicer:
         Creates the node name used by the mas publisher for the given topic.
         """
         ns, name = ros2_publisher_nodename_tuple(topic_name)
-        fullname = f"{ns}/{name}".strip("/").replace("/", "_")
+        fullname = os.path.join(ns, name).replace("/", "_")
         return f"/{fullname}"
 
     def _join_node_name(self, ns: str, name: str) -> str:
@@ -814,9 +815,10 @@ class RosStateServicer:
                 unique_id_in_container = self.get_composed_node_id(container_name, node.name)
                 if unique_id_in_container > -1:
                     service_unload_node = f"{container_node.name}/_container/unload_node"
-                    Log.info(
-                        f"{self.__class__.__name__}: -> unload '{node.name}' with id '{unique_id_in_container}' using service '{service_unload_node}'"
+                    msg = (
+                        f"unload '{node.name}' with id '{unique_id_in_container}' using service '{service_unload_node}'"
                     )
+                    Log.info(f"{self.__class__.__name__}: -> {msg}")
                     request = UnloadNode.Request()
                     request.unique_id = unique_id_in_container
                     response = nmd.launcher.call_service(
@@ -842,8 +844,10 @@ class RosStateServicer:
         return False
 
     def get_composed_node_id(self, container_name: str, node_name: str) -> Number:
-        # Normally, you would call the _container/list_nodes service to get the ID of the composable node.
-        # However, this can take a long time if the service is unavailable but many composable nodes need to be shut down.
+        # Normally, you would call the _container/list_nodes
+        # service to get the ID of the composable node.
+        # However, this can take a long time if the service is unavailable
+        # but many composable nodes need to be shut down.
         # Therefore, we fall back to the last known status.
         with self._ros_composable_mutex:
             for composable in self._composables_nodes:
@@ -851,15 +855,6 @@ class RosStateServicer:
                     for name, unique_id in composable.composableIds:
                         if name == node_name:
                             return unique_id
-        # service_list_nodes = f'{container_name}/_container/list_nodes'
-        # Log.debug(f"{self.__class__.__name__}: list nodes from '{service_list_nodes}'")
-        # request_list = ListNodes.Request()
-        # response_list = nmd.launcher.call_service(
-        #     service_list_nodes, ListNodes, request_list, callback_group=self._callback_group_composed, timeout_sec=1.0)
-        # if response_list is not None:
-        #     for name, unique_id in zip(response_list.full_node_names, response_list.unique_ids):
-        #         if name == node_name:
-        #             return unique_id
         return -1
 
     def _get_ros_node_list(self, forceRefresh: bool = False) -> list[RosNode]:

@@ -98,13 +98,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
         setProvider(provider);
       }
     }
-  }, [currentProviderId]);
-
-  useEffect(() => {
-    if (!provider) return;
-    updateTopicNameOptions();
-    getAvailableMessageTypes();
-  }, [provider]);
+  }, [currentProviderId, rosCtx, rosCtx.getProviderById]);
 
   // Make a request to provider and get known message types
   const getAvailableMessageTypes = useCallback(async (): Promise<void> => {
@@ -112,23 +106,26 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
     const result: string[] = await provider.getRosMessageMessageTypes();
     if (result.length === 0) return;
     setMessageTypeOptions(result);
-  }, [provider, rosCtx.providers]);
+  }, [provider]);
 
   const updateTopicNameOptions = useCallback((): void => {
     if (!provider) return;
     setTopicNameOptions(provider.rosTopics.map((topic) => topic.name));
-  }, [provider, rosCtx.providers]);
+  }, [provider]);
+
+  useEffect(() => {
+    if (!provider) return;
+    updateTopicNameOptions();
+    getAvailableMessageTypes();
+  }, [provider, getAvailableMessageTypes, updateTopicNameOptions]);
 
   // get item history after the history was loaded
-  const fromHistory = useCallback(
-    (entry: TMsgHistoryEntry) => {
-      const { rate, skw, data } = entry;
-      setPublishRate(rate ?? "1");
-      setSubstituteKeywords(skw ?? true);
-      setMessageStruct(structuredClone(data));
-    },
-    [setPublishRate, setSubstituteKeywords, setMessageStruct]
-  );
+  const fromHistory = useCallback((entry: TMsgHistoryEntry) => {
+    const { rate, skw, data } = entry;
+    setPublishRate(rate ?? "1");
+    setSubstituteKeywords(skw ?? true);
+    setMessageStruct(structuredClone(data));
+  }, []);
 
   // add new item to the history
   const updateHistory = useCallback(async () => {
@@ -144,17 +141,6 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
       createdAt: Date.now(),
     });
   }, [messageStruct, publishRate, substituteKeywords, currentMessageType, addEntry]);
-
-  // create string from message struct and copy it to clipboard
-  const onCopyToClipboard = useCallback((): void => {
-    if (!messageStruct) return;
-    const json: string = rosMessageStructToString(messageStruct, false, false) as string;
-    const qos: RosQos | undefined = findQoSFromSub();
-    navigator.clipboard.writeText(
-      `${currentTopicName} ${qos ? qosFromJson(qos).toString() : ""} ${currentMessageType} '${json}'`
-    );
-    logCtx.success("message publish object copied!", "", "message publish object copied");
-  }, [messageStruct, currentTopicName, currentMessageType]);
 
   const updateMessageTypeFromTopic = useCallback(async () => {
     if (provider) {
@@ -192,7 +178,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
       //   setInputElements(null);
       //   setMessageStruct(undefined);
     }
-  }, [currentTopicName, provider, currentMessageType, rosCtx]);
+  }, [currentTopicName, provider]);
 
   const getTopicStructData = useCallback(async () => {
     if (currentMessageType && currentMessageType !== "unknown") {
@@ -215,7 +201,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
         }
       }
     }
-  }, [currentMessageType, provider, rosCtx]);
+  }, [currentMessageType, provider, currentTopicName, searchTerm]);
 
   // debounced filter callback
   const updateInputElements = useCallback(
@@ -234,7 +220,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
         setInputElements(null);
       }
     },
-    [messageStruct, currentMessageType, currentTopicName]
+    [messageStruct, currentMessageType, topicName]
   );
 
   async function stopPublisher(): Promise<void> {
@@ -255,34 +241,35 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
   useEffect(() => {
     if (editTopicName) return;
     updateMessageTypeFromTopic();
-  }, [currentTopicName, editTopicName]);
+  }, [editTopicName, updateMessageTypeFromTopic]);
 
   useEffect(() => {
     if (editMessageType) return;
     if (!provider) return;
     if (!currentMessageType || currentMessageType === "unknown") return;
     getTopicStructData();
-  }, [currentMessageType, editMessageType, provider]);
+  }, [currentMessageType, editMessageType, provider, getTopicStructData]);
 
   useEffect(() => {
     if (!messageStruct) return;
     updateInputElements(searchTerm);
-  }, [messageStruct]);
+  }, [messageStruct, searchTerm, updateInputElements]);
 
   // Update the visible state of input fields on a filter change
   useEffect(() => {
     updateInputElements(searchTerm);
-  }, [searchTerm]);
+  }, [searchTerm, updateInputElements]);
 
   useEffect(() => {
     if (provider && currentTopicName) {
+      void rosCtx.mapProviderRosNodes;
       provider.hasPublisher(currentTopicName).then((hasPub) => {
         setHasPublisher(hasPub.result);
       });
     }
-  }, [provider, rosCtx.mapProviderRosNodes, currentTopicName]);
+  }, [provider, currentTopicName, rosCtx.mapProviderRosNodes]);
 
-  function findQoSFromSub(): RosQos | undefined {
+  const findQoSFromSub = useCallback((): RosQos | undefined => {
     // find first available subscriber with QoS
     let qos: RosQos | undefined;
     const topics = provider?.rosTopics || [];
@@ -309,7 +296,18 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
       }
     }
     return qos;
-  }
+  }, [currentTopicName, provider?.rosTopics]);
+
+  // create string from message struct and copy it to clipboard
+  const onCopyToClipboard = useCallback((): void => {
+    if (!messageStruct) return;
+    const json: string = rosMessageStructToString(messageStruct, false, false) as string;
+    const qos: RosQos | undefined = findQoSFromSub();
+    navigator.clipboard.writeText(
+      `${currentTopicName} ${qos ? qosFromJson(qos).toString() : ""} ${currentMessageType} '${json}'`
+    );
+    logCtx.success("message publish object copied!", "", "message publish object copied");
+  }, [messageStruct, currentTopicName, currentMessageType, logCtx, findQoSFromSub]);
 
   async function handleStartPublisher(): Promise<void> {
     if (!messageStruct) return;
@@ -446,7 +444,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
       }
       return { flexGrow: 1, backgroundColor: backgroundColor };
     },
-    [currentProviderId, colorizeHosts, rosCtx.providerColor]
+    [currentProviderId, colorizeHosts, rosCtx, backgroundColor]
   );
 
   return (
@@ -530,7 +528,7 @@ export default function TopicPublishPanel(props: TopicPublishPanelProps): JSX.El
           <FormControl sx={{ m: 1, width: "100%" }} variant="standard">
             <ProviderSelector
               defaultProvider={currentProviderId || ""}
-              setSelectedProvider={(provId) => setCurrentProviderId(provId)}
+              setSelectedProvider={(providerId) => setCurrentProviderId(providerId)}
             />
           </FormControl>
         </Stack>
