@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.10.2 (20.09.2026)
+-------------------
+* fix: show running publisher in topic publisher panel
+
 5.10.1 (16.09.2026)
 -------------------
 * fix(daemon): use non-default WebSocket port for subscriber and introspection services
@@ -339,7 +343,7 @@ Changelog for package fkie_mas_daemon
 4.4.0 (02.05.2025)
 ------------------
 * Use local addresses if no discovery node available, but a screen for a node was found
-* Remove outdated discoverd daemons
+* Remove outdated discovered daemons
 * Added the possibility to search for a process of a node to stop
 
 4.3.10 (30.04.2025)
@@ -364,7 +368,7 @@ Changelog for package fkie_mas_daemon
 ------------------
 * Added parameter change detection on reload file
 * Fixed update of available screens
-* Fixed call service, it was brocken after added action handling
+* Fixed call service, it was broken after added action handling
 
 4.3.5 (03.04.2025)
 ------------------

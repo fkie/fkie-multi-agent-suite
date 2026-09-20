@@ -1,5 +1,9 @@
 # Changelog
 
+## 5.11.3 - 20.09.2026
+
+- [fkie_mas_daemon] fix: show running publisher in topic publisher panel
+
 ## 5.11.2 - 17.09.2026
 
 - fix(tsc-typecheck): removed unused variable
