@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
 
   steps:
-    - uses: actions/checkout@v3
-    - uses: Nats-ji/delete-old-releases@v1
+    - name: Delete old releases
+      uses: Nats-ji/delete-old-releases@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         keep-count: 5
