@@ -1,7 +1,8 @@
 name: Cleanup old releases
 
 on:
-  push:
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -20,4 +21,4 @@ jobs:
           keep-old-minor-releases: true
           keep-old-minor-releases-count: 3
           keep-old-minor-releases-by: 'minor'
-          dry-run: true
+          dry-run: false
