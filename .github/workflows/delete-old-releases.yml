@@ -1,0 +1,10 @@
+steps:
+- uses: actions/checkout@v3
+- uses: Nats-ji/delete-old-releases@v1
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+    keep-count: 5
+    keep-old-minor-releases: true
+    keep-old-minor-releases-count: 3
+    keep-old-minor-releases-by: 'minor'
+    dry-run: true
