@@ -42,6 +42,13 @@ export interface IAutoUpdateContext {
 
 export const AutoUpdateContext = createContext<IAutoUpdateContext | null>(null);
 
+const MIN_DELAY_AUTO_CHECK = 86400; // 1 day (in seconds)
+
+/** Check whether enough time has passed since the last auto update check */
+function autoCheckAllowed(timestamp: number): boolean {
+  return Math.floor(Date.now() / 1000) - timestamp > MIN_DELAY_AUTO_CHECK;
+}
+
 interface IAutoUpdateProviderProps {
   children: React.ReactNode;
 }
@@ -52,8 +59,6 @@ export const AutoUpdateProvider = ({
   const logCtx = useLoggingContext();
   const navCtx = useNavigationContext();
   const rosCtx = useRosContext();
-
-  const MIN_DELAY_AUTO_CHECK = 86400; // 1 day (in seconds)
 
   const [checkForUpdates] = useSetting<boolean>("checkForUpdates");
 
@@ -148,10 +153,13 @@ export const AutoUpdateProvider = ({
     async (url: string, credentials?: { username: string; token: string } | null): Promise<Response> => {
       const headers: HeadersInit = { Accept: "application/vnd.github+json" };
       const creds = credentials || storedCredentials;
-      if (creds) {
-        headers["Authorization"] = `Basic ${btoa(`${creds.username}:${creds.token}`)}`;
-      }
-      return fetch(url, { headers });
+      const finalHeaders = {
+        ...headers,
+        ...(creds && {
+          Authorization: `Basic ${btoa(`${creds.username}:${creds.token}`)}`,
+        }),
+      };
+      return fetch(url, { headers: finalHeaders });
     },
     [storedCredentials]
   );
@@ -165,35 +173,15 @@ export const AutoUpdateProvider = ({
         updateChannel === "prerelease" ? " -p" : updateChannel !== "release" ? ` -s ${updateChannel}` : "";
       const args = `${!gui ? " -r" : ""}${!ros ? " -g" : ""}`;
       const branch = updateChannel === "prerelease" ? "devel" : "master";
-      return `wget -O /tmp/install_mas_debs.sh https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/${branch}/install_mas_debs.sh && bash /tmp/install_mas_debs.sh${channelOpt}${args}`;
+      const installUrl = `https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/${branch}/scripts/install_mas_debs.sh`;
+      return `wget -O /tmp/install_mas_debs.sh ${installUrl} && bash /tmp/install_mas_debs.sh${channelOpt}${args}`;
     },
     [updateChannel]
   );
 
-  /** Checks for new release versions on GitHub or via AppImage updater */
-  const checkForUpdate = useCallback(
-    (channelParam?: "prerelease" | "release" | string): void => {
-      const channel = channelParam || updateChannel;
-      logCtx.info(`Checking for new ${channel} ${isAppImage ? "AppImage" : "Debian"} update`, "", "check update");
-
-      setUpdateAvailable(null);
-      setUpdateError("");
-      setDownloadProgress(null);
-      setCheckingForUpdate(true);
-      setCheckTimestamp(Math.floor(Date.now() / 1000));
-
-      if (isAppImage && autoUpdateManager) {
-        if (["prerelease", "release"].includes(channel)) {
-          autoUpdateManager.setChannel(channel as "prerelease" | "release");
-        }
-        autoUpdateManager.checkForUpdate();
-        setCheckedThisRun(true);
-      } else {
-        fetchRelease(channel);
-      }
-    },
-    [autoUpdateManager, isAppImage, updateChannel]
-  );
+  const getTitle = useCallback((release: JSONObject) => {
+    return `Changes in version ${release.name} (${(release.published_at as string).split("T")[0]})${release.prerelease ? " prerelease" : ""}:`;
+  }, []);
 
   /** Fetches release info directly from GitHub (with 403 handling) */
   const fetchRelease = useCallback(
@@ -272,11 +260,46 @@ export const AutoUpdateProvider = ({
         setCheckedThisRun(true);
       }
     },
-    [fetchWithAuth, requestCredentials, autoUpdateManager, setAvailableVersions]
+    [
+      fetchWithAuth,
+      requestCredentials,
+      autoUpdateManager,
+      setAvailableVersions,
+      logCtx,
+      setStoredCredentials,
+      setStoredUpdateAvailable,
+      getTitle,
+    ]
   );
 
-  const getTitle = (release: JSONObject) =>
-    `Changes in version ${release.name} (${(release.published_at as string).split("T")[0]})${release.prerelease ? " prerelease" : ""}:`;
+  /** Checks for new release versions on GitHub or via AppImage updater */
+  const checkForUpdate = useCallback(
+    (channelParam?: "prerelease" | "release" | string): void => {
+      const channel = channelParam || updateChannel;
+      logCtx.info(`Checking for new ${channel} ${isAppImage ? "AppImage" : "Debian"} update`, "", "check update");
+
+      setUpdateAvailable(null);
+      setUpdateError("");
+      setDownloadProgress(null);
+      setCheckingForUpdate(true);
+      setCheckTimestamp(Math.floor(Date.now() / 1000));
+
+      if (isAppImage && autoUpdateManager) {
+        if (["prerelease", "release"].includes(channel)) {
+          autoUpdateManager.setChannel(channel as "prerelease" | "release");
+        }
+        autoUpdateManager.checkForUpdate();
+        setCheckedThisRun(true);
+      } else {
+        fetchRelease(channel);
+      }
+    },
+    [autoUpdateManager, isAppImage, updateChannel, fetchRelease, logCtx, setCheckTimestamp]
+  );
+
+  const getLocalProviderId = useCallback(() => {
+    return rosCtx.getLocalProvider()[0]?.id || "";
+  }, [rosCtx]);
 
   const installDebian = useCallback(
     async (gui: boolean, ros: boolean): Promise<void> => {
@@ -308,7 +331,7 @@ export const AutoUpdateProvider = ({
       }
       setInstalling(false);
     },
-    [getUpdateCli, navCtx, logCtx, updateAvailable]
+    [getUpdateCli, navCtx, logCtx, updateAvailable, getLocalProviderId]
   );
 
   const requestInstallUpdate = useCallback(() => {
@@ -325,12 +348,8 @@ export const AutoUpdateProvider = ({
       if (["prerelease", "release"].includes(channel))
         autoUpdateManager?.setChannel(channel as "prerelease" | "release");
     },
-    [updateChannel, autoUpdateManager]
+    [updateChannel, autoUpdateManager, setStoredChannel]
   );
-
-  const getLocalProviderId = () => rosCtx.getLocalProvider()[0]?.id || "";
-
-  const autoCheckAllowed = (timestamp: number) => Math.floor(Date.now() / 1000) - timestamp > MIN_DELAY_AUTO_CHECK;
 
   /** Determine if we are using AppImage and maybe trigger background check */
   const updateIsAppImage = useCallback(
@@ -341,7 +360,7 @@ export const AutoUpdateProvider = ({
         checkForUpdate(updateChannel);
       }
     },
-    [checkForUpdates, checkTimestamp, updateChannel]
+    [checkForUpdates, checkTimestamp, updateChannel, checkForUpdate]
   );
 
   // ==== Effects ====
@@ -366,14 +385,19 @@ export const AutoUpdateProvider = ({
     });
 
     updateIsAppImage(autoUpdateManager);
-  }, [autoUpdateManager]);
+  }, [autoUpdateManager, logCtx, setStoredUpdateAvailable, updateIsAppImage]);
 
-  useEffect(() => {
+  const updateLocalProviderId = useCallback(() => {
     if (!localProviderId) {
       const local = rosCtx.getLocalProvider();
       if (local.length > 0) setLocalProviderId(local[0].id);
     }
-  }, [rosCtx.providers]);
+  }, [localProviderId, rosCtx]);
+
+  useEffect(() => {
+    void rosCtx.providers;
+    updateLocalProviderId();
+  }, [rosCtx.providers, updateLocalProviderId]);
 
   useEffect(() => {
     if (
@@ -382,7 +406,7 @@ export const AutoUpdateProvider = ({
       (autoCheckAllowed(checkTimestamp) || updateChannel.split(".").length === 3)
     )
       checkForUpdate(updateChannel);
-  }, [autoUpdateManager, localProviderId, updateChannel, checkTimestamp]);
+  }, [autoUpdateManager, localProviderId, updateChannel, checkTimestamp, checkForUpdate]);
 
   useEffect(() => {
     if (!storedUpdateAvailable || storedUpdateAvailable.version === packageJson.version) {
@@ -394,7 +418,7 @@ export const AutoUpdateProvider = ({
       ? semver.gt(storedUpdateAvailable?.version, pkgVersion)
       : pkgVersion !== storedUpdateAvailable?.version;
     if (newRelease) setUpdateAvailable(storedUpdateAvailable);
-  }, [storedUpdateAvailable]);
+  }, [storedUpdateAvailable, autoUpdateManager]);
 
   const contextValue = useMemo(
     () => ({
@@ -430,6 +454,11 @@ export const AutoUpdateProvider = ({
       isAppImage,
       installing,
       availableVersions,
+      checkForUpdate,
+      getUpdateCli,
+      installDebian,
+      requestInstallUpdate,
+      setUpdateChannel,
     ]
   );
 

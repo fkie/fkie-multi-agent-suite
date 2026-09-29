@@ -183,7 +183,7 @@ export default class CommandExecutor implements TCommandExecutor {
         this.sshUsers[currentHost] = username;
       } else if ((nLine.startsWith("Port ") || nLine.startsWith("port ")) && currentHost) {
         const port = nLine.split(" ")[1];
-        this.sshPorts[currentHost] = Number.parseInt(port);
+        this.sshPorts[currentHost] = Number.parseInt(port, 10);
       } else if (nLine.startsWith("IdentityFile ") && currentHost) {
         const identPath: string = nLine.split(" ")[1].replace("~", os.homedir());
         try {
@@ -685,7 +685,7 @@ export async function updateDebianPackages(prerelease: boolean = false): Promise
       const child = spawn(
         "/usr/bin/wget",
         [
-          `https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/${prerelease ? "devel" : "master"}/install_mas_debs.sh`,
+          `https://raw.githubusercontent.com/fkie/fkie-multi-agent-suite/refs/heads/${prerelease ? "devel" : "master"}/scripts/install_mas_debs.sh`,
           "-O",
           "/tmp/install_mas_debs.sh",
           "&&",

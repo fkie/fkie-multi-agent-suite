@@ -1,24 +1,62 @@
-name: Cleanup old releases
+name: Cleanup Releases
 
 on:
   release:
-    types: [published]
+    types: [published]          # 'released' würde einen zweiten Lauf auslösen
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only log what would be deleted"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
 
+concurrency:
+  group: cleanup-releases-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Delete old releases
-        uses: Nats-ji/delete-old-releases@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          keep-count: 5
-          keep-old-minor-releases: true
-          keep-old-minor-releases-count: 3
-          keep-old-minor-releases-by: 'minor'
-          dry-run: false
+      - uses: actions/checkout@v4
+
+      - name: Cleanup releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          VAR_DRY_RUN: ${{ vars.CLEANUP_DRY_RUN }}
+          PROTECT_TAG: ${{ github.event.release.tag_name }}
+          KEEP_PATCHES: "3"
+          KEEP_PRERELEASES: "5"
+          PRERELEASE_SCOPE: global
+          DELETE_TAGS: "false"
+        run: |
+          set -euo pipefail
+
+          # resolve dry-run flag: manual input wins, otherwise repo variable
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            DRY_RUN="${INPUT_DRY_RUN:-true}"
+          else
+            DRY_RUN="${VAR_DRY_RUN:-true}"
+          fi
+
+          ARGS=(
+            --repo "$REPOSITORY"
+            --keep-patches "$KEEP_PATCHES"
+            --keep-prereleases "$KEEP_PRERELEASES"
+            --prerelease-scope "$PRERELEASE_SCOPE"
+            --yes
+          )
+          # use 'if' instead of '&&' - a failing test would abort under 'set -e'
+          if [ -n "${PROTECT_TAG:-}" ]; then ARGS+=(--protect "$PROTECT_TAG"); fi
+          if [ "$DELETE_TAGS" = "true" ]; then ARGS+=(--delete-tags); fi
+          if [ "$DRY_RUN" != "true" ]; then ARGS+=(--execute); fi
+
+          echo "Dry run: $DRY_RUN"
+          # the script writes the markdown report to GITHUB_STEP_SUMMARY itself
+          bash "$GITHUB_WORKSPACE/scripts/cleanup-releases.sh" "${ARGS[@]}"

@@ -1,4 +1,3 @@
-# DEPRECATED: The new script is located in the scripts folder.
 SUPPORTED_OS_CODENAMES=(focal jammy noble resolute)
 SUPPORTED_ROS_DISTROS=(noetic galactic humble jazzy kilted lyrical)
 
