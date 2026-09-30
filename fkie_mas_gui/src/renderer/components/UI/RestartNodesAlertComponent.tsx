@@ -109,24 +109,37 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
           }}
         >
           <CardActions>
-            <Stack sx={{ width: "100%" }} direction="row" spacing="0.5em" alignItems="center">
+            <Stack sx={{ width: "100%", flexWrap: "wrap" }} direction="row" spacing="0.5em" alignItems="center">
               <Box sx={{ flexGrow: 1 }} />
+
               <IconButton
-                aria-label="Show more"
+                aria-label={expanded ? "Show less" : "Show more"}
                 sx={{
                   color: (theme) => theme.palette.getContrastText(theme.palette.warning.main),
-                  transform: "rotate(0deg)",
-                  transition: "all .2s",
+                  transition: "transform .2s",
+                  transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
                 }}
-                style={expanded ? { transform: "rotate(180deg)" } : undefined}
-                onClick={() => handleExpandClick()}
+                onClick={handleExpandClick}
               >
                 <ExpandMoreIcon fontSize="inherit" />
               </IconButton>
 
-              <Typography variant="subtitle1">{`${message} Do you want to restart ${currentNodeList.length === 1 ? currentNodeList[0] : `${currentNodeList.length} nodes`} on: `}</Typography>
-              <Typography variant="subtitle1" fontWeight="bold">
-                {provider.name()}
+              {/* single Typography -> text wraps as one readable sentence */}
+              <Typography variant="subtitle1" sx={{ minWidth: 0 }}>
+                {message}{" "}
+                <Box component="span" sx={{ fontWeight: 700, fontSize: "1.15em", whiteSpace: "nowrap" }}>
+                  {currentNodeList.length}
+                </Box>{" "}
+                {currentNodeList.length === 1 ? "node" : "nodes"}
+                {currentNodeList.length === 1 && (
+                  <Box component="span" sx={{ fontStyle: "italic" }}>
+                    {` (${currentNodeList[0]})`}
+                  </Box>
+                )}
+                {" will be restarted on "}
+                <Box component="span" sx={{ fontWeight: 700 }}>
+                  {provider.name()}
+                </Box>
               </Typography>
 
               <Button
@@ -135,14 +148,16 @@ const RestartNodesAlertComponent = forwardRef<HTMLDivElement, RestartNodesCompon
                 variant="contained"
                 onClick={() => {
                   handleDismiss();
-                  if (onReload) onReload(provider.id, checked);
+                  onReload?.(provider.id, checked);
                 }}
               >
                 Restart
               </Button>
+
               <IconButton
-                onClick={() => handleDismiss()}
+                onClick={handleDismiss}
                 size="small"
+                aria-label="Dismiss"
                 sx={{ color: (theme) => theme.palette.getContrastText(theme.palette.warning.main) }}
               >
                 <CloseOutlinedIcon fontSize="inherit" />
