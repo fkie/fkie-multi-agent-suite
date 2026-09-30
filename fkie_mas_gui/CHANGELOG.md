@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.11.4 - 30.09.2026
+
+- feat(ui): explain SIGTERM shutdown issue in "Multiple Screens" tooltip
+- fix(queue-status): stack progress label above progress bar
+- fix(ui): highlight node count and improve restart prompt readability
+- fix(HostTreeViewPanel): fix killing nodes with kill_on_stop set on stop and restart
+- fix(parameter-editing): normalize bool and float values for launch files
+- fix(FileEditorPanel): hide parameter confirm buttons and load files dependencies
+- [fkie_mas_daemon] fix(file_observer): emit a single change event per file save
+- feat(workflow): enabled delete old releases workflow
+
 ## 5.11.3 - 20.09.2026
 
 - [fkie_mas_daemon] fix: show running publisher in topic publisher panel

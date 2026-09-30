@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.10.3 (30.09.2026)
+-------------------
+* fix(file_observer): emit a single change event per file save
+
 5.10.2 (20.09.2026)
 -------------------
 * fix: show running publisher in topic publisher panel
