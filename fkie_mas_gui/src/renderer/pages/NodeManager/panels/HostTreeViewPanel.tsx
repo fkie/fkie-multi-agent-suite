@@ -1696,14 +1696,24 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         )}
         {queue.currentIndex >= 0 && (
           <Paper elevation={2}>
-            <Stack alignItems="center" justifyItems="center" direction="row" spacing={0.5} sx={{ marginRight: 2 }}>
-              <Typography noWrap pr={0.5}>
-                {`${queue.getAt(queue.currentIndex)?.action} ${queue.getAt(queue.currentIndex)?.node?.name}`}
-              </Typography>
-              <LinearProgress style={{ flexGrow: 1 }} variant="determinate" value={progressQueueMain} />
+            <Stack alignItems="center" direction="row" spacing={0.5} sx={{ marginRight: 2 }}>
+              {/* vertical group: label on top, progress bar below */}
+              <Stack direction="column" spacing={0.25} sx={{ flexGrow: 1, minWidth: 0 }} paddingBottom={0.5}>
+                <Stack direction="row">
+                  <Typography noWrap variant="body2" pr={0.5} color="textSecondary">
+                    {`${queue.getAt(queue.currentIndex)?.action ?? ""}`}
+                  </Typography>
+                  <Typography noWrap variant="body2" pr={0.5}>
+                    {`${queue.getAt(queue.currentIndex)?.node?.name ?? ""}`}
+                  </Typography>
+                </Stack>
+                <LinearProgress variant="determinate" value={progressQueueMain} sx={{ width: "100%" }} />
+              </Stack>
+
               <FormLabel>
                 {queue.currentIndex}/{queue.queue.length}
               </FormLabel>
+
               <IconButton
                 onClick={() => {
                   // cancel pending SIGKILL timers, otherwise nodes are killed after the user aborted
