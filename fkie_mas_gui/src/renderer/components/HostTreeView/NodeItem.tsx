@@ -557,7 +557,62 @@ export default function NodeItem(props: NodeItemProps): JSX.Element {
                 <OverflowMenu
                   icon={
                     node.status === RosNodeStatus.RUNNING ? (
-                      <Tooltip title="Multiple Screens" disableInteractive>
+                      <Tooltip
+                        title={
+                          <Box sx={{ maxWidth: 480 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                              Multiple Screens
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              More than one screen was found for this node. This can happen when nodes do not shut down
+                              on the SIGTERM signal. This is especially common with Python nodes: the SIGTERM handler
+                              has to be installed <em>before</em> rclpy.init(), so that rclpy chains into it and
+                              additionally wakes up the wait set (otherwise the Python handler would only run after
+                              rcl_wait() returns).
+                            </Typography>
+                            <Box
+                              component="pre"
+                              sx={{
+                                m: 0,
+                                mb: 1,
+                                p: 1,
+                                borderRadius: 1,
+                                bgcolor: "rgba(0, 0, 0, 0.4)",
+                                fontFamily: "monospace",
+                                fontSize: "0.75rem",
+                                whiteSpace: "pre",
+                                overflowX: "auto",
+                              }}
+                            >
+                              {`def _sigterm_handler(signum, frame):
+    raise KeyboardInterrupt
+
+signal.signal(signal.SIGTERM, _sigterm_handler)
+rclpy.init()`}
+                            </Box>
+                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                              Alternatively, add the following parameter to the node configuration to force a kill after
+                              the given timeout (in milliseconds):
+                            </Typography>
+                            <Box
+                              component="pre"
+                              sx={{
+                                m: 0,
+                                p: 1,
+                                borderRadius: 1,
+                                bgcolor: "rgba(0, 0, 0, 0.4)",
+                                fontFamily: "monospace",
+                                fontSize: "0.75rem",
+                                whiteSpace: "pre",
+                                overflowX: "auto",
+                              }}
+                            >
+                              {`<param name="mas/kill_on_stop" value="300" />`}
+                            </Box>
+                          </Box>
+                        }
+                        slotProps={{ tooltip: { sx: { maxWidth: "none" } } }}
+                      >
                         <DynamicFeedOutlinedIcon color="warning" style={{ fontSize: "inherit" }} />
                       </Tooltip>
                     ) : (
