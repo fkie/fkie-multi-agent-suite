@@ -171,7 +171,7 @@ function pythonValue(value: string | undefined, type: string | undefined): strin
       return INT_RE.test(raw.trim()) ? raw.trim() : "0";
 
     case "float":
-      return FLOAT_RE.test(raw.trim()) ? raw.trim() : "0.0";
+      return FLOAT_RE.test(raw.trim()) ? floatString(raw.trim()) : "0.0";
 
     case "list":
     case "str[]":
@@ -206,12 +206,59 @@ export type TXmlNodeBlock = {
 export const NODE_TAG_NAMES = ["node", "composable_node", "node_container"] as const;
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const TRUE_VALUES = ["true", "1", "yes", "on"];
+const FALSE_VALUES = ["false", "0", "no", "off"];
+
+/** ensures a decimal point: "1" -> "1.0", ".5" -> "0.5", "1." -> "1.0" */
+function ensureDecimalPoint(value: string): string {
+  let result = value;
+  // leading dot needs a zero: ".5" -> "0.5"
+  result = result.replace(/^([+-]?)\./, "$10.");
+  if (!result.includes(".")) return `${result}.0`;
+  if (result.endsWith(".")) return `${result}0`;
+  return result;
+}
+
+/** normalizes a float string, keeps exponent notation intact ("1e3" -> "1.0e3") */
+function floatString(value: string, fallback = "0.0"): string {
+  const raw = value.trim();
+  if (!FLOAT_RE.test(raw)) return fallback;
+
+  const expIdx = raw.search(/[eE]/);
+  if (expIdx < 0) return ensureDecimalPoint(raw);
+  return `${ensureDecimalPoint(raw.slice(0, expIdx))}${raw.slice(expIdx)}`;
+}
+
+/** normalizes a value for XML launch files (bool -> True/False, float -> with decimal point) */
+function xmlParamValue(value: string | undefined, type: string | undefined): string {
+  const raw = `${value ?? ""}`.trim();
+
+  switch (type) {
+    case "bool":
+    case "boolean": {
+      const lower = raw.toLowerCase();
+      if (TRUE_VALUES.includes(lower)) return "True";
+      if (FALSE_VALUES.includes(lower)) return "False";
+      // unknown input -> keep it, do not silently change semantics
+      return raw;
+    }
+    case "float":
+    case "double":
+      return floatString(raw);
+    case "int":
+      return INT_RE.test(raw) ? raw : raw;
+    default:
+      return `${value ?? ""}`;
+  }
+}
 
 /** Ranges that must be ignored: comments, CDATA, processing instructions. */
 function ignoredRanges(text: string): Array<[number, number]> {
   const ranges: Array<[number, number]> = [];
   const re = /<!--[\s\S]*?(?:-->|$)|<!\[CDATA\[[\s\S]*?(?:\]\]>|$)|<\?[\s\S]*?(?:\?>|$)/g;
-  for (let m; (m = re.exec(text)); ) ranges.push([m.index, m.index + m[0].length]);
+  for (let m: RegExpExecArray | null = re.exec(text); m !== null; m = re.exec(text)) {
+    ranges.push([m.index, m.index + m[0].length]);
+  }
   return ranges;
 }
 
@@ -250,7 +297,7 @@ function matchingClose(
   const re = new RegExp(`<${escapeRe(tag)}(?=[\\s/>])|</${escapeRe(tag)}\\s*>`, "g");
   re.lastIndex = bodyStart;
   let depth = 1;
-  for (let m; (m = re.exec(text)); ) {
+  for (let m: RegExpExecArray | null = re.exec(text); m !== null; m = re.exec(text)) {
     if (inRanges(ignored, m.index)) continue;
     if (m[0][1] === "/") {
       if (--depth === 0) return { bodyEnd: m.index, blockEnd: m.index + m[0].length };
@@ -276,7 +323,7 @@ export function xmlNodeBlockAt(
 
   // Collect all candidate openings starting at or before `offset`.
   const candidates: Array<{ index: number; tag: string }> = [];
-  for (let m; (m = re.exec(text)) && m.index <= offset; ) {
+  for (let m: RegExpExecArray | null = re.exec(text); m !== null && m.index <= offset; m = re.exec(text)) {
     if (!inRanges(ignored, m.index)) candidates.push({ index: m.index, tag: m[1] });
   }
 
@@ -327,7 +374,8 @@ function lookupXml(model: editor.ITextModel, request: TParameterRequest, rosVers
   // not found -> create insert proposal
   const indent = indentAt(model, block.tagStart);
   const typeAttr = rosVersion === "1" && request.paramType ? ` type="${xmlValue(request.paramType)}"` : "";
-  const paramTag = `<param name="${xmlValue(short)}" value="${xmlValue(request.paramValue)}"${typeAttr}/>`;
+  const paramValue = xmlParamValue(request.paramValue, request.paramType);
+  const paramTag = `<param name="${xmlValue(short)}" value="${xmlValue(paramValue)}"${typeAttr}/>`;
 
   if (block.selfClosing) {
     const unit = indentUnit(model);
