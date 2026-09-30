@@ -412,6 +412,7 @@ class FileObserverRegistry:
         self,
         on_change: Callable[[str, str, frozenset[str]], None],
         min_event_interval: float = 1.0,
+        burst_window: float = 0.25,
         watch_roots: Iterable[str] | None = None,
     ) -> None:
         """
@@ -434,8 +435,15 @@ class FileObserverRegistry:
         if min_event_interval < 0.0:
             raise ValueError("min_event_interval must not be negative")
 
+        if burst_window < 0.0:
+            raise ValueError("burst_window must not be negative")
+
         self._on_change = on_change
         self._min_event_interval = min_event_interval
+        # Events arriving inside this window after a forwarded event belong to
+        # the same write operation. Editors truncate and write separately,
+        # which emits several IN_MODIFY events a few milliseconds apart.
+        self._burst_window = min(burst_window, min_event_interval)
 
         self._lock = threading.Lock()
 
@@ -1324,8 +1332,19 @@ class FileObserverRegistry:
                     and self._min_event_interval > 0.0
                     and now - last_event < self._min_event_interval
                 ):
+                    delta = now - last_event
+                    if delta <= self._burst_window:
+                        Log.debug(
+                            f"{self.__class__.__name__}: burst suppressed "
+                            f"{logical_path} delta={delta:.4f} "
+                            f"window={self._burst_window:.4f}"
+                        )
+                        # Same save operation, no additional event required.
+                        continue
+
                     # Collapse the event instead of dropping it, so the last
                     # change of a file is always reported (trailing edge).
+                    Log.debug(f"{self.__class__.__name__}: deferred {logical_path} delta={delta:.4f}")
                     self._pending_events[logical_path] = (
                         event_type,
                         last_event + self._min_event_interval,
@@ -1333,6 +1352,7 @@ class FileObserverRegistry:
                     wake_worker = True
                     continue
 
+                Log.debug(f"{self.__class__.__name__}: forwarded {logical_path}")
                 self._last_event[logical_path] = now
                 self._pending_events.pop(logical_path, None)
 
