@@ -1,3 +1,4 @@
+import { emitCustomEvent } from "react-custom-events";
 import {
   CmdType,
   CmdTypes,
@@ -11,7 +12,6 @@ import {
   TSystemInfo,
 } from "@/types";
 import { TResultParam } from "@/types/TResultParam";
-import { emitCustomEvent } from "react-custom-events";
 import { DEFAULT_BUG_TEXT, ILoggingContext } from "../context/LoggingContext";
 import { getDefaultPortFromRos, ISettingsContext } from "../context/SettingsContext";
 import {
@@ -64,8 +64,6 @@ import { envFromSystemEnv } from "../models/ProviderLaunchConfiguration";
 import { delay, generateUniqueId } from "../utils";
 import ConnectionState from "./ConnectionState";
 import {
-  emitNodeDiagnostic,
-  emitSystemDiagnostics,
   EventProviderActionEvent,
   EventProviderActionIntrospection,
   EventProviderActivity,
@@ -85,6 +83,8 @@ import {
   EventProviderSubscriberEvent,
   EventProviderTimeDiff,
   EventProviderWarnings,
+  emitNodeDiagnostic,
+  emitSystemDiagnostics,
   TEventNodeComposable,
   TEventNodeLifecycle,
 } from "./events";
@@ -1553,7 +1553,7 @@ export default class Provider implements IProvider {
     let nodesUpdated: boolean = false;
     // update nodes
     // if node exist (it is running), only update the associated launch file
-    this.screens.map((screen) => {
+    for (const screen of this.screens) {
       const idxNode = this.rosNodes.findIndex((n) => {
         return n.name === screen.name;
       });
@@ -1600,7 +1600,7 @@ export default class Provider implements IProvider {
         }
         this.rosNodes.push(n);
       }
-    });
+    }
     const nodesToRemove: string[] = [];
     this.rosNodes.forEach((node: RosNode, idx: number) => {
       if (node.status !== RosNodeStatus.RUNNING) {

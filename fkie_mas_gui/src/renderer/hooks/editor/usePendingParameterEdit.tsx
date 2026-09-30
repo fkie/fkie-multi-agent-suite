@@ -13,6 +13,8 @@ const WIDGET_ID = "pending.parameter.edit.widget";
 /** maximum undo steps used to restore the state before the insert */
 const MAX_UNDO_STEPS = 100;
 
+const SHOW_CONFIRM_BUTTONS = false;
+
 type TPending = {
   request: TParameterRequest;
   /** text which was replaced by the insert - used as revert fallback */
@@ -195,6 +197,18 @@ export function usePendingParameterEdit(
         endPosition.column
       );
 
+      editorInstance.setSelection(insertedRange);
+      editorInstance.revealRangeInCenterIfOutsideViewport(insertedRange);
+      editorInstance.focus();
+
+      if (!SHOW_CONFIRM_BUTTONS) {
+        // auto accept: keep the inserted text, no decorations / widget / pending state
+        pendingRef.current = null;
+        setHasPendingEdit(false);
+        onAccepted?.(request);
+        return;
+      }
+
       // model decorations survive a model switch of the editor
       const decorationIds = model.deltaDecorations(
         [],
@@ -228,13 +242,9 @@ export function usePendingParameterEdit(
         editedOutside: false,
       };
       setHasPendingEdit(true);
-
-      editorInstance.setSelection(insertedRange);
-      editorInstance.revealRangeInCenterIfOutsideViewport(insertedRange);
-      editorInstance.focus();
       showWidget();
     },
-    [editorRef, monaco, showWidget]
+    [editorRef, monaco, showWidget, onAccepted]
   );
 
   // the portal content is rendered after addContentWidget -> re-measure the widget

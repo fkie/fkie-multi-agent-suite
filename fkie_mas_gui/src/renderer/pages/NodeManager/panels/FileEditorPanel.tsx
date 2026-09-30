@@ -38,6 +38,9 @@ type TAlertNotification = {
   messageSeverity?: "success" | "info" | "warning" | "error";
 };
 
+/** file extensions that may contain includes and therefore need an include scan */
+const INCLUDE_AWARE_EXTENSIONS: string[] = ["launch", "xml", "xacro", "py"];
+
 interface FileEditorPanelProps {
   editorId: string;
   provider: Provider;
@@ -60,17 +63,27 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     topLevelLaunchArgs,
     selectParameter,
   } = props;
+
   const logCtx = useLoggingContext();
   const monacoInitCtx = useMonacoInitContext();
   const monacoCtx = monacoInitCtx.monacoCtx;
 
-  const editorRef = useRef<editor.IStandaloneCodeEditor>();
+  /** the monaco instance - a value ref, never a callback */
+  const editorIdRef = useRef(editorId);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | undefined>(undefined);
+  const closeEditorsRef = useRef(monacoCtx.closeEditors);
+  /** becomes true in onMount and re-triggers the initial load */
+  const [editorMounted, setEditorMounted] = useState<boolean>(false);
+  /** guards the initial load against parent re-renders with fresh prop objects */
+  const loadedKeyRef = useRef<string>("");
+  /** the selectParameter prop is a one-shot request on panel open */
+  const selectParameterAppliedRef = useRef<boolean>(false);
 
   const [providerName, setProviderName] = useState<string>("");
   const [packageName, setPackageName] = useState<string>("");
   const [currentFileState, setCurrentFileState] = useState({ name: "", requesting: false, path: "" });
 
-  const [selectionRange, setSelectionRange] = useState<TFileRange>();
+  const [selectionRange, setSelectionRange] = useState<TFileRange | undefined>();
   const [currentLaunchArgs, setCurrentLaunchArgs] = useState<TLaunchArg[]>(launchArgs);
   const [notificationDescription, setNotificationDescription] = useState<TAlertNotification | undefined>();
   const [isDarkMode] = useSetting<boolean>("useDarkMode");
@@ -78,27 +91,14 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   const [historyModel, setHistoryModel] = useState<THistoryModel | undefined>();
   const [eventButton, setEventButton] = useState<React.MouseEvent<HTMLDivElement, MouseEvent> | undefined>(undefined);
   const [keyboardEvent, setKeyboardEvent] = useState<React.KeyboardEvent | undefined>();
-  const [savedFiles, setSavedFiles] = useState<string[]>([]);
+  /** save markers - must be readable synchronously, the path event races the render */
+  const savedFilesRef = useRef<Set<string>>(new Set());
+  /** latest-ref for the imperative monaco keybinding registration */
+  const saveModelRef = useRef<((model: editor.ITextModel) => Promise<void>) | null>(null);
 
   // a requested parameter is applied by an effect, never inside setEditorModel:
   // the model must be active and dirty-tracked before the insert happens
   const [parameterRequest, setParameterRequest] = useState<TParameterRequest | null>(null);
-
-  const { hasPendingEdit, startPendingEdit, rejectPendingEdit, clearPendingState, pendingEditWidget } =
-    usePendingParameterEdit(
-      editorRef,
-      monacoCtx.monaco,
-      (request) => {
-        // onAccepted
-        const model = editorRef.current?.getModel();
-        if (!model) return;
-        const result = locateNodeParameter(model, request, provider.rosVersion === "1" ? "1" : "2");
-        if (result.found && result.range) setSelectionRange(result.range);
-      },
-      () => {
-        // onReverted
-      }
-    );
 
   const {
     panelRef,
@@ -119,133 +119,244 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
   } = useEditorLayout();
 
   const includeResolver = useIncludedFiles(provider, rootFilePath, topLevelLaunchArgs);
-  monacoCtx.setResolver(editorId, includeResolver);
+  const { includedFiles, fetchIncludedFiles, clearIncludedFiles } = includeResolver;
+
+  // side effects belong into effects, never into the render body
+  useEffect(() => {
+    monacoCtx.setResolver(editorId, includeResolver);
+  }, [editorId, includeResolver, monacoCtx]);
 
   const mEditor = useMonacoEditor({
-    editorId: editorId,
-    editorRef: editorRef,
-    saveModel: (model) => {
-      saveModel(model);
+    editorId,
+    editorRef,
+    saveModel: (model: editor.ITextModel) => {
+      void saveModelRef.current?.(model);
     },
   });
+  const { setCurrentModel, activeModel, activeModelDirty, modifiedFiles, initialized: editorInitialized } = mEditor;
 
-  // the selectParameter prop is a one-shot request on panel open
-  const selectParameterAppliedRef = useRef<boolean>(false);
+  const onPendingEditAccepted = useCallback(
+    (request: TParameterRequest): void => {
+      const model = editorRef.current?.getModel();
+      if (!model) return;
+      const result = locateNodeParameter(model, request, provider.rosVersion === "1" ? "1" : "2");
+      if (result.found && result.range) setSelectionRange(result.range);
+    },
+    [provider]
+  );
 
-  const ownUriPaths: Set<string> = useMemo(() => {
-    const result = new Set([
-      createUriPath(provider.id, rootFilePath),
-      ...(includeResolver.includedFiles?.map((f) => createUriPath(provider.id, f.inc_path)) || []),
-    ]);
-    return result;
-  }, [provider, rootFilePath, includeResolver.includedFiles]);
+  const onPendingEditReverted = useCallback((): void => {
+    // nothing to do - the widget restores the previous content itself
+  }, []);
 
-  useEditorKeyboard(() => {
-    const id = createEditorId(rootFilePath, provider.id);
-    emitCloseComponent({ id: id });
-  });
+  const { startPendingEdit, rejectPendingEdit, clearPendingState, pendingEditWidget } = usePendingParameterEdit(
+    editorRef,
+    monacoCtx.monaco,
+    onPendingEditAccepted,
+    onPendingEditReverted
+  );
 
+  const ownUriPaths: Set<string> = useMemo(
+    () =>
+      new Set([
+        createUriPath(provider.id, rootFilePath),
+        ...includedFiles.map((f) => createUriPath(provider.id, f.inc_path)),
+      ]),
+    [provider.id, rootFilePath, includedFiles]
+  );
+
+  const onCloseEditor = useCallback((): void => {
+    emitCloseComponent({ id: createEditorId(rootFilePath, provider.id) });
+  }, [rootFilePath, provider.id]);
+
+  useEditorKeyboard(onCloseEditor);
+
+  // keep refs up to date without re-running the cleanup effect
+  useEffect(() => {
+    editorIdRef.current = editorId;
+    closeEditorsRef.current = monacoCtx.closeEditors;
+  }, [editorId, monacoCtx.closeEditors]);
+
+  // dispose own models on unmount only - editorId is stable for the panel lifetime
   useEffect(() => {
     return (): void => {
       editorRef.current?.setModel(null);
       // dispose all own models
-      monacoCtx.closeEditors([editorId]);
+      closeEditorsRef.current([editorIdRef.current]);
     };
   }, []);
 
   useEffect(() => {
-    const editor = editorRef.current;
-    if (!selectionRange || !editor) return;
+    const ed = editorRef.current;
+    if (!selectionRange || !ed) return;
 
     const { startLineNumber, endLineNumber, startColumn, endColumn } = selectionRange;
-
     const isSingleCursor = startLineNumber === endLineNumber && startColumn === endColumn;
-
     const adjustedEndLineNumber = isSingleCursor ? endLineNumber + 1 : endLineNumber;
 
-    editor.revealRangeInCenter(selectionRange);
-    editor.setPosition({
-      lineNumber: startLineNumber,
-      column: startColumn,
-    });
-
-    editor.setSelection({
-      startLineNumber,
-      endLineNumber: adjustedEndLineNumber,
-      startColumn,
-      endColumn,
-    });
-
-    editor.focus();
+    ed.revealRangeInCenter(selectionRange);
+    ed.setPosition({ lineNumber: startLineNumber, column: startColumn });
+    ed.setSelection({ startLineNumber, endLineNumber: adjustedEndLineNumber, startColumn, endColumn });
+    ed.focus();
   }, [selectionRange]);
 
-  // set the current model to the editor based on [uriPath], and update its decorations
+  const updatePackageName = useCallback(
+    async (uriPath: string, forcePackageReload: boolean = false): Promise<void> => {
+      if (forcePackageReload) {
+        await provider.getPackageList(false);
+      }
+      const name = provider.getPackageName(fileFromUriPath(uriPath));
+      if (!name && !forcePackageReload) {
+        await updatePackageName(uriPath, true); // the recursive call must be awaited
+        return;
+      }
+      setPackageName(name || "");
+    },
+    [provider]
+  );
+
+  /** set the current model to the editor based on [uriPath], and update its decorations */
   const setEditorModel = useCallback(
     async (
       uriPath: string,
       range: TFileRange | null = null,
-      launchArgs: TLaunchArg[] = [],
+      modelLaunchArgs: TLaunchArg[] = [],
       forceReload: boolean = false,
       appendToHistory: boolean = true
     ): Promise<boolean> => {
       if (!uriPath) return false;
+
       // an unconfirmed parameter insert must not survive a model switch or a reload
-      const currentUriPath = editorRef.current?.getModel()?.uri.path;
-      if (hasPendingEdit && (currentUriPath !== uriPath || forceReload)) {
-        rejectPendingEdit();
+      if (editorRef.current?.getModel()?.uri.path !== uriPath || forceReload) {
+        rejectPendingEdit(); // idempotent - no hasPendingEdit dependency needed
       }
+
       setNotificationDescription({ message: "Getting file from provider...", messageSeverity: "info" });
-      // If model does not exist, try to fetch it
       const result: TModelResult = await monacoCtx.getModel(editorId, uriPath, forceReload);
       setNotificationDescription(undefined);
       setCurrentFileState({ name: getFileName(uriPath), requesting: false, path: uriPath });
 
-      // get model from path if exists
       if (!result.model) {
-        logCtx.error(`Could not get model for file: ${uriPath}`, "");
+        logCtx.error(`Could not get model for file: ${uriPath}`, result.error || "");
         setNotificationDescription({
-          message: result?.error || `Could not get model for file: ${uriPath}`,
+          message: result.error || `Could not get model for file: ${uriPath}`,
           messageSeverity: "error",
         });
-        mEditor.setCurrentModel(null);
+        setCurrentModel(null);
         return false;
       }
-      mEditor.setCurrentModel(result.model);
 
-      // set package name
-      updatePackageName(result.model.uri.path);
+      setCurrentModel(result.model);
+      await updatePackageName(result.model.uri.path);
 
-      // set range if available
       if (range) {
         setSelectionRange(range);
       }
-      setCurrentLaunchArgs(launchArgs);
+      setCurrentLaunchArgs(modelLaunchArgs);
       if (appendToHistory) {
-        setHistoryModel({ uriPath: result.model.uri.path, range: range, launchArgs: launchArgs });
+        setHistoryModel({ uriPath: result.model.uri.path, range: range, launchArgs: modelLaunchArgs });
       }
-
-      // only apply the initial parameter request once, never on reloads
-      // the insert itself is done by the effect below, after react committed the model
-      if (selectParameter && !selectParameterAppliedRef.current) {
-        selectParameterAppliedRef.current = true;
-        setParameterRequest(selectParameter);
-      }
-
       return true;
     },
-    [mEditor, monacoCtx, editorId, logCtx, selectParameter, hasPendingEdit, rejectPendingEdit]
+    [editorId, monacoCtx, logCtx, setCurrentModel, rejectPendingEdit, updatePackageName]
   );
 
-  const reloadCurrentFile = useCallback(async () => {
-    if (!mEditor.activeModel?.uri.path) return;
-    const path = mEditor.activeModel.uri.path;
-    // drop the pending insert before the model gets disposed by forceReload
-    if (hasPendingEdit) rejectPendingEdit();
-    const result = await setEditorModel(path, selectionRange, currentLaunchArgs, true, false);
-    if (result) {
+  const saveModel = useCallback(
+    async (editorModel: editor.ITextModel): Promise<void> => {
+      if (editorModel.isDisposed()) return;
+      clearPendingState(); // idempotent
+      const uriPath = editorModel.uri.path;
+      // mark synchronously - the path event of this very save may arrive before the next render
+      savedFilesRef.current.add(uriPath);
+
+      const saveResult = await monacoCtx.saveFile(editorModel);
+      if (saveResult.result) {
+        setCurrentModel(editorModel);
+        return;
+      }
+      savedFilesRef.current.delete(uriPath);
+      setNotificationDescription({
+        message: `Could not save file: ${saveResult.message}`,
+        messageSeverity: "warning",
+      });
+      logCtx.error("Could not save file", saveResult.message, "save failed");
+    },
+    [clearPendingState, monacoCtx, setCurrentModel, logCtx]
+  );
+
+  // keep the latest save action reachable for the keybinding without re-registering it
+  useEffect(() => {
+    saveModelRef.current = saveModel;
+  }, [saveModel]);
+
+  // Most important function:
+  //  - get the content of [filePath] and create the corresponding monaco model
+  //  - scan for includes when the extension may contain them
+  // Models are downloaded per request. A recursive text search downloads all files.
+  const loadFiles = useCallback(
+    async (filePath: string, range: TFileRange | null, modelLaunchArgs: TLaunchArg[]): Promise<void> => {
+      if (!monacoCtx.monaco) {
+        setNotificationDescription({ message: "monaco is not yet available", messageSeverity: "error" });
+        return;
+      }
+      // validate the argument, not the prop
+      if (!filePath) {
+        setNotificationDescription({ message: "[filePath] Invalid file path", messageSeverity: "warning" });
+        return;
+      }
+      if (!rootFilePath) {
+        setNotificationDescription({ message: "[rootFilePath] Invalid file path", messageSeverity: "warning" });
+        return;
+      }
+      if (!provider.host()) {
+        logCtx.error("The provider does not have configured any host.", "Please check your provider configuration");
+        setNotificationDescription({
+          message: "The provider does not have configured any host.",
+          messageSeverity: "warning",
+        });
+        return;
+      }
+
+      setProviderName(provider.name());
+      setNotificationDescription({ message: "Getting file from provider...", messageSeverity: "info" });
+      setCurrentFileState({ name: getFileName(filePath), requesting: true, path: filePath });
+
+      const result: TModelResult = await monacoCtx.getModel(editorId, filePath, false);
+      setCurrentFileState({ name: getFileName(filePath), requesting: false, path: filePath });
+
+      if (!result.model) {
+        setNotificationDescription({
+          message: result.error || `Could not get file: [${filePath}]`,
+          messageSeverity: "warning",
+        });
+        return;
+      }
+
+      // check the extension first - no include roundtrip for plain files
+      if (INCLUDE_AWARE_EXTENSIONS.includes(result.file?.extension || "")) {
+        const includes = await fetchIncludedFiles();
+        // a failed include scan must not prevent showing the file
+        if (!includes.result) {
+          setNotificationDescription({ message: includes.error, messageSeverity: "warning" });
+        }
+      } else {
+        clearIncludedFiles();
+      }
+
+      await setEditorModel(result.model.uri.path, range, modelLaunchArgs);
+    },
+    [monacoCtx, editorId, rootFilePath, provider, logCtx, fetchIncludedFiles, clearIncludedFiles, setEditorModel]
+  );
+
+  const reloadCurrentFile = useCallback(async (): Promise<void> => {
+    const path = editorRef.current?.getModel()?.uri.path;
+    if (!path) return;
+    rejectPendingEdit(); // drop the insert before forceReload disposes the model
+    const ok = await setEditorModel(path, selectionRange ?? null, currentLaunchArgs, true, false);
+    if (ok) {
       logCtx.success(`File reloaded [${getFileName(path)}]`, "", `${getFileName(path)} reloaded`);
     }
-  }, [mEditor, selectionRange, currentLaunchArgs, logCtx, setEditorModel, hasPendingEdit, rejectPendingEdit]);
+  }, [selectionRange, currentLaunchArgs, logCtx, setEditorModel, rejectPendingEdit]);
 
   /** select the parameter definition, or insert it as pending edit */
   const applyParameterRequest = useCallback(
@@ -260,8 +371,6 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       }
       if (result.insert && !monacoCtx.isReadOnly(model)) {
         startPendingEdit(request, result.insert);
-        // the dirty event may have fired before react committed the active model
-        // mEditor.refreshDirtyState();
         return;
       }
       setNotificationDescription({
@@ -272,112 +381,120 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     [provider, monacoCtx, startPendingEdit]
   );
 
-  // apply a queued parameter request as soon as the model is active in the editor
+  // one-shot: queue the selectParameter prop as soon as its model is really in the editor
   useEffect(() => {
-    if (!parameterRequest) return;
-    const model = mEditor.activeModel;
-    if (!model) return;
+    if (!selectParameter || selectParameterAppliedRef.current) return;
+    if (!activeModel || editorRef.current?.getModel()?.uri.path !== activeModel.uri.path) return;
+    selectParameterAppliedRef.current = true;
+    setParameterRequest(selectParameter);
+  }, [selectParameter, activeModel]);
+
+  // apply a queued parameter request once the model is active in the editor
+  useEffect(() => {
+    if (!parameterRequest || !activeModel) return;
     // the editor must already show this model, otherwise the insert hits the wrong buffer
-    if (editorRef.current?.getModel()?.uri.path !== model.uri.path) return;
+    if (editorRef.current?.getModel()?.uri.path !== activeModel.uri.path) return;
     setParameterRequest(null);
     applyParameterRequest(parameterRequest);
-  }, [parameterRequest, mEditor.activeModel, applyParameterRequest]);
+  }, [parameterRequest, activeModel, applyParameterRequest]);
 
-  /** select node definition on event. */
-  useCustomEventListener(EVENT_EDITOR_SELECT_RANGE, async (data: TEventEditorSelectRange) => {
-    if (data.editorId !== editorId) return;
-    const ok = await setEditorModel(data.filePath, data.fileRange, data.launchArgs);
-    if (ok && data.selectParameter) {
-      selectParameterAppliedRef.current = true;
-      setParameterRequest(data.selectParameter);
+  // initial load - editorMounted makes this retry after onMount
+  useEffect(() => {
+    if (!monacoInitCtx.initialized || !editorInitialized || !editorMounted) return;
+    const key = `${provider.id}:${currentFilePath}`;
+    if (loadedKeyRef.current === key) return; // load each file only once per panel
+    loadedKeyRef.current = key;
+    void loadFiles(currentFilePath, fileRange, launchArgs);
+  }, [
+    monacoInitCtx.initialized,
+    editorInitialized,
+    editorMounted,
+    provider.id,
+    currentFilePath,
+    fileRange,
+    launchArgs,
+    loadFiles,
+  ]);
+
+  useEffect(() => {
+    if (monacoInitCtx.initialized && monacoCtx.monaco) {
+      monacoCtx.monaco.editor.setTheme(isDarkMode ? "vs-ros-dark" : "vs-ros-light");
     }
-  });
+  }, [monacoInitCtx.initialized, isDarkMode, monacoCtx.monaco]);
+
+  // report dirty state of the active model to the external editor window
+  useEffect(() => {
+    if (!activeModel) return;
+    window.editorManager?.changed(
+      createEditorId(rootFilePath, provider.id),
+      fileFromUriPath(activeModel.uri.path),
+      activeModelDirty
+    );
+  }, [activeModel, activeModelDirty, rootFilePath, provider.id]);
+
+  /** select node definition on event */
+  useCustomEventListener(
+    EVENT_EDITOR_SELECT_RANGE,
+    (data: TEventEditorSelectRange) => {
+      if (data.editorId !== editorId) return;
+      void setEditorModel(data.filePath, data.fileRange, data.launchArgs).then((ok) => {
+        if (ok && data.selectParameter) {
+          selectParameterAppliedRef.current = true;
+          setParameterRequest(data.selectParameter);
+        }
+      });
+    },
+    [editorId, setEditorModel]
+  );
 
   useCustomEventListener(
     EVENT_PROVIDER_LAUNCH_LOADED,
     (data: EventProviderLaunchLoaded) => {
       // reload included files to update provided parameters
-      if (data.provider.id === provider.id) {
-        if (data.launchFile === rootFilePath) {
-          loadFiles(mEditor.activeModel ? fileFromUriPath(mEditor.activeModel.uri.path) : currentFilePath);
-        }
-      }
+      if (data.provider.id !== provider.id || data.launchFile !== rootFilePath) return;
+      const activePath = editorRef.current?.getModel()?.uri.path;
+      const filePath = activePath ? fileFromUriPath(activePath) : currentFilePath;
+      void loadFiles(filePath, null, currentLaunchArgs);
     },
-    [rootFilePath, provider, mEditor.activeModel, currentFilePath]
+    [provider.id, rootFilePath, currentFilePath, currentLaunchArgs, loadFiles]
   );
 
-  /** Handle events caused by changed files. */
+  /** handle events caused by changed files */
   useCustomEventListener(
     EVENT_PROVIDER_PATH_EVENT,
     async (data: EventProviderPathEvent) => {
-      if (data.provider.id !== provider.id) {
-        // ignore event from other provider
+      if (data.provider.id !== provider.id) return; // ignore events from other providers
+
+      const changedUri: string = createUriPath(provider.id, data.path.srcPath);
+      if (!ownUriPaths.has(changedUri)) return;
+
+      // our own save - consume the marker and stop, never recreate the model here
+      if (savedFilesRef.current.has(changedUri)) {
+        savedFilesRef.current.delete(changedUri);
         return;
       }
-      const changedUri: string = createUriPath(provider.id, data.path.srcPath);
-      if (ownUriPaths.has(changedUri)) {
-        // ignore if we saved the file
-        if (savedFiles.includes(changedUri)) {
-          setSavedFiles(savedFiles.filter((uri) => uri !== changedUri));
-          // TODO: reload file content
-        }
-        if (!editorRef.current) return;
-        const currentModelUri = editorRef.current.getModel()?.uri.path;
-        const result = await provider.getFileContent(data.path.srcPath);
-        if (result.error) {
-          console.error(`Could not open file: [${result.file.fileName}]: ${result.error}`);
-          setNotificationDescription({
-            message: `Could not open file: [${result.file.fileName}]: ${result.error}`,
-            messageSeverity: "warning",
-          });
-        }
-        const model = monacoCtx.createModel(editorId, result.file);
-        if (!model) {
-          console.error(`Could not create model for: [${result.file.fileName}]`);
-          setNotificationDescription({
-            message: `Could not create model for: [${result.file.fileName}]`,
-            messageSeverity: "warning",
-          });
-          return;
-        }
-        if (monacoCtx.dirtyManager()?.isDirty(model)) {
-          setNotificationDescription({
-            message: `${result.file.fileName} was changed on remote host! Save your file or reload manually!`,
-            messageSeverity: "warning",
-          });
-        }
-        if (currentModelUri === model.uri.path) {
-          mEditor.setCurrentModel(model);
-        }
-      }
-    },
-    [provider.id, ownUriPaths, editorId, monacoCtx, mEditor]
-  );
 
-  const saveModel = useCallback(
-    async (editorModel: editor.ITextModel): Promise<void> => {
-      // update saved file to avoid reload question of the current editing file
-      if (hasPendingEdit) clearPendingState();
-      if (!savedFiles.includes(editorModel.uri.path)) {
-        setSavedFiles((prev) => [...prev, editorModel.uri.path]);
-      }
-      const saveResult = await monacoCtx.saveFile(editorModel);
-      if (saveResult.result) {
-        // update model state
-        mEditor.setCurrentModel(editorModel);
-      } else {
-        setSavedFiles((prev) => prev.filter((f) => f !== editorModel.uri.path));
+      // check the dirty state BEFORE anything touches the buffer
+      if (modifiedFiles.includes(changedUri)) {
         setNotificationDescription({
-          message: `Could not save file: ${saveResult.message}`,
+          message: `${getFileName(changedUri)} was changed on remote host! Save your file or reload manually!`,
           messageSeverity: "warning",
         });
-        logCtx.error("Could not save file", saveResult.message, "save failed");
+        return;
       }
+
+      // reuse the regular load path - it disposes and re-attaches the model consistently
+      if (editorRef.current?.getModel()?.uri.path === changedUri) {
+        await setEditorModel(changedUri, null, currentLaunchArgs, true, false);
+        return;
+      }
+      // inactive and clean model: just refresh the cache entry
+      await monacoCtx.getModel(editorId, changedUri, true);
     },
-    [savedFiles, rootFilePath, hasPendingEdit, clearPendingState, monacoCtx, mEditor, logCtx]
+    [provider, ownUriPaths, modifiedFiles, editorId, monacoCtx, currentLaunchArgs, setEditorModel]
   );
 
-  const debouncedWidthUpdate = useDebounceCallback((newWidth) => {
+  const debouncedWidthUpdate = useDebounceCallback((newWidth: number) => {
     setEditorWidth(newWidth);
   }, 50);
 
@@ -385,158 +502,38 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
     if (panelRef.current) {
       debouncedWidthUpdate(panelRef.current.getBoundingClientRect().width - sideBarWidth);
     }
-  }, [sideBarWidth]);
-
-  const updatePackageName: (uriPath: string, forcePackageReload?: boolean) => void = useCallback(
-    async (uriPath, forcePackageReload = false) => {
-      if (forcePackageReload) {
-        await provider.getPackageList(false);
-      }
-      const filePath = fileFromUriPath(uriPath);
-      const packageName = provider.getPackageName(filePath);
-      if (!packageName && !forcePackageReload) {
-        updatePackageName(uriPath, true);
-        return;
-      }
-      setPackageName(packageName || "");
-    },
-    [provider, mEditor]
-  );
+  }, [sideBarWidth, debouncedWidthUpdate, panelRef]);
 
   function onKeyDown(event: React.KeyboardEvent): void {
     setKeyboardEvent(event);
   }
 
-  // Most important function:
-  //  when the component is mounted, this callback will execute following steps:
-  //  - get the content of [currentFilePath]
-  //  - create a monaco model (file in editor) based on [currentFilePath]
-  //  - check if include files are available (for xml and launch files for example)
-  //  -   if available, download all include files and create their corresponding models
-  // We download the models per request. On recursive text search all files will be downloaded
-  async function loadFiles(filePath: string): Promise<void> {
-    if (!editorRef.current) {
-      return;
-    }
-    if (!monacoCtx.monaco) {
-      // monaco is not yet available
-      setNotificationDescription({ message: "monaco is not yet available", messageSeverity: "error" });
-      return;
-    }
-    if (!currentFilePath || currentFilePath.length === 0) {
-      setNotificationDescription({ message: "[currentFilePath] Invalid file path", messageSeverity: "warning" });
-      return;
-    }
-    if (!rootFilePath || rootFilePath.length === 0) {
-      setNotificationDescription({ message: "[rootFilePath] Invalid file path", messageSeverity: "warning" });
-      return;
-    }
-    // search host based on selected provider
-    if (!provider) {
-      setNotificationDescription({
-        message: "Provider not available",
-        messageSeverity: "warning",
-      });
-      return;
-    }
-    if (!provider.host()) {
-      logCtx.error("The provider does not have configured any host.", "Please check your provider configuration");
-      setNotificationDescription({
-        message: "The provider does not have configured any host.",
-        messageSeverity: "warning",
-      });
-      return;
-    }
-
-    setProviderName(provider.name());
-    setNotificationDescription({ message: "Getting file from provider...", messageSeverity: "info" });
-    // get file content from provider and create monaco model
-    async function getFileAndIncludesAsync(filePath: string): Promise<void> {
-      setCurrentFileState({ name: getFileName(filePath), requesting: true, path: filePath });
-      const resultFetchIncludes = await includeResolver.fetchIncludedFiles();
-      if (!resultFetchIncludes.result) {
-        setNotificationDescription({ message: resultFetchIncludes.error, messageSeverity: "warning" });
-        return;
-      }
-      const result: TModelResult = await monacoCtx.getModel(editorId, filePath, false);
-      if (!result.model && !result.file) {
-        setNotificationDescription({
-          message: result.error || `Could not get file: [${filePath}]`,
-          messageSeverity: "warning",
-        });
-        return;
-      }
-      setCurrentFileState({ name: getFileName(filePath), requesting: false, path: filePath });
-      if (!result.model && result.file) {
-        console.error(`Could not create model for: [${result.file.fileName}]`);
-        setNotificationDescription({
-          message: `Could not create model for: [${result.file.fileName}]`,
-          messageSeverity: "warning",
-        });
-        return;
-      }
-      if (result.model) {
-        await setEditorModel(result.model.uri.path, filePath === currentFilePath ? fileRange : null, launchArgs);
-      }
-      // Ignore "non-launch" files
-      if (result.file && !["launch", "xml", "xacro", "py"].includes(result.file.extension)) {
-        console.log(`wrong extension: ${result.file.extension} of ${result.file}`);
-        includeResolver.clearIncludedFiles();
-        setNotificationDescription(undefined);
-        return;
-      }
-    }
-    getFileAndIncludesAsync(filePath);
+  function handleEditorDidMount(ed: editor.IStandaloneCodeEditor): void {
+    editorRef.current = ed;
+    setEditorMounted(true); // retry trigger - loadFiles no longer bails out silently
   }
-
-  function handleEditorDidMount(editor: editor.IStandaloneCodeEditor): void {
-    editorRef.current = editor;
-  }
-
-  useEffect(() => {
-    if (monacoInitCtx.initialized && mEditor.initialized) {
-      loadFiles(currentFilePath);
-    }
-  }, [monacoInitCtx.initialized, mEditor.initialized]);
-
-  useEffect(() => {
-    if (monacoInitCtx.initialized && monacoInitCtx.monacoCtx.monaco) {
-      monacoInitCtx.monacoCtx.monaco.editor.setTheme(isDarkMode ? "vs-ros-dark" : "vs-ros-light");
-    }
-  }, [monacoInitCtx.initialized, isDarkMode]);
-
-  // report dirty state of the active model to the external editor window
-  useEffect(() => {
-    const model = mEditor.activeModel;
-    if (!model) return;
-    window.editorManager?.changed(
-      createEditorId(rootFilePath, provider.id),
-      fileFromUriPath(model.uri.path),
-      mEditor.activeModelDirty
-    );
-  }, [mEditor.activeModel, mEditor.activeModelDirty, rootFilePath, provider.id]);
 
   const handleEditorChange = useCallback(
-    async (_value: string | undefined, event: editor.IModelContentChangedEvent): Promise<void> => {
+    (_value: string | undefined, event: editor.IModelContentChangedEvent): void => {
       // use the editor model directly - activeModel may still be stale on the first change
       const model = editorRef.current?.getModel();
       if (!model || model.isDisposed()) return;
       cleanUpXmlComment(event.changes, model);
       // refresh dirty state (toolbar, sidebar, external window)
-      mEditor.setCurrentModel(model);
+      setCurrentModel(model);
     },
-    [mEditor]
+    [setCurrentModel]
   );
 
   const onStateChange = useCallback(
-    (collapsed: boolean) => {
+    (collapsed: boolean): void => {
       if (collapsed) {
         setSideBarWidth(sideBarMinSize);
       } else if (sideBarWidth <= sideBarMinSize) {
         setSideBarWidth(savedSideBarUserWidth);
       }
     },
-    [sideBarMinSize, sideBarWidth, savedSideBarUserWidth]
+    [sideBarMinSize, sideBarWidth, savedSideBarUserWidth, setSideBarWidth]
   );
 
   return (
@@ -544,15 +541,13 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
       direction="row"
       height="100%"
       width="100%"
-      onKeyDown={(event) => onKeyDown(event)}
-      onMouseDown={(event) => {
-        setEventButton(event);
-      }}
+      onKeyDown={onKeyDown}
+      onMouseDown={(event) => setEventButton(event)}
       ref={panelRef as ForwardedRef<HTMLDivElement>}
-      overflow="auto"
+      overflow="hidden"
     >
       <SplitPane
-        sizes={[sideBarWidth]}
+        sizes={[sideBarWidth, "auto"]}
         onChange={([size]) => {
           if (size !== sideBarMinSize && size >= sideBarMinSize) {
             setSavedSideBarUserWidth(size);
@@ -568,84 +563,70 @@ export default function FileEditorPanel(props: FileEditorPanelProps): JSX.Elemen
             editorId={editorId}
             provider={provider}
             rootFilePath={rootFilePath}
-            includedFiles={includeResolver.includedFiles}
-            selectedFile={{ uriPath: mEditor.activeModel?.uri.path || "", launchArgs: currentLaunchArgs }}
-            modifiedUriPaths={mEditor.modifiedFiles}
+            includedFiles={includedFiles}
+            selectedFile={{ uriPath: activeModel?.uri.path || "", launchArgs: currentLaunchArgs }}
+            modifiedUriPaths={modifiedFiles}
             sideBarWidth={sideBarWidth}
             keyboardEvent={keyboardEvent}
             panelRef={panelRef}
             onStateChange={onStateChange}
           />
         </Pane>
-        <Stack
-          sx={{
-            flex: 1,
-            margin: 0,
-          }}
-          overflow="none"
-        >
-          <EditorToolbar
-            refEl={toolbarRef as ForwardedRef<HTMLDivElement>}
-            providerId={provider.id}
-            providerName={providerName}
-            packageName={packageName}
-            rootFilePath={rootFilePath}
-            currentFileState={currentFileState}
-            activeModel={mEditor.activeModel}
-            activeModelDirty={mEditor.activeModelDirty}
-            historyModel={historyModel}
-            includedFiles={includeResolver.includedFiles}
-            modifiedFiles={mEditor.modifiedFiles}
-            eventButton={eventButton}
-            setEditorModel={setEditorModel}
-            saveModel={saveModel}
-            reloadCurrentFile={() => {
-              reloadCurrentFile();
-            }}
-          />
-          <PendingEditStyles />
-          {/* portal target of the pending edit buttons - must stay mounted */}
-          {/* the span wrapper avoids the prop-types warning of mui containers */}
-          <span style={{ display: "contents" }}>{pendingEditWidget}</span>
-          <AlertsBar
-            refEl={alertRef as ForwardedRef<HTMLDivElement>}
-            activeModel={mEditor.activeModel}
-            message={notificationDescription?.message}
-            messageSeverity={notificationDescription?.messageSeverity}
-            onClose={() => setNotificationDescription(undefined)}
-          />
-          <Monaco.Editor
-            key="editor"
-            height={editorHeight}
-            width={editorWidth}
-            theme={isDarkMode ? "vs-ros-dark" : "vs-ros-light"}
-            onMount={(editor: editor.IStandaloneCodeEditor) => handleEditorDidMount(editor)}
-            onChange={(value: string | undefined, ev: editor.IModelContentChangedEvent) =>
-              handleEditorChange(value, ev)
-            }
-            options={{
-              // to check the all possible options check this - https://github.com/microsoft/monacoRef.current-editor/blob/a5298e1/website/typedoc/monacoRef.current.d.ts#L3017
-              // TODO: make global config for this parameters
-              readOnly: mEditor.activeModel ? monacoCtx.isReadOnly(mEditor.activeModel) : false,
-              colorDecorators: true,
-              mouseWheelZoom: true,
-              scrollBeyondLastLine: false,
-              smoothScrolling: false,
-              wordWrap: "off",
-              fontSize: fontSize,
-              minimap: { enabled: false },
-              selectOnLineNumbers: true,
-              guides: {
-                bracketPairs: true,
-              },
-              definitionLinkOpensInPeek: false,
-              comments: {
-                ignoreEmptyLines: false,
-                insertSpace: true,
-              },
-            }}
-          />
-        </Stack>
+        <Pane>
+          <Stack sx={{ flex: 1, margin: 0 }} overflow="hidden">
+            <EditorToolbar
+              refEl={toolbarRef as ForwardedRef<HTMLDivElement>}
+              providerId={provider.id}
+              providerName={providerName}
+              packageName={packageName}
+              rootFilePath={rootFilePath}
+              currentFileState={currentFileState}
+              activeModel={activeModel}
+              activeModelDirty={activeModelDirty}
+              historyModel={historyModel}
+              includedFiles={includedFiles}
+              modifiedFiles={modifiedFiles}
+              eventButton={eventButton}
+              setEditorModel={setEditorModel}
+              saveModel={saveModel}
+              reloadCurrentFile={() => void reloadCurrentFile()}
+            />
+            <PendingEditStyles />
+            {/* portal target of the pending edit buttons - must stay mounted */}
+            {/* the span wrapper avoids the prop-types warning of mui containers */}
+            <span style={{ display: "contents" }}>{pendingEditWidget}</span>
+            <AlertsBar
+              refEl={alertRef as ForwardedRef<HTMLDivElement>}
+              activeModel={activeModel}
+              message={notificationDescription?.message}
+              messageSeverity={notificationDescription?.messageSeverity}
+              onClose={() => setNotificationDescription(undefined)}
+            />
+            <Monaco.Editor
+              key="editor"
+              height={editorHeight}
+              width={editorWidth}
+              theme={isDarkMode ? "vs-ros-dark" : "vs-ros-light"}
+              onMount={handleEditorDidMount}
+              onChange={handleEditorChange}
+              options={{
+                // TODO: make a global config for these parameters
+                readOnly: activeModel ? monacoCtx.isReadOnly(activeModel) : false,
+                colorDecorators: true,
+                mouseWheelZoom: true,
+                scrollBeyondLastLine: false,
+                smoothScrolling: false,
+                wordWrap: "off",
+                fontSize: fontSize,
+                minimap: { enabled: false },
+                selectOnLineNumbers: true,
+                guides: { bracketPairs: true },
+                definitionLinkOpensInPeek: false,
+                comments: { ignoreEmptyLines: false, insertSpace: true },
+              }}
+            />
+          </Stack>
+        </Pane>
       </SplitPane>
     </Stack>
   );

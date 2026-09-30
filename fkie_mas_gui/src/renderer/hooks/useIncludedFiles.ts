@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCustomEventListener } from "react-custom-events";
 import { LaunchArgument, LaunchIncludedFile, LaunchIncludedFilesRequest, RosPackage } from "@/renderer/models";
 
@@ -17,74 +17,125 @@ import { Provider } from "../providers";
 import { EventProviderRosPackages } from "../providers/events";
 import { EVENT_PROVIDER_PACKAGES } from "../providers/eventTypes";
 
-// Type alias for the nested map: currentFile -> rawPath -> resolved include info
 type ResolveMap = Map<string, Map<string, ResolveType>>;
 
 export type IncludeResolver = {
   cache: Map<string, ResolverCacheEntry[]>;
-  includedFiles: TIncludedFile[];
+  /** live value, backed by a ref -> the resolver object itself never changes identity */
+  readonly includedFiles: TIncludedFile[];
   fetchIncludedFiles: () => Promise<{ result: boolean; error: string }>;
   clearIncludedFiles: () => void;
   resolve: (currentFile: string, rawPath: string, lineNumber: number, fullTextBeforeMatch?: string) => ResolveType[];
   getArgs: (currentFile: string) => ResolverIncludeArgs | undefined;
-  update: (includedFiles: LaunchIncludedFile[], packages: RosPackage[]) => void;
-  extractIncludes(text: string, language: string, currentFile: string): IncludeMatch[];
+  update: (includedFiles: LaunchIncludedFile[]) => void;
+  extractIncludes: (text: string, language: string, currentFile: string) => IncludeMatch[];
 };
 
-/**
- * Normalize a path so that daemon and editor results become comparable.
- * Removes duplicated slashes, "." and resolves ".." segments.
- */
 export function normalizePath(p: string): string {
   if (!p) return "";
   const isAbsolute = p.startsWith("/");
-  const parts = p.replace(/\/{2,}/g, "/").split("/");
   const out: string[] = [];
-  for (const part of parts) {
+  for (const part of p.replace(/\/{2,}/g, "/").split("/")) {
     if (part === "" || part === ".") continue;
-    if (part === "..") {
-      out.pop();
-    } else {
-      out.push(part);
-    }
+    if (part === "..") out.pop();
+    else out.push(part);
   }
   return (isAbsolute ? "/" : "") + out.join("/");
 }
 
-/** Key of the include *statement* - stable, independent of the resolution result. */
+/**
+ * A path is considered "resolved" only if it is absolute and free of unexpanded
+ * substitutions. Editor side results are never stat'ed, so this is the best
+ * available heuristic to avoid false positives in the UI.
+ */
+function looksResolved(p: string): boolean {
+  return !!p && p.startsWith("/") && !p.includes("$(") && !p.includes("${") && !p.includes("$LaunchConfig");
+}
+
 function rawKey(f: LaunchIncludedFile): string {
   return `${normalizePath(f.path)}|${(f.raw_inc_path || "").trim()}|${f.line_number ?? -1}`;
 }
 
-/** Key of the resolved file. */
+/**
+ * Key of the resolved target. Falls back to a unique sentinel when the target is
+ * unknown, otherwise all unresolved entries of one file would collide.
+ */
 function resolvedKey(f: LaunchIncludedFile): string {
-  return `${normalizePath(f.path)}|${normalizePath(f.inc_realpath || f.inc_path)}`;
+  const target = normalizePath(f.inc_realpath || f.inc_path || "");
+  const suffix = target || `\u0000unresolved:${f.line_number ?? -1}:${(f.raw_inc_path || "").trim()}`;
+  return `${normalizePath(f.path)}|${suffix}`;
+}
+
+/** normalized target of an entry, used to link children to their parent */
+function targetPath(f: LaunchIncludedFile): string {
+  return normalizePath(f.inc_realpath || f.inc_path || "");
+}
+
+/** cheap content comparison - avoids a state update when nothing really changed */
+function sameIncludes(a: TIncludedFile[], b: TIncludedFile[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      rawKey(x) !== rawKey(y) ||
+      resolvedKey(x) !== resolvedKey(y) ||
+      x.exists !== y.exists ||
+      x.rec_depth !== y.rec_depth ||
+      x.resolver !== y.resolver
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** signature used to detect real changes of the daemon part of the list */
+function includesSignature(files: TIncludedFile[]): string {
+  return files.map((f) => `${rawKey(f)}>${resolvedKey(f)}>${f.exists ? 1 : 0}>${f.resolver ?? ""}`).join("\n");
 }
 
 /**
- * Merge the daemon result with editor-discovered entries.
- * Daemon entries always win. Editor entries survive only if the daemon reported
- * neither the same include statement nor the same resolved file.
+ * Index of the entry that includes `child`. When the same file is included more
+ * than once, the shallowest (and first) occurrence wins - this keeps the result
+ * deterministic instead of depending on the array order.
  */
+function findParentIndex(result: TIncludedFile[], child: TIncludedFile): number {
+  const wanted = normalizePath(child.path);
+  if (!wanted) return -1;
+  let best = -1;
+  for (let i = 0; i < result.length; i++) {
+    if (targetPath(result[i]) !== wanted) continue;
+    if (best === -1 || (result[i].rec_depth ?? 0) < (result[best].rec_depth ?? 0)) best = i;
+  }
+  return best;
+}
+
+/** first index after the whole subtree of `parentIndex` */
+function subtreeEnd(result: TIncludedFile[], parentIndex: number): number {
+  const parentDepth = result[parentIndex].rec_depth ?? 0;
+  let i = parentIndex + 1;
+  while (i < result.length && (result[i].rec_depth ?? 0) > parentDepth) i++;
+  return i;
+}
+
 function mergeIncludedFiles(daemon: TIncludedFile[], editor: TIncludedFile[]): TIncludedFile[] {
   const rawKeys = new Set(daemon.map(rawKey));
   const resolvedKeys = new Set(daemon.map(resolvedKey));
-  const result: TIncludedFile[] = daemon.map((f) => ({ ...f, resolver: "daemon" as const }));
+  const result: TIncludedFile[] = daemon.map((f) => (f.resolver === "daemon" ? f : { ...f, resolver: "daemon" }));
 
   for (const e of editor) {
-    // skip entries which are already known by the daemon
-    if (rawKeys.has(rawKey(e)) || resolvedKeys.has(resolvedKey(e))) continue;
-    rawKeys.add(rawKey(e));
-    resolvedKeys.add(resolvedKey(e));
+    const rk = rawKey(e);
+    const rsk = resolvedKey(e);
+    if (rawKeys.has(rk) || resolvedKeys.has(rsk)) continue;
+    rawKeys.add(rk);
+    resolvedKeys.add(rsk);
 
     // the depth must match the parent, otherwise the tree builder misplaces the item
-    const parent = result.find((f) => normalizePath(f.inc_path) === normalizePath(e.path));
-    const insertIndex = parent ? result.indexOf(parent) + 1 : result.length;
-    result.splice(insertIndex, 0, {
-      ...e,
-      rec_depth: (parent?.rec_depth ?? 0) + 1,
-      resolver: "editor",
-    });
+    const parentIndex = findParentIndex(result, e);
+    const insertIndex = parentIndex >= 0 ? subtreeEnd(result, parentIndex) : result.length;
+    const parentDepth = parentIndex >= 0 ? (result[parentIndex].rec_depth ?? 0) : -1;
+    result.splice(insertIndex, 0, { ...e, rec_depth: parentDepth + 1, resolver: "editor" });
   }
   return result;
 }
@@ -95,373 +146,453 @@ export function useIncludedFiles(
   rootLaunchArgs: TLaunchArg[]
 ): IncludeResolver {
   const [includedFiles, setIncludedFiles] = useState<TIncludedFile[]>([]);
-  // Nested map for resolving includes
+
   const mapRef = useRef<ResolveMap>(new Map());
   const mapIncludeArgsRef = useRef<Map<string, ResolverIncludeArgs>>(new Map());
   const cacheRef = useRef<Map<string, ResolverCacheEntry[]>>(new Map());
   const rosPackagesRef = useRef<Map<string, string>>(new Map());
 
-  // true as soon as the daemon has answered at least once for the current request
+  // latest-ref pattern: volatile inputs must not invalidate the callbacks
+  const providerRef = useRef(provider);
+  const rootFilePathRef = useRef(rootFilePath);
+  const rootLaunchArgsRef = useRef(rootLaunchArgs);
+  const includedFilesRef = useRef(includedFiles);
+  providerRef.current = provider;
+  rootFilePathRef.current = rootFilePath;
+  rootLaunchArgsRef.current = rootLaunchArgs;
+  includedFilesRef.current = includedFiles;
+
   const daemonLoadedRef = useRef<boolean>(false);
-  // editor results discovered before the daemon answered
   const pendingDiscoveredRef = useRef<TIncludedFile[]>([]);
-  // guard against outdated daemon responses
   const fetchGenerationRef = useRef<number>(0);
+  const inFlightRef = useRef<{ key: string; promise: Promise<{ result: boolean; error: string }> } | null>(null);
+  // batching of editor-discovered includes
+  const discoveredQueueRef = useRef<TIncludedFile[]>([]);
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // signature of the list the resolve maps were built from
+  const updateSignatureRef = useRef<string>("");
 
-  const map = mapRef.current;
-  const mapIncludeArgs = mapIncludeArgsRef.current;
-  const cache = cacheRef.current;
-  const rosPackages = rosPackagesRef.current;
-  const topLevelArgs = rootLaunchArgs;
+  const setPackages = useCallback((packages: RosPackage[]): void => {
+    const map = rosPackagesRef.current;
+    map.clear();
+    for (const p of packages || []) map.set(p.name, p.path);
+  }, []);
 
-  function setPackages(packages: RosPackage[]): void {
-    rosPackages.clear();
-    for (const p of packages) {
-      rosPackages.set(p.name, p.path);
+  const set = useCallback((file: string, raw: string, value: ResolveType): void => {
+    let inner = mapRef.current.get(file);
+    if (!inner) {
+      inner = new Map();
+      mapRef.current.set(file, inner);
     }
-  }
+    // daemon results always win over editor guesses
+    const existing = inner.get(raw);
+    if (existing?.resolver === "daemon" && value.resolver !== "daemon") return;
+    inner.set(raw, value);
+  }, []);
+
+  const getArgs = useCallback((currentFile: string): ResolverIncludeArgs | undefined => {
+    return mapIncludeArgsRef.current.get(currentFile);
+  }, []);
+
+  const update = useCallback(
+    (files: LaunchIncludedFile[]): void => {
+      const map = mapRef.current;
+      const next = new Map<string, Set<string>>();
+      const validArgKeys = new Set<string>([rootFilePathRef.current]);
+
+      // process daemon entries first so that they cannot be overwritten by editor guesses
+      const ordered = [...files].sort((a, b) => {
+        const av = (a as TIncludedFile).resolver === "editor" ? 1 : 0;
+        const bv = (b as TIncludedFile).resolver === "editor" ? 1 : 0;
+        return av - bv;
+      });
+
+      for (const f of ordered) {
+        if (!f.raw_inc_path) continue; // nothing to key on
+        const resolver = (f as TIncludedFile).resolver === "editor" ? "editor" : "daemon";
+        set(f.path, f.raw_inc_path, {
+          path: f.inc_path,
+          realpath: f.inc_realpath,
+          exists: f.exists,
+          resolver,
+        });
+
+        let s = next.get(f.path);
+        if (!s) {
+          s = new Set();
+          next.set(f.path, s);
+        }
+        s.add(f.raw_inc_path);
+
+        if (f.inc_path) {
+          validArgKeys.add(f.inc_path);
+          // only daemon entries carry real argument information
+          if (resolver === "daemon" || !mapIncludeArgsRef.current.has(f.inc_path)) {
+            mapIncludeArgsRef.current.set(f.inc_path, {
+              args: f.args || [],
+              defaults: f.default_inc_args || [],
+              topLevel: rootLaunchArgsRef.current,
+              from: f.path,
+            });
+          }
+        }
+      }
+
+      // remove stale entries
+      const dirtyFiles = new Set<string>();
+      for (const [file, inner] of map) {
+        const valid = next.get(file);
+        for (const raw of [...inner.keys()]) {
+          if (!valid?.has(raw)) {
+            inner.delete(raw);
+            dirtyFiles.add(file);
+          }
+        }
+        if (inner.size === 0) map.delete(file);
+      }
+      for (const file of dirtyFiles) cacheRef.current.delete(file);
+
+      // drop argument entries of files that are no longer included (prevents stale args + leak)
+      for (const key of [...mapIncludeArgsRef.current.keys()]) {
+        if (!validArgKeys.has(key)) mapIncludeArgsRef.current.delete(key);
+      }
+    },
+    [set]
+  );
+
+  /** flush queued editor results in one single state update */
+  const scheduleFlush = useCallback((): void => {
+    if (flushTimerRef.current !== null) return;
+    flushTimerRef.current = setTimeout(() => {
+      flushTimerRef.current = null;
+      const queue = discoveredQueueRef.current;
+      discoveredQueueRef.current = [];
+      if (queue.length === 0) return;
+
+      setIncludedFiles((prev) => {
+        const daemonEntries = prev.filter((f) => f.resolver !== "editor");
+        const editorEntries = prev.filter((f) => f.resolver === "editor");
+        const known = new Set([...prev.map(rawKey), ...prev.map(resolvedKey)]);
+        let changed = false;
+        for (const c of queue) {
+          if (known.has(rawKey(c)) || known.has(resolvedKey(c))) continue;
+          known.add(rawKey(c));
+          known.add(resolvedKey(c));
+          editorEntries.push(c);
+          changed = true;
+        }
+        // keep the previous identity -> no re-render, no loop
+        if (!changed) return prev;
+        const merged = mergeIncludedFiles(daemonEntries, editorEntries);
+        return sameIncludes(prev, merged) ? prev : merged;
+      });
+    }, 0);
+  }, []);
+
+  const addDiscoveredInclude = useCallback(
+    (currentFile: string, rawPath: string, lineNumber: number, variant: string): void => {
+      const prov = providerRef.current;
+      if (!prov) return;
+      // never report unresolved guesses as included files
+      if (!looksResolved(variant)) return;
+
+      const candidate: TIncludedFile = {
+        host: prov.host(),
+        size: -1, // unknown, file was not stat'ed by the daemon
+        path: currentFile,
+        raw_inc_path: rawPath,
+        inc_path: variant,
+        inc_realpath: variant,
+        line_number: lineNumber,
+        exists: true, // unverified: editor side never stats the file
+        rec_depth: 0,
+        args: [],
+        default_inc_args: [],
+        conditional_excluded: false,
+        resolver: "editor",
+      };
+
+      // daemon result not yet available -> buffer it and render nothing for now
+      if (!daemonLoadedRef.current) {
+        if (
+          !pendingDiscoveredRef.current.some(
+            (f) => rawKey(f) === rawKey(candidate) || resolvedKey(f) === resolvedKey(candidate)
+          )
+        ) {
+          pendingDiscoveredRef.current.push(candidate);
+        }
+        return;
+      }
+
+      // already known? -> do not even schedule an update
+      if (
+        includedFilesRef.current.some(
+          (f) => rawKey(f) === rawKey(candidate) || resolvedKey(f) === resolvedKey(candidate)
+        ) ||
+        discoveredQueueRef.current.some(
+          (f) => rawKey(f) === rawKey(candidate) || resolvedKey(f) === resolvedKey(candidate)
+        )
+      ) {
+        return;
+      }
+      discoveredQueueRef.current.push(candidate);
+      scheduleFlush();
+    },
+    [scheduleFlush]
+  );
+
+  const resolve = useCallback(
+    (currentFile: string, rawPath: string, lineNumber: number, fullTextBeforeMatch?: string): ResolveType[] => {
+      // replace ROS package expressions with actual package paths (all occurrences)
+      const pkgRegex = /\$\((?:find|find-pkg-share)\s+([^)]+)\)|\$\((?:package|pkg):\/\/([^)]+)\)/g;
+      const replacedPackage = rawPath.replace(pkgRegex, (match, p1, p2) => {
+        const name = ((p1 ?? p2) || "").trim();
+        const pkgPath = name ? rosPackagesRef.current.get(name) : undefined;
+        // unknown package -> keep the expression, the result stays "not resolvable"
+        return pkgPath || match;
+      });
+
+      const result: ResolveType[] = [];
+      const seenPaths = new Set<string>();
+
+      const mapped = mapRef.current.get(currentFile)?.get(rawPath);
+      if (mapped) {
+        result.push(mapped);
+        if (mapped.path) seenPaths.add(normalizePath(mapped.path));
+        if (mapped.realpath) seenPaths.add(normalizePath(mapped.realpath));
+      }
+
+      const variants = replaceAllXmlVars(replacedPackage, currentFile, getArgs(currentFile), fullTextBeforeMatch);
+      for (const variant of variants) {
+        if (!variant || seenPaths.has(normalizePath(variant))) continue;
+        seenPaths.add(normalizePath(variant));
+        result.push({ path: variant, realpath: variant, exists: looksResolved(variant), resolver: "editor" });
+        addDiscoveredInclude(currentFile, rawPath, lineNumber, variant);
+      }
+      return result;
+    },
+    [getArgs, addDiscoveredInclude]
+  );
+
+  const extractIncludes = useCallback(
+    (text: string, language: string, currentFile: string): IncludeMatch[] => {
+      const matches: IncludeMatch[] = [];
+      const lineStarts = [0];
+      for (let i = 0; i < text.length; i++) if (text[i] === "\n") lineStarts.push(i + 1);
+
+      // binary search, returns the 1-based line number
+      const lineFromOffset = (offset: number): number => {
+        let lo = 0;
+        let hi = lineStarts.length - 1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (lineStarts[mid] <= offset) lo = mid + 1;
+          else hi = mid - 1;
+        }
+        return hi + 1;
+      };
+
+      if (language === "python") {
+        const PY_INCLUDE_REGEX = /\bIncludeLaunchDescription\s*\(/gms;
+        for (const match of text.matchAll(PY_INCLUDE_REGEX)) {
+          if (match.index == null) continue;
+          const startOffset = match.index;
+          const lineNumber = lineFromOffset(startOffset);
+          // skip commented out calls (works at line start, too)
+          const prefix = text.slice(lineStarts[lineNumber - 1], startOffset);
+          if (prefix.includes("#")) continue;
+
+          const block = extractPythonInclude(text, startOffset);
+          if (!block) continue;
+          for (const resolved of resolve(currentFile, block, lineNumber)) {
+            matches.push(...extractPythonIncludeFiles(block, startOffset, resolved));
+          }
+        }
+        return matches;
+      }
+
+      const PATH_REGEX = new RegExp(
+        [
+          String.raw`(?:file|textfile|binfile)\s*=\s*"([^\n"]+)"`,
+          String.raw`(\$\((?:find|find-pkg-share|dirname) [^)]+\)[^\n"]*)`,
+          String.raw`((?:pkg|package):\/\/[^"]*)`,
+        ].join("|"),
+        "g"
+      );
+
+      for (const match of text.matchAll(PATH_REGEX)) {
+        if (match.index == null) continue;
+        const value = match.slice(1).find((v) => v != null);
+        if (!value) continue;
+        const resolves = resolve(currentFile, value, lineFromOffset(match.index), text.slice(0, match.index));
+        const offset = match.index + match[0].indexOf(value);
+        for (const resolved of resolves) {
+          matches.push({
+            value,
+            offset,
+            resolved: resolved.path,
+            realpath: resolved.realpath,
+            exists: resolved.exists,
+            resolver: resolved.resolver,
+          });
+        }
+      }
+      return matches;
+    },
+    [resolve]
+  );
+
+  const runFetch = useCallback(
+    async (generation: number, request: LaunchIncludedFilesRequest): Promise<{ result: boolean; error: string }> => {
+      const prov = providerRef.current;
+      try {
+        const daemonFiles = await prov.launchGetIncludedFiles(request);
+
+        // a newer request was started meanwhile -> its result wins, drop ours silently.
+        // this must NOT be reported as an error, otherwise callers start a retry loop
+        if (generation !== fetchGenerationRef.current) return { result: true, error: "" };
+
+        const pending = pendingDiscoveredRef.current;
+        pendingDiscoveredRef.current = [];
+
+        if (!daemonFiles) {
+          // daemon failed: release the buffered editor results as fallback
+          if (pending.length > 0) {
+            setIncludedFiles((prev) => {
+              const merged = mergeIncludedFiles(
+                prev.filter((f) => f.resolver === "daemon"),
+                pending
+              );
+              return sameIncludes(prev, merged) ? prev : merged;
+            });
+          }
+          return { result: false, error: `error while get included launch files from ${prov.id}` };
+        }
+
+        setIncludedFiles((prev) => {
+          const merged = mergeIncludedFiles(daemonFiles as TIncludedFile[], pending);
+          // identical content -> keep identity, this breaks the loadFiles/fetch loop
+          return sameIncludes(prev, merged) ? prev : merged;
+        });
+        return { result: true, error: "" };
+      } catch (error) {
+        return { result: false, error: `useIncludedFiles: ${error}` };
+      } finally {
+        // never leave the editor path blocked, even on error or abort
+        if (generation === fetchGenerationRef.current) {
+          daemonLoadedRef.current = true;
+          inFlightRef.current = null;
+        }
+      }
+    },
+    []
+  );
+
+  const fetchIncludedFiles = useCallback(async (): Promise<{ result: boolean; error: string }> => {
+    const prov = providerRef.current;
+    if (!prov) return { result: false, error: "useIncludedFiles: Provider not available" };
+
+    const path = rootFilePathRef.current;
+    if (!path) return { result: false, error: "useIncludedFiles: no root file path" };
+
+    const launch = prov.launchFiles?.find((l) => l.path === path);
+    const args =
+      launch?.args?.map((t) => new LaunchArgument(t.name, t.value, t.default_value, t.description, t.choices)) || [];
+
+    // an identical request is already running -> share the very same promise
+    // (StrictMode double mount, multiple consumers, volatile effect deps)
+    const key = `${prov.id}|${path}|${JSON.stringify(args.map((a) => [a.name, a.value]))}`;
+    if (inFlightRef.current?.key === key) return inFlightRef.current.promise;
+
+    const request = new LaunchIncludedFilesRequest();
+    request.path = path;
+    request.unique = false;
+    request.recursive = true;
+    request.args = args;
+
+    const generation = ++fetchGenerationRef.current;
+    // only block editor results on the very first load, not on every refresh
+    if (includedFilesRef.current.length === 0) daemonLoadedRef.current = false;
+
+    const promise = runFetch(generation, request);
+    inFlightRef.current = { key, promise };
+    return promise;
+  }, [runFetch]);
 
   /**
-   * Helper to set a resolved include in the nested map
-   * @param file - The current file path
-   * @param raw - The raw include path from that file
-   * @param value - The resolved include information
+   * Invalidates all in-flight work (pending daemon request + queued editor flush).
+   * Kept as a stable callback so effect cleanups do not access `ref.current`
+   * directly - that would trigger react-hooks/exhaustive-deps, although reading
+   * the *latest* value is exactly what we want here.
    */
-  function set(file: string, raw: string, value: ResolveType): void {
-    let inner = map.get(file);
-    if (!inner) {
-      // Initialize inner map if it doesn't exist
-      inner = new Map();
-      map.set(file, inner);
+  const abortPendingWork = useCallback((): void => {
+    fetchGenerationRef.current++;
+    inFlightRef.current = null;
+    if (flushTimerRef.current !== null) {
+      clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
     }
-    inner.set(raw, value);
-  }
+  }, []);
 
+  const clearIncludedFiles = useCallback((): void => {
+    abortPendingWork();
+    pendingDiscoveredRef.current = [];
+    discoveredQueueRef.current = [];
+    daemonLoadedRef.current = false;
+    mapRef.current.clear();
+    cacheRef.current.clear();
+    mapIncludeArgsRef.current.clear();
+    updateSignatureRef.current = "";
+    setIncludedFiles((prev) => (prev.length === 0 ? prev : []));
+  }, [abortPendingWork]);
+
+  // keep the top level args in sync with the props
   useEffect(() => {
-    // Initialize the map with the provided included files
-    mapIncludeArgs.set(rootFilePath, {
+    mapIncludeArgsRef.current.set(rootFilePath, {
       args: rootLaunchArgs,
       defaults: [],
       topLevel: rootLaunchArgs,
       from: "top level",
     });
-    setPackages(provider.packages);
-  }, []);
+  }, [rootFilePath, rootLaunchArgs]);
 
   useEffect(() => {
+    setPackages(provider.packages);
+  }, [provider, setPackages]);
+
+  // rebuild the resolve maps only when the content really changed
+  useEffect(() => {
+    const signature = includesSignature(includedFiles);
+    if (signature === updateSignatureRef.current) return;
+    updateSignatureRef.current = signature;
     update(includedFiles);
-  }, [includedFiles]);
+  }, [includedFiles, update]);
 
-  async function fetchIncludedFiles(): Promise<{ result: boolean; error: string }> {
-    if (!provider) {
-      return { result: false, error: "useIncludedFiles: Provider not available" };
-    }
+  // stop pending work of an unmounted hook
+  useEffect(() => abortPendingWork, [abortPendingWork]);
 
-    // invalidate older requests and block editor results until the answer arrives
-    const generation = ++fetchGenerationRef.current;
-    daemonLoadedRef.current = false;
+  useCustomEventListener(
+    EVENT_PROVIDER_PACKAGES,
+    (data: EventProviderRosPackages) => {
+      if (data.provider.id === provider.id) setPackages(data.packages);
+    },
+    [provider.id, setPackages]
+  );
 
-    const launch = provider.launchFiles.find((l) => l.path === rootFilePath);
-    const request = new LaunchIncludedFilesRequest();
-    request.path = rootFilePath;
-    request.unique = false;
-    request.recursive = true;
-    request.args =
-      launch?.args?.map((t) => new LaunchArgument(t.name, t.value, t.default_value, t.description, t.choices)) || [];
-
-    const includedFilesLocal = await provider.launchGetIncludedFiles(request);
-
-    // ignore outdated responses
-    if (generation !== fetchGenerationRef.current) {
-      return { result: true, error: "" };
-    }
-
-    if (!includedFilesLocal) {
-      // daemon failed: release the buffered editor results as fallback
-      daemonLoadedRef.current = true;
-      const pending = pendingDiscoveredRef.current;
-      pendingDiscoveredRef.current = [];
-      if (pending.length > 0) {
-        setIncludedFiles((prev) =>
-          mergeIncludedFiles(
-            prev.filter((f) => f.resolver === "daemon"),
-            pending
-          )
-        );
-      }
-      return { result: false, error: `error while get included launch files from ${provider.id}` };
-    }
-
-    daemonLoadedRef.current = true;
-    const pending = pendingDiscoveredRef.current;
-    pendingDiscoveredRef.current = [];
-    setIncludedFiles(mergeIncludedFiles(includedFilesLocal as TIncludedFile[], pending));
-    return { result: true, error: "" };
-  }
-
-  function clearIncludedFiles(): void {
-    pendingDiscoveredRef.current = [];
-    setIncludedFiles([]);
-  }
-
-  useCustomEventListener(EVENT_PROVIDER_PACKAGES, (data: EventProviderRosPackages) => {
-    if (data.provider.id === provider.id) {
-      setPackages(data.packages);
-    }
-  });
-
-  /**
-   * Resolves a raw include path from a given file.
-   *
-   * It performs:
-   *  - ROS package path replacement (e.g. $(find pkg), $(find-pkg-share pkg), $(package://pkg/...))
-   *  - XML variable replacement (via replaceAllXmlVars), which may return multiple variants
-   *
-   * @param currentFile         The file that contains the include statement
-   * @param rawPath             The raw include value as it appears in the file
-   * @param lineNumber          Line number of the raw path in full text
-   * @param fullTextBeforeMatch Full text before the include position (used for XML var resolution)
-   * @returns                   Array of possible resolutions (each as ResolveType)
-   */
-  function resolve(
-    currentFile: string,
-    rawPath: string,
-    lineNumber: number,
-    fullTextBeforeMatch?: string
-  ): ResolveType[] {
-    // Regex to replace ROS package expressions with actual package paths
-    const pkgRegex = /\$\((?:find|find-pkg-share)\s+([^)]+)\)|\$\((?:package|pkg):\/\/([^)]+)\)/;
-
-    const replacedPackage = rawPath.replace(pkgRegex, (_, p1, p2) => {
-      const packageName = p1 || p2;
-      return rosPackages.get(packageName) || "";
-    });
-
-    const result: ResolveType[] = [];
-    // tracks which normalized paths have already been added
-    const seenPaths = new Set<string>();
-
-    // Check if we already have a resolved entry from the includedFiles map
-    const mapped = map.get(currentFile)?.get(rawPath);
-    if (mapped) {
-      result.push(mapped);
-      seenPaths.add(normalizePath(mapped.path));
-      seenPaths.add(normalizePath(mapped.realpath));
-    }
-
-    // Resolve XML variables; may return multiple path variants
-    const replacedVariants = replaceAllXmlVars(replacedPackage, currentFile, getArgs(currentFile), fullTextBeforeMatch);
-
-    for (const variant of replacedVariants) {
-      // Skip if this path was already added (either from mapped or from another variant)
-      if (seenPaths.has(normalizePath(variant))) {
-        continue;
-      }
-
-      result.push({
-        path: variant,
-        realpath: variant,
-        exists: true,
-        resolver: "editor",
-      });
-      seenPaths.add(normalizePath(variant));
-      addDiscoveredInclude(currentFile, rawPath, lineNumber, variant);
-    }
-
-    return result;
-  }
-
-  /**
-   * Update the resolver with a new set of included files
-   * Adds new entries, updates existing ones, and removes stale entries
-   */
-  function update(includedFiles: LaunchIncludedFile[]): void {
-    // Track valid rawPaths for each current file
-    const next = new Map<string, Set<string>>();
-
-    // Add or update entries in the map
-    for (const f of includedFiles) {
-      set(f.path, f.raw_inc_path, {
-        path: f.inc_path,
-        realpath: f.inc_realpath,
-        exists: f.exists,
-        resolver: (f as TIncludedFile).resolver === "editor" ? "editor" : "daemon",
-      });
-
-      // Record which raw paths should remain
-      let s = next.get(f.path);
-      if (!s) {
-        s = new Set();
-        next.set(f.path, s);
-      }
-      s.add(f.raw_inc_path);
-
-      // update include args
-      mapIncludeArgs.set(f.inc_path, {
-        args: f.args || [],
-        defaults: f.default_inc_args || [],
-        topLevel: topLevelArgs,
-        from: f.path,
-      });
-    }
-
-    // Remove stale entries from the map and cache
-    for (const [file, inner] of map) {
-      const valid = next.get(file);
-
-      // Delete raw paths that are no longer present
-      for (const raw of inner.keys()) {
-        if (!valid?.has(raw)) {
-          inner.delete(raw);
-          // Remove corresponding cache entries
-          cache.delete(file);
-        }
-      }
-
-      // Remove outer map entry if empty
-      if (inner.size === 0) {
-        map.delete(file);
-      }
-    }
-  }
-
-  function getArgs(currentFile: string): ResolverIncludeArgs | undefined {
-    return mapIncludeArgs.get(currentFile);
-  }
-
-  function getLineFromOffset(lineStarts: number[], offset: number): number {
-    // binary search for O(log n)
-    let lo = 0;
-    let hi = lineStarts.length - 1;
-    while (lo <= hi) {
-      const mid = (lo + hi) >> 1;
-      if (lineStarts[mid] <= offset) {
-        lo = mid + 1;
-      } else {
-        hi = mid - 1;
-      }
-    }
-    return hi + 1; // 0-based line number
-  }
-
-  /**
-   * Extracts ROS/Launch/Include paths from text
-   * @param text The text to parse
-   * @param language "xml", ... | "python" (used to distinguish parsing strategy if needed)
-   * @returns List of matches with value and offset
-   */
-  function extractIncludes(text: string, language: string, currentFile: string): IncludeMatch[] {
-    const matches: IncludeMatch[] = [];
-
-    const lineStarts = [0];
-    for (let i = 0; i < text.length; i++) {
-      if (text[i] === "\n") {
-        lineStarts.push(i + 1);
-      }
-    }
-
-    if (language === "python") {
-      // --- Handle Python IncludeLaunchDescription(...) separately ---
-      const prefix = "[^#]";
-      const PY_INCLUDE_REGEX = new RegExp(`${prefix}\\sIncludeLaunchDescription\\s*?\\(`, "gsm");
-      for (const match of text.matchAll(PY_INCLUDE_REGEX)) {
-        if (match.index == null) continue; // safe check
-        const startOffset = match.index;
-        const block = extractPythonInclude(text, startOffset);
-        if (!block) continue;
-        const resolves = resolve(currentFile, block, getLineFromOffset(lineStarts, match.index));
-        for (const resolved of resolves) {
-          const fileMatches = extractPythonIncludeFiles(block, startOffset, resolved);
-          matches.push(...fileMatches);
-        }
-      }
-      return matches;
-    }
-
-    // --- Regex for file, ROS paths, pkg paths ---
-    const PATH_REGEX = new RegExp(
-      [
-        // file="..." / textfile="..." / binfile="..."
-        String.raw`(?:file|textfile|binfile)\s*=\s*"([^\n"]+)"`,
-        // $(find pkg)/path , $(find-pkg-share pkg)/path , $(dirname)/path
-        String.raw`(\$\((?:find|find-pkg-share|dirname) [^)]+\)[^\n"]*)`,
-        // pkg://pkg/path or package://pkg/path
-        String.raw`((?:pkg|package):\/\/[^"]*)`,
-      ].join("|"),
-      "g"
-    );
-
-    for (const match of text.matchAll(PATH_REGEX)) {
-      if (match.index == null) continue; // safe check
-      const fullTextBeforeMatch = text.slice(0, match.index);
-      const value = match.slice(1).find((v) => v != null);
-      if (!value) continue;
-      const resolves = resolve(currentFile, value, getLineFromOffset(lineStarts, match.index), fullTextBeforeMatch);
-      const offset = match.index + match[0].indexOf(value);
-      for (const resolved of resolves) {
-        matches.push({
-          value,
-          offset,
-          resolved: resolved.path,
-          realpath: resolved.realpath,
-          exists: resolved.exists,
-          resolver: resolved.resolver,
-        });
-      }
-    }
-
-    return matches;
-  }
-
-  /**
-   * Register an include which was discovered by the editor itself.
-   * Before the daemon answered the entry is only buffered, so no duplicates appear.
-   */
-  function addDiscoveredInclude(currentFile: string, rawPath: string, lineNumber: number, variant: string): void {
-    const candidate: TIncludedFile = {
-      host: provider.host(),
-      size: -1, // unknown, file was not stat'ed by the daemon
-      path: currentFile,
-      raw_inc_path: rawPath,
-      inc_path: variant,
-      inc_realpath: variant,
-      line_number: lineNumber,
-      exists: true,
-      rec_depth: 0,
-      args: [],
-      default_inc_args: [],
-      conditional_excluded: false,
-      resolver: "editor",
-    };
-
-    // daemon result not yet available -> buffer it and render nothing for now
-    if (!daemonLoadedRef.current) {
-      if (!pendingDiscoveredRef.current.some((f) => rawKey(f) === rawKey(candidate))) {
-        pendingDiscoveredRef.current.push(candidate);
-      }
-      return;
-    }
-
-    setIncludedFiles((prev) => {
-      // already known (same statement or same resolved file)?
-      if (prev.some((f) => rawKey(f) === rawKey(candidate) || resolvedKey(f) === resolvedKey(candidate))) {
-        return prev;
-      }
-      const daemonEntries = prev.filter((f) => f.resolver !== "editor");
-      const editorEntries = [...prev.filter((f) => f.resolver === "editor"), candidate];
-      return mergeIncludedFiles(daemonEntries, editorEntries);
-    });
-  }
-
-  // Return the resolver object
-  return {
-    includedFiles,
-    fetchIncludedFiles,
-    clearIncludedFiles,
-    cache,
-    resolve,
-    update,
-    getArgs,
-    extractIncludes,
-  };
+  // stable forever: includedFiles is exposed as a getter backed by a ref
+  return useMemo<IncludeResolver>(
+    () => ({
+      get includedFiles(): TIncludedFile[] {
+        return includedFilesRef.current;
+      },
+      cache: cacheRef.current,
+      fetchIncludedFiles,
+      clearIncludedFiles,
+      resolve,
+      update,
+      getArgs,
+      extractIncludes,
+    }),
+    [fetchIncludedFiles, clearIncludedFiles, resolve, update, getArgs, extractIncludes]
+  );
 }
