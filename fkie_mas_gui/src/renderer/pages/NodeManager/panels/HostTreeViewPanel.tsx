@@ -93,6 +93,7 @@ type TPendingRestart = {
   onlyWithLaunch: boolean;
   ignoreTimer: boolean;
   notBefore: number; // timestamp in ms since epoch
+  killTried?: boolean; // guard: only one extra KILL round per restart request
 };
 
 const queueActionMeta: Record<QueueActionType, { successText: string }> = {
@@ -147,13 +148,15 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     { node: string; pid: number; cmdLine: string; callback?: () => Promise<void> }[]
   >([]);
   // remember last processed queue index to avoid double execution (e.g. in StrictMode)
-  const lastProcessedIndexRef = useRef<number | null>(null);
   const pendingKillNodesRef = useRef<RosNode[]>([]);
   // pending SIGKILL timers, must be cancelled on clear/unmount
   const killTimersRef = useRef<number[]>([]);
   // guards against re-processing the same batch when an effect re-runs
   const handledStartBatchRef = useRef<RosNode[] | null>(null);
   const handledRestartRef = useRef<TPendingRestart | null>(null);
+  // remember last processed queue item to avoid double execution (e.g. in StrictMode)
+  // key instead of index: survives clear() + enqueue within one React batch
+  const lastProcessedKeyRef = useRef<string | null>(null);
 
   /** Synchronous check whether an action for a node is already queued. */
   const isQueued = useCallback(
@@ -167,7 +170,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
   const enqueue = useCallback(
     (items: TQueueAction[], source: string): void => {
       if (items.length === 0) return;
-      console.log(
+      console.debug(
         `[queue] enqueue from '${source}': ${items.map((i) => `${i.action}:${i.node?.name ?? i.service ?? "?"}`).join(", ")}`
       );
       queue.update(items);
@@ -176,8 +179,12 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
   );
 
   /** Remove nodes from the pending SIGKILL list (e.g. stopped successfully or restarted). */
-  const removePendingKill = useCallback((nodes: RosNode[]): void => {
+  const removePendingKill = useCallback((nodes: RosNode[], reason: string): void => {
     const ids = new Set(nodes.map((n) => n.id));
+    const removed = pendingKillNodesRef.current.filter((n) => ids.has(n.id)).map((n) => n.name);
+    if (removed.length > 0) {
+      console.debug(`[sigkill] remove pending (${reason}): ${removed.join(", ")}`);
+    }
     pendingKillNodesRef.current = pendingKillNodesRef.current.filter((n) => !ids.has(n.id));
   }, []);
 
@@ -189,6 +196,15 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
     killTimersRef.current = [];
     pendingKillNodesRef.current = [];
   }, []);
+
+  /** Re-read the node from the current node map and check whether it is still alive. */
+  const isStillRunning = useCallback(
+    (node: RosNode): boolean => {
+      const current = rosCtx.nodeMap.get(node.idGlobal) ?? node;
+      return current.status === RosNodeStatus.RUNNING || (current.screens?.length ?? 0) > 0;
+    },
+    [rosCtx.nodeMap]
+  );
 
   /**
    * Get list of nodes from a list of node.idGlobal
@@ -608,7 +624,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
   function removePendingNodes(nodes: RosNode[]): void {
     const idsToRemove = new Set(nodes.map((n) => n.id));
-    removePendingKill(nodes);
+    removePendingKill(nodes, "start nodes");
 
     setPendingRestart((prev) => {
       if (!prev) return null;
@@ -663,7 +679,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         queue.addStatus("STOP", node.name, false, resultStopNode.message);
       } else {
         // node terminated regularly -> no SIGKILL needed
-        removePendingKill([node]);
+        // removePendingKill([node], "node terminated regularly -> no SIGKILL needed");
         queue.addStatus("STOP", node.name, true, "stopped");
       }
     } else if ((node.screens || []).length > 0) {
@@ -676,7 +692,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         queue.addStatus("STOP", node.name, true, "sent SIGTERM to executable");
       }
     } else {
-      removePendingKill([node]);
+      // removePendingKill([node], "no screen to stop");
       queue.addStatus("STOP", node.name, false, "no screen to stop");
     }
   }
@@ -843,10 +859,10 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
       const nodesKillTimeout: RosNode[] = [];
       for (const node of orderedNodesToStop) {
-        if (!node.pid) continue;
+        // if (!node.pid) continue;
         for (const launchInfo of node.launchInfo.values()) {
           if (launchInfo.sigkill_timeout) {
-            nodesKillTimeout.push(node);
+            if (!nodesKillTimeout.some((n) => n.id === node.id)) nodesKillTimeout.push(node);
             maxKillTime = Math.max(maxKillTime, launchInfo.sigkill_timeout);
           }
         }
@@ -856,10 +872,13 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
         pendingKillNodesRef.current = [...pendingKillNodesRef.current, ...nodesKillTimeout];
         const timerId = window.setTimeout(() => {
           killTimersRef.current = killTimersRef.current.filter((id) => id !== timerId);
-          const toKill = pendingKillNodesRef.current.filter((n) => nodesKillTimeout.some((nk) => nk.id === n.id));
-          pendingKillNodesRef.current = pendingKillNodesRef.current.filter(
-            (n) => !nodesKillTimeout.some((nk) => nk.id === n.id)
-          );
+          const candidates = pendingKillNodesRef.current.filter((n) => nodesKillTimeout.some((nk) => nk.id === n.id));
+          removePendingKill(candidates, "sigkill-timer");
+          const toKill = candidates.filter((n) => {
+            const alive = isStillRunning(n);
+            console.debug(`[sigkill] timer fired for ${n.name}, stillRunning=${alive}`);
+            return alive && !isQueued("KILL", n.name);
+          });
           if (toKill.length > 0) {
             enqueue(
               toKill.map((node) => ({ node, action: "KILL" as QueueActionType })),
@@ -972,8 +991,9 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
       emitNodeCmdState({ provider: provider, node: node, state: "kill" });
       await provider.delayRosUpdate();
       const result = await provider.screenKillNode(node.name);
-      const success = result.result ?? false;
-      const message = result.message || (success ? "killed" : "failed");
+      const gone = /does not have an active screen/i.test(result.message ?? "");
+      const success = (result.result ?? false) || gone;
+      const message = gone ? "already terminated" : result.message || (success ? "killed" : "failed");
       queue.addStatus("KILL", node.name, success, message);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -1226,8 +1246,26 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
     handledRestartRef.current = pendingRestart;
 
-    // nodes are restarted now, so cancel a still pending SIGKILL for them
-    removePendingKill(pendingRestart.nodes);
+    // SIGTERM grace period is over. Try a final KILL only once, otherwise a node
+    // whose state is not refreshed yet would retrigger this effect forever.
+    if (!pendingRestart.killTried) {
+      const pendingIds = new Set(pendingKillNodesRef.current.map((n) => n.id));
+      const stillAlive = pendingRestart.nodes.filter(
+        (n) => pendingIds.has(n.id) && isStillRunning(n) && !isQueued("KILL", n.name)
+      );
+      removePendingKill(pendingRestart.nodes, "restart");
+      if (stillAlive.length > 0) {
+        enqueue(
+          stillAlive.map((node) => ({ node, action: "KILL" as QueueActionType })),
+          "restart-kill"
+        );
+        setPendingRestart({ ...pendingRestart, killTried: true, notBefore: Date.now() });
+        handledRestartRef.current = null;
+        return undefined;
+      }
+    }
+
+    removePendingKill(pendingRestart.nodes, "restart");
 
     startNodesWithLaunchCheck(
       pendingRestart.nodes,
@@ -1238,7 +1276,7 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
     setPendingRestart(null);
     return undefined;
-  }, [pendingRestart, queue.currentIndex, killProcessQuestion]);
+  }, [pendingRestart, queue.currentIndex, killProcessQuestion, enqueue, isQueued, isStillRunning, removePendingKill]);
 
   // cleanup on unmount
   useEffect(() => {
@@ -1315,16 +1353,17 @@ export default function HostTreeViewPanel(props: HostTreeViewPanelProps): JSX.El
 
   // update queue
   useEffect(() => {
-    // Prevent processing the same index multiple times.
-    // This can happen in development, e.g. with React StrictMode.
-    if (queue.currentIndex === lastProcessedIndexRef.current) {
+    const item = queue.getAt(queue.currentIndex);
+    // identity of the current item, not just its index
+    const currentKey = `${queue.currentIndex}:${item?.action ?? ""}:${item?.node?.name ?? item?.service ?? ""}`;
+
+    if (currentKey === lastProcessedKeyRef.current) {
       return;
     }
-
-    lastProcessedIndexRef.current = queue.currentIndex;
+    lastProcessedKeyRef.current = currentKey;
 
     performQueueMain(queue.currentIndex);
-  }, [queue.currentIndex, performQueueMain]);
+  }, [queue, performQueueMain]);
 
   // --- Derived selection information for the action bar ---
   const selectedNodes = getSelectedNodes();
