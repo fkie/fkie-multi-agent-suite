@@ -204,7 +204,7 @@ class ScreenServicer:
         self._screen_do_check = True
         return json.dumps({"result": success, "message": "\n".join(errors)}, cls=SelfEncoder)
 
-    def get_screen_list(self, force: False) -> str:
+    def get_screen_list(self, force: bool = False) -> str:
         Log.info(f"{self.__class__.__name__}: Request to [ros.screen.get_list]")
         with self._screen_thread_lock:
             self._screen_do_check = True
