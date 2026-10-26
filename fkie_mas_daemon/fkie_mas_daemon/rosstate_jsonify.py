@@ -1128,6 +1128,10 @@ class RosStateJsonify:
                             f"{self.__class__.__name__}:-> Timeout while update "
                             f"{wait_future.type} of '{wait_future.node_name}'"
                         )
+                        # a container busy loading may time out: forget it to query it again
+                        with self._lock:
+                            if generation < 0 or generation == self._state_generation:
+                                self._composable_nodes.pop(wait_future.node_id, None)
                 wait_future.client.destroy()
 
             if retry_nodes:
