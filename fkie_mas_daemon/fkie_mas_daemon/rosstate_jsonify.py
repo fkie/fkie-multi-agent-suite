@@ -483,8 +483,9 @@ class RosStateJsonify:
 
             # identify local nodes without own process/screen that are not
             # assigned to any composable container
+            # without discovery a component loaded later has no location yet
             for node in discovered_nodes:
-                if node.is_local and not node.process_ids and not node.screens:
+                if (node.is_local or node.location == "unknown") and not node.process_ids and not node.screens:
                     if node.name not in known_composable_names and "_impl_" not in node.name:
                         current_unassigned.add(node.name)
 
