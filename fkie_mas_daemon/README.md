@@ -32,6 +32,11 @@ In addition to remote configuration access, MAS Daemon provides features such as
   The default value is `30`. Set it to `0` to wait indefinitely until the daemon is shut down.
 
 
+- **`MAS_NS_SCOPED_PID`** *(ROS 2 only)*  
+
+  Set it to `1` when daemons run in containers sharing the host PID namespace (e.g. `hostPID`), so each daemon treats only its own container's processes as local. Default: unset.
+
+
 - **`MAS_SYSTEM_DIAGNOSTIC`** *(ROS 2 only)*  
 
   Can be used to disable system monitoring.
