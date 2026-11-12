@@ -23,9 +23,13 @@ from rclpy.action import ActionClient
 from rclpy.callback_groups import CallbackGroup
 from rclpy.client import SrvType, SrvTypeRequest, SrvTypeResponse
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.signals import SignalHandlerOptions
 
 import fkie_mas_daemon as nmd
 from fkie_mas_daemon.server import Server
+
+# a teardown taking longer exits without finalizing
+SHUTDOWN_TIMEOUT_SEC = 10.0
 
 
 class RosNodeLauncher:
@@ -36,6 +40,8 @@ class RosNodeLauncher:
 
     def __init__(self):
         self._on_shutdown = False
+        self._shutdown_requested = threading.Event()
+        self._shutdown_complete = False
         self.ros_domain_id = 0
         self.parser = self._init_arg_parser()
         self.name = NM_DAEMON_NAME
@@ -51,10 +57,9 @@ class RosNodeLauncher:
             self.ros_domain_id = int(os.environ["ROS_DOMAIN_ID"])
             # TODO: switch domain id
             # os.environ.pop('ROS_DOMAIN_ID')
-        if os.environ.get("ROS_DISTRO") != "galactic":
-            signal.signal(signal.SIGTERM, self.exit_gracefully)
-            signal.signal(signal.SIGINT, self.exit_gracefully)
-        rclpy.init(args=remaining_args)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        rclpy.init(args=remaining_args, signal_handler_options=SignalHandlerOptions.NO)
         try:
             self.ros_node = rclpy.create_node(self.name, namespace=NM_NAMESPACE, enable_logger_service=True)
         except TypeError:
@@ -74,26 +79,32 @@ class RosNodeLauncher:
         self.success_start = False
 
     def exit_gracefully(self, signum, frame):
-        if self._on_shutdown:
-            return
         self._on_shutdown = True
-        print("shutdown own server")
+        self._shutdown_requested.set()
+
+    def _shutdown(self, executor, spin_thread):
         if self._autostart and self._stop_on_shutdown:
             self.server.stop_all_nodes()
-        print("shutdown server")
+        executor.shutdown()
+        if spin_thread is not None:
+            spin_thread.join()
         self.server.shutdown()
-        print("ros ok -> shutdown")
-        if rclpy.ok():
-            rclpy.shutdown()
-        print("destroy own node")
         self.ros_node.destroy_node()
-        print("bye!")
+        rclpy.shutdown()
+        self._shutdown_complete = True
+
+    def _spin_executor(self, executor):
+        try:
+            executor.spin()
+        finally:
+            self.exit_gracefully(-1, None)
 
     def exception_handler(self, loop, error):
         pass
 
     def spin(self):
         executor = MultiThreadedExecutor()
+        spin_thread = None
         try:
             # start server and load launch files provided by arguments
             self.success_start = self.server.start(self._port, displayed_name=self._displayed_name)
@@ -101,7 +112,10 @@ class RosNodeLauncher:
                 threading.Thread(target=self._load_launches).start()
                 # self.executor.spin()
                 executor.add_node(self.ros_node)
-                executor.spin()
+                spin_thread = threading.Thread(target=self._spin_executor, args=(executor,))
+                spin_thread.start()
+                # a signal can not wake the executor, but interrupts this wait
+                self._shutdown_requested.wait()
                 # rclpy.spin(self.ros_node)
                 # rclpy.spin(self.ros_node)
         except KeyboardInterrupt:
@@ -122,7 +136,13 @@ class RosNodeLauncher:
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
             # os.kill(os.getpid(), signal.SIGKILL)
-        self.exit_gracefully(-1, None)
+        teardown = threading.Thread(target=self._shutdown, args=(executor, spin_thread), daemon=True)
+        teardown.start()
+        teardown.join(SHUTDOWN_TIMEOUT_SEC)
+        # else the still running executor thread hangs the interpreter exit
+        if not self._shutdown_complete:
+            Log.warn(f"shutdown failed or blocked for {SHUTDOWN_TIMEOUT_SEC}s, exit without cleanup")
+            os._exit(1)
 
     def _run_tests(self):
         try:
