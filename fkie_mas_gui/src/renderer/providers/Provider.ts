@@ -523,7 +523,7 @@ export default class Provider implements IProvider {
       case CmdTypes.CMD:
       case CmdTypes.TERMINAL: {
         const prefix = this.createRosEnvExportPrefix(env);
-        result.cmd = cmd ? `${prefix} ${cmd}${KEEP_OPEN}` : `${prefix}; exec "\${SHELL:-/bin/bash}" -i`;
+        result.cmd = cmd ? `${prefix} ${cmd}${KEEP_OPEN}` : `${prefix} exec "\${SHELL:-/bin/bash}" -i`;
         result.displayCmd = cmd;
         break;
       }
