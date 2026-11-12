@@ -6,7 +6,7 @@ import { emitEditorSelectRange, emitOpenComponent } from "@/renderer/components/
 import { useLoggingContext } from "@/renderer/hooks/useLoggingContext";
 import { useRosContext } from "@/renderer/hooks/useRosContext";
 import { getBaseName, LaunchNodeInfo } from "@/renderer/models";
-import { xor } from "@/renderer/utils/index";
+import { generateUniqueId, xor } from "@/renderer/utils/index";
 import {
   CmdType,
   CmdTypes,
@@ -92,6 +92,7 @@ type TOpenTerminal = {
   forceOpenTerminal?: boolean;
   insideDomainLayout?: boolean;
   noPopout?: boolean;
+  anonymous?: boolean;
 };
 
 export interface INavigationContext {
@@ -647,12 +648,13 @@ export function NavigationProvider({ children }: INavigationProvider): JSX.Eleme
         forceOpenTerminal = false,
         insideDomainLayout = true,
         noPopout,
+        anonymous = false,
       } = args;
       logCtx.debug(`Start terminal ${type}@${providerId} for ${node || screen || cmd}`);
       const provider = rosCtx.getProviderById(providerId);
       if (!provider) return;
 
-      const id = `terminal-${type}-${provider.connection.host}-${provider.connection.port}-${screen || node}`;
+      const id = `terminal-${type}-${provider.connection.host}-${provider.connection.port}-${screen || node || anonymous ? generateUniqueId() : ""}`;
       const openExternal =
         type === CmdTypes.SCREEN
           ? xor(screenOpenExternal, externalKeyModifier)

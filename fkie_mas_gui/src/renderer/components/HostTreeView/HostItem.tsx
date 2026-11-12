@@ -162,7 +162,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
   const rosCtx = useRosContext();
   const logCtx = useLoggingContext();
 
-  const optionsTimeButton = ["ntpdate", "set date", "sync me to this date", "help"];
+  const optionsTimeButton = ["ntpdate", "set date", "sync me to this date", "help", "open new terminal"];
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [showHelpTime, setShowHelpTime] = useState<boolean>(false);
   const [openNtpdateDialog, setOpenNtpdateDialog] = useState<boolean>(false);
@@ -197,7 +197,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
     }
   }
 
-  function handleMenuTimeItemClick(_event, index): void {
+  function handleMenuTimeItemClick(event, index): void {
     if (index === 0) {
       // set time using ntpdate
       setOpenNtpdateDialog(true);
@@ -211,6 +211,18 @@ export default function HostItem(props: HostItemProps): JSX.Element {
       updateTime(true);
     } else if (index === 3) {
       setShowHelpTime(true);
+    } else if (index === 4) {
+      navCtx.openTerminal({
+        type: CmdTypes.TERMINAL,
+        providerId: provider.id,
+        node: "",
+        screen: "",
+        externalKeyModifier: event.nativeEvent.shiftKey,
+        forceOpenTerminal: false,
+        insideDomainLayout: true,
+        noPopout: true,
+        anonymous: true,
+      });
     }
   }
 
