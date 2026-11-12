@@ -498,8 +498,9 @@ class RosStateJsonify:
 
             # identify local nodes without own process/screen that are not
             # assigned to any composable container
+            # without discovery a component loaded later has no location yet
             for node in discovered_nodes:
-                if node.is_local and not node.process_ids and not node.screens:
+                if (node.is_local or node.location == "unknown") and not node.process_ids and not node.screens:
                     if node.name not in known_composable_names and "_impl_" not in node.name:
                         current_unassigned.add(node.name)
 
@@ -1142,6 +1143,10 @@ class RosStateJsonify:
                             f"{self.__class__.__name__}:-> Timeout while update "
                             f"{wait_future.type} of '{wait_future.node_name}'"
                         )
+                        # a container busy loading may time out: forget it to query it again
+                        with self._lock:
+                            if generation < 0 or generation == self._state_generation:
+                                self._composable_nodes.pop(wait_future.node_id, None)
                 wait_future.client.destroy()
 
             if retry_nodes:

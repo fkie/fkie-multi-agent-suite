@@ -284,6 +284,9 @@ class RosStateServicer:
             self._composables_nodes = filtered_list
         # publish outside of the lock, the websocket call can block
         self.websocket.publish("ros.nodes.composable", {"composable": composables})
+        # without discovery nothing else triggers the rebuild that applies the children
+        with self._lock_check:
+            self._ts_state_updated = time.time()
 
     def _callback_nodes(self, nodes: list[RosNode]):
         new_nodes_str = json.dumps(nodes, cls=SelfEncoder)
