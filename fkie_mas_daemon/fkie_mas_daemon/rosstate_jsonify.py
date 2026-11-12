@@ -89,6 +89,8 @@ LIFECYCLE_QUEUE_MAX_SIZE = 1000
 COMPOSABLE_RETRY_MAX = 3
 # timeout in seconds for the service calls
 SERVICE_CALL_TIMEOUT = 10
+# containers sharing the host PID namespace: only match processes of our own container
+NS_SCOPED_PID = os.environ.get("MAS_NS_SCOPED_PID", "") == "1"
 # warnings about topics used with more than one message type are reported in an
 # own group, so that they are not overwritten by lifecycle/composable warnings
 WARNING_GROUP_TOPIC_TYPES = f"{SystemWarningGroup.ID_ROS_STATE}_TOPIC_TYPES"
@@ -377,11 +379,17 @@ class RosStateJsonify:
         """Scans all processes once and returns an index (namespace, basename) -> [pid]
         for all processes started with a '__node:=' argument."""
         index: dict[tuple[str, str], list[int]] = {}
+        own_mnt_ns = self._mount_namespace("self") if NS_SCOPED_PID else None
         for process in psutil.process_iter(["pid", "cmdline"]):
             try:
                 cmdline = process.info["cmdline"]
                 if not cmdline:
                     continue
+                if own_mnt_ns is not None:
+                    mnt_ns = self._mount_namespace(process.info["pid"])
+                    # unreadable: can not prove it is foreign
+                    if mnt_ns is not None and mnt_ns != own_mnt_ns:
+                        continue
                 node_name: str | None = None
                 node_ns = ""
                 for arg in cmdline:
@@ -398,6 +406,13 @@ class RosStateJsonify:
                     f"{self.__class__.__name__}: ignored exception while scanning processes: {traceback.format_exc()}"
                 )
         return index
+
+    @staticmethod
+    def _mount_namespace(pid: int | str) -> str | None:
+        try:
+            return os.readlink(f"/proc/{pid}/ns/mnt")
+        except OSError:
+            return None
 
     def _index_screens(self) -> dict[NodeFullName, list[str]]:
         """Builds node full name -> [screen session names] once per update cycle."""
