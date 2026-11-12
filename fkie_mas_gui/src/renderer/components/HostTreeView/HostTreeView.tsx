@@ -24,6 +24,8 @@ import NodeItem from "./NodeItem";
 import { KeyTreeItem, NodeTree, NodeTreeItem } from "./types";
 
 const ID_SEP = "█";
+// nodes no daemon claims
+const UNASSIGNED_PROVIDER_ID = "unassigned";
 
 function compareTreeItems(a: NodeTreeItem, b: NodeTreeItem): number {
   // place system groups are at the end
@@ -134,16 +136,26 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       // ...and keep a list of the tree nodes
       const nodeTree: NodeTreeItem[] = [];
       const level: NodeTree = { nodeTree };
+      // every daemon reports the whole graph: show a node under the host that claims or launches it, else once
+      const isOwned = (n: RosNode): boolean => n.isLocal || n.launchInfo.size > 0;
+      const localNodeNames = new Set(nodes.filter(isOwned).map((n) => n.name));
+      const unassignedNodeNames = new Set<string>();
       for (const node of nodes) {
         let remoteLocationId = "";
-        if (!node.isLocal) {
-          // adds a new provider, which has no mas daemon and discovery
-          remoteLocationId = idFromDDSLocations(Array.isArray(node.location) ? node.location : [node.location]);
-          if (!remoteLocationId) {
-            remoteLocationId = node.providerId;
+        if (!isOwned(node)) {
+          if (node.location === "unknown") {
+            if (localNodeNames.has(node.name) || unassignedNodeNames.has(node.name)) continue;
+            unassignedNodeNames.add(node.name);
+            remoteLocationId = UNASSIGNED_PROVIDER_ID;
+          } else {
+            // adds a new provider, which has no mas daemon and discovery
+            remoteLocationId = idFromDDSLocations(Array.isArray(node.location) ? node.location : [node.location]);
+            if (!remoteLocationId) {
+              remoteLocationId = node.providerId;
+            }
           }
         }
-        let nodePath = node.isLocal && node.providerId ? node.providerId : remoteLocationId;
+        let nodePath = isOwned(node) && node.providerId ? node.providerId : remoteLocationId;
         const isSpamNode = spamNodesRegExp && node.name.match(spamNodesRegExp);
         if (node.system_node && namespaceSystemNodes && !isSpamNode) {
           // for system nodes, e.g.: /{SYSTEM}/ns
