@@ -1,3 +1,4 @@
+import "./monaco/setup/monacoSetup";
 import { useContext } from "react";
 import { AutoUpdateProvider } from "./context/AutoUpdateContext";
 import { DirtyEditorGuardProvider } from "./context/DirtyEditorGuard";
