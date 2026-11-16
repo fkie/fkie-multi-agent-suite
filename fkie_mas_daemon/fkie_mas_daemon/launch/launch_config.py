@@ -196,7 +196,7 @@ class LaunchConfig:
 
         self.__reqTested = False
         self.__argv_values = {}
-        self.__launch_id = "%.9f" % time.time()
+        self.__launch_id = f"{time.time():.9f}"
         self._robot_description = None
         self._capabilities = None
         self.resolve_dict = {}
@@ -628,7 +628,7 @@ class LaunchConfig:
             if state.current_file:
                 self.context.extend_locals({"current_launch_file_path": state.current_file})
         except launch.invalid_launch_file_error.InvalidLaunchFileError as err:
-            raise Exception("%s (%s)" % (err, entity.launch_description_source.location))
+            raise Exception(f"{err} ({entity.launch_description_source.location})") from err
         finally:
             os.environ.clear()  # restore environment
             os.environ.update(saved_env)
@@ -703,7 +703,9 @@ class LaunchConfig:
                     import traceback
 
                     print(traceback.format_exc())
-                    raise LaunchConfigException(f"Error while resolve arguments in {state.current_file}: {err}")
+                    raise LaunchConfigException(
+                        f"Error while resolve arguments in {state.current_file}: {err}"
+                    ) from err
             default_args = []
             for arg in entity.get_launch_arguments():
                 try:
@@ -717,7 +719,9 @@ class LaunchConfig:
                     import traceback
 
                     print(traceback.format_exc())
-                    raise LaunchConfigException(f"Error while resolve default arguments in {state.current_file}: {err}")
+                    raise LaunchConfigException(
+                        f"Error while resolve default arguments in {state.current_file}: {err}"
+                    ) from err
             last_included_file.args = launch_args
             last_included_file.default_inc_args = default_args
         # state.position_in_file = self._load(entity, launch_description=state.launch_description,
@@ -798,6 +802,41 @@ class LaunchConfig:
         """
         return self.__package
 
+    # -- launch arguments ----------------------------------------------------
+
+    @staticmethod
+    def _provided_values(provided_args: list | None) -> dict[str, str]:
+        """
+        Explicitly provided argument values by name.
+
+        Arguments without a value (None) count as not provided, so that their
+        default value is used. For duplicate names the last value wins, like
+        on the command line.
+        """
+        provided: dict[str, str] = {}
+        for argument in provided_args or []:
+            value = getattr(argument, "value", None)
+            if value is not None:
+                provided[argument.name] = str(value)
+        return provided
+
+    @staticmethod
+    def _resolve_default(context: LaunchContext, argument_action) -> str | None:
+        """
+        Resolve the default value of a DeclareLaunchArgument.
+
+        :return: resolved default value, None if the argument has no default
+                 value or if it cannot be resolved in the given context
+        """
+        # same check as DeclareLaunchArgument.execute(): an empty default is valid
+        if argument_action.default_value is None:
+            return None
+        try:
+            return perform_substitutions(context, argument_action.default_value)
+        except Exception as error:
+            Log.warn(f"LaunchConfig: cannot resolve default value of launch argument '{argument_action.name}': {error}")
+            return None
+
     @classmethod
     def _get_launch_arguments(
         cls, context: LaunchContext, filename: str, *, provided_args: list | None
@@ -806,9 +845,14 @@ class LaunchConfig:
         Returns only top-level launch arguments, but collects all possible default values recursively
         from entire launch tree (includes, groups, nested LaunchDescriptions).
 
-        Note: this executes OpaqueFunctions of the launch file, therefore it must
-        only be called with _LOAD_LOCK held and with a context that may be
-        modified (see get_launch_arguments()).
+        Top-level arguments are resolved in declaration order and stored in the
+        context like DeclareLaunchArgument.execute() does, so that defaults can
+        refer to previously declared arguments, e.g. "$(var global_frame)/test".
+
+        Note: this executes OpaqueFunctions of the launch file and modifies the
+        launch configurations of 'context', therefore it must only be called
+        with _LOAD_LOCK held and with a context that may be modified (see
+        get_launch_arguments()).
         """
 
         def get_entities(entity):
@@ -829,18 +873,18 @@ class LaunchConfig:
             for entity in entities:
                 # Direct DeclareLaunchArgument
                 if isinstance(entity, launch.actions.DeclareLaunchArgument):
-                    if entity.default_value:
+                    if entity.default_value is not None:
                         try:
-                            resolved = launch.utilities.perform_substitutions(context, entity.default_value)
+                            resolved = perform_substitutions(context, entity.default_value)
                             if resolved not in defaults_map[entity.name]:
                                 defaults_map[entity.name].append(resolved)
-                        except Exception:
-                            pass
+                        except Exception as error:
+                            # nested defaults are only additional choices, not fatal
+                            Log.debug(f"LaunchConfig: skip default of '{entity.name}' as choice: {error}")
 
                 # IncludeLaunchDescription
                 elif isinstance(entity, launch.actions.IncludeLaunchDescription):
-                    sub_entities = entity.describe_sub_entities()
-                    collect_all_defaults(sub_entities, defaults_map)
+                    collect_all_defaults(entity.describe_sub_entities(), defaults_map)
                     for _, cond_entities in entity.describe_conditional_sub_entities():
                         collect_all_defaults(cond_entities, defaults_map)
 
@@ -856,13 +900,9 @@ class LaunchConfig:
                 elif isinstance(entity, launch.actions.OpaqueFunction):
                     try:
                         result = entity.execute(context)
-                        if isinstance(result, list):
-                            for sub_result in result:
-                                collect_all_defaults([sub_result], defaults_map)
-                        else:
-                            collect_all_defaults([result], defaults_map)
-                    except Exception:
-                        pass
+                        collect_all_defaults(result if isinstance(result, list) else [result], defaults_map)
+                    except Exception as error:
+                        Log.debug(f"LaunchConfig: OpaqueFunction failed while collecting defaults: {error}")
 
                 # Generic recursion for other containers
                 else:
@@ -870,48 +910,53 @@ class LaunchConfig:
 
         launch_description = get_launch_description_from_any_launch_file(filename)
 
-        # Phase 1: ONLY top-level DeclareLaunchArgument (direct from launch_description.entities)
-        top_level_actions = []
+        # Provided values win over defaults, like arguments passed on the
+        # command line or by an include.
+        provided = cls._provided_values(provided_args)
+        context.launch_configurations.update(provided)
+
+        # Phase 1: top-level arguments in declaration order. Each resolved value
+        # is stored in the context, otherwise later defaults referring to it via
+        # $(var ...) fail with SubstitutionFailure.
+        top_level: dict[str, tuple] = {}  # name -> (action, resolved default)
         for entity in launch_description.entities:
             if isinstance(entity, launch.actions.DeclareLaunchArgument):
-                if entity.name not in [e.name for e in top_level_actions]:
-                    top_level_actions.append(entity)
+                if entity.name in top_level:
+                    # first declaration wins, like in launch
+                    continue
+                default_value = cls._resolve_default(context, entity)
+                top_level[entity.name] = (entity, default_value)
+                if default_value is not None and entity.name not in context.launch_configurations:
+                    context.launch_configurations[entity.name] = default_value
+            elif isinstance(entity, launch.actions.SetLaunchConfiguration):
+                # top-level <let> may be referenced by later defaults
+                try:
+                    if entity.condition is None or entity.condition.evaluate(context):
+                        entity.execute(context)
+                except Exception as error:
+                    Log.debug(f"LaunchConfig: cannot apply top-level launch configuration in {filename}: {error}")
 
-        # Phase 2: FULL recursion - collect ALL defaults from entire tree
+        # Phase 2: FULL recursion - collect ALL defaults from entire tree. Runs
+        # after phase 1, so nested defaults can refer to top-level arguments.
         all_defaults_map = defaultdict(list)
         collect_all_defaults(launch_description.entities, all_defaults_map)
 
-        # Build result
+        # Build result: declared choices extended with ALL found defaults
         result = []
-        for argument_action in top_level_actions:
-            value = None
-            if provided_args is not None:
-                for provided_arg in provided_args:
-                    if argument_action.name == provided_arg.name and hasattr(provided_arg, "value"):
-                        value = provided_arg.value
-                        break
-
-            default_value = None
-            if argument_action.default_value:
-                default_value = launch.utilities.perform_substitutions(context, argument_action.default_value)
-
-            # Extend choices with ALL found defaults
-            all_choices = list(all_defaults_map[argument_action.name])
-            existing_choices = argument_action.choices or []
-            choices = list(existing_choices)
-            for default_val in all_choices:
+        for name, (argument_action, default_value) in top_level.items():
+            choices = list(argument_action.choices or [])
+            for default_val in all_defaults_map[name]:
                 if default_val not in choices:
                     choices.append(default_val)
-
-            arg = LaunchArgument(
-                name=argument_action.name,
-                value=value if value is not None else default_value,
-                default_value=default_value,
-                description=argument_action.description,
-                choices=choices,
+            result.append(
+                LaunchArgument(
+                    name=name,
+                    value=provided.get(name, default_value),
+                    default_value=default_value,
+                    description=argument_action.description,
+                    choices=choices,
+                )
             )
-            result.append(arg)
-
         return result
 
     @classmethod
@@ -927,13 +972,19 @@ class LaunchConfig:
         _LOAD_LOCK held, with a restored environment afterwards. The 'context'
         parameter is kept for API compatibility and is only used as a fallback
         source for the argv of the parse context.
+
+        Provided values are stored in the parse context before the cache key is
+        built: defaults may refer to them, therefore they are part of the key
+        via the context fingerprint.
         """
         normalized_filename = normalize_path(filename)
+        provided = cls._provided_values(provided_args)
 
         # Own context for the parse: executing entities must not leak launch
         # configurations into the caller's context.
         parse_argv = list(getattr(context, "argv", None) or sys.argv[1:])
         parse_context = LaunchContext(argv=parse_argv)
+        parse_context.launch_configurations.update(provided)
 
         # The key is built from the context that is actually used for the parse,
         # so key and cached result always belong together.
@@ -947,7 +998,7 @@ class LaunchConfig:
             with cls._LOAD_LOCK:
                 saved_env = dict(os.environ)
                 try:
-                    # The cached result must not contain request-specific values.
+                    # provided values are already part of parse_context
                     parsed = cls._get_launch_arguments(parse_context, filename=normalized_filename, provided_args=None)
                 finally:
                     os.environ.clear()
@@ -965,12 +1016,8 @@ class LaunchConfig:
 
         templates = LAUNCH_ARGUMENT_CACHE.get_or_load(key, _load_templates)
 
-        # Always return fresh request-specific objects.
-        provided = {}
-
-        if provided_args:
-            provided = {argument.name: argument.value for argument in provided_args if hasattr(argument, "value")}
-
+        # Always return fresh request-specific objects. Arguments without a
+        # provided value fall back to their default value.
         return [
             LaunchArgument(
                 name=template.name,
@@ -1056,12 +1103,12 @@ class LaunchConfig:
             new_env["ROS_NAMESPACE"] = node.node_namespace
         # set logging
         if node.output_format:
-            new_env["ROSCONSOLE_FORMAT"] = "%s" % node.output_format
+            new_env["ROSCONSOLE_FORMAT"] = f"{node.output_format}"
         # handle respawn
         respawn_prefix = ""
         if node.respawn:
             if node.respawn_delay and node.respawn_delay > 0:
-                new_env["RESPAWN_DELAY"] = "%d" % node.respawn_delay
+                new_env["RESPAWN_DELAY"] = f"{node.respawn_delay}"
             respawn_prefix = f"{RESPAWN_SCRIPT}"
 
         launch_prefix = ""
@@ -1107,7 +1154,10 @@ class LaunchConfig:
             service_load_node_name, composition_interfaces.srv.LoadNode, request, timeout_sec=COMPONENT_LOAD_TIMEOUT
         )
         if response is None:
-            error_msg = f"Failed to load service '{request.node_name}' of type '{request.plugin_name}' in container '{node.composable_container}': None as service response"
+            error_msg = (
+                f"Failed to load service '{request.node_name}' of type '{request.plugin_name}'"
+                f"in container '{node.composable_container}': None as service response"
+            )
             Log.error(error_msg)
             raise exceptions.StartException(error_msg)
         Log.debug(f"  <- load composed node: response received: {response} {dir(response)}")
@@ -1115,6 +1165,9 @@ class LaunchConfig:
         if response.success:
             Log.info(f"Loaded node '{response.full_node_name}' in container '{node.composable_container}'")
         else:
-            error_msg = f"Failed to load node '{node_name}' of type '{request.plugin_name}' in container '{node.composable_container}': {response.error_message}"
+            error_msg = (
+                f"Failed to load node '{node_name}' of type '{request.plugin_name}'"
+                f"in container '{node.composable_container}': {response.error_message}"
+            )
             Log.error(error_msg)
             raise exceptions.StartException(error_msg)
