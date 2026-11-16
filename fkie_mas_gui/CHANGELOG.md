@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.12.0 - 16.11.2026
+
+- fix(updater): fetch available versions
+- [fkie_mas_daemon] fix: defaults referring to other launch arguments
+- fix: use local monaco editor instead download it on startup
+- feat: added menu to start a new terminal for a host
+- fix: environment mit double ";"
+- [fkie_mas_daemon] fix(rosstate_jsonify): query container again after list_nodes timed out
+- [fkie_mas_daemon] fix(rosstate_jsonify): query containers again for components loaded later
+- [fkie_mas_daemon] fix(rosstate_servicer): rebuild node list after container children were queried
+- [fkie_mas_daemon] fix(ros_node): stop callbacks and destroy entities before rclpy shutdown
+- feat(HostTreeView): list nodes no daemon claims once under an unassigned group
+- [fkie_mas_daemon] feat(rosstate_jsonify): add MAS_NS_SCOPED_PID to match only processes in the own mount namespace
+- [fkie_mas_daemon] Fix type annotation
+- fix(deps): resolve security vulnerabilities via npm audit fix
+- fix(readme): install script path
+
 ## 5.11.4 - 30.09.2026
 
 - feat(ui): explain SIGTERM shutdown issue in "Multiple Screens" tooltip

@@ -2,6 +2,18 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.11.0 (16.11.2026)
+-------------------
+* fix: defaults referring to other launch arguments
+* fix(rosstate_jsonify): query container again after list_nodes timed out
+* fix(rosstate_jsonify): query containers again for components loaded later
+* fix(rosstate_servicer): rebuild node list after container children were queried
+* fix(ros_node): stop callbacks and destroy entities before rclpy shutdown
+* feat(rosstate_jsonify): add MAS_NS_SCOPED_PID to match only processes in the own mount namespace
+* Fix type annotation
+* chore(release): prepare 5.11.4
+* fix(file_observer): emit a single change event per file save
+
 5.10.3 (30.09.2026)
 -------------------
 * fix(file_observer): emit a single change event per file save
