@@ -224,8 +224,8 @@ export const AutoUpdateProvider = ({
         const versions: TAvailableVersion[] = [];
         for (const r of data) {
           const version = (r.name || r.tag_name) as string;
-          if (!version || !semver.valid(version)) return;
-          if (versions.some((v) => v.version === version)) return;
+          if (!version || !semver.valid(version)) continue;
+          if (versions.some((v) => v.version === version)) continue; // skip duplicates
           versions.push({ version: version, prerelease: !!r.prerelease || !!semver.prerelease(version) });
         }
         setAvailableVersions(versions.sort((a, b) => semver.rcompare(a.version, b.version)));
