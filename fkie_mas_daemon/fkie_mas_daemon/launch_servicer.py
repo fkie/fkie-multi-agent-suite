@@ -110,13 +110,13 @@ class CfgId:
         self._local = is_local(daemonuri)
 
     def __str__(self):
-        return "%s%s" % (self.daemonuri, self.path)
+        return f"{self.daemonuri}{self.path}"
 
     def __repr__(self):
-        return "%s%s" % (self.daemonuri, self.path)
+        return f"{self.daemonuri}{self.path}"
 
     def __hash__(self, *args, **kwargs):
-        return hash("%s%s" % (self.daemonuri, self.path))
+        return hash(f"{self.daemonuri}{self.path}")
 
     def __eq__(self, other):
         """
@@ -579,7 +579,7 @@ class LaunchServicer:
         old_content = getattr(old_node, "param_file_content", {}) or {}
         normalized_new = new_node.cmd
         normalized_old = old_node.cmd
-        for new_file, old_file in zip(new_matches, old_matches):
+        for new_file, old_file in zip(new_matches, old_matches, strict=False):
             if new_content.get(new_file, "") != old_content.get(old_file, ""):
                 return True
             normalized_new = normalized_new.replace(new_file, "")
@@ -658,7 +658,7 @@ class LaunchServicer:
     def ros_run(self, request_json: RosRun, return_as_json: bool = True) -> RosRunReply:
         Log.info(f"{self.__class__.__name__}: Request to [ros.launch.ros_run]: {request_json}")
 
-        # Covert input dictionary into a proper python object
+        # Convert input dictionary into a proper python object
         request = request_json
         package = request.package
         binary = request.binary
@@ -704,6 +704,7 @@ class LaunchServicer:
             if error:
                 result.result = False
                 result.message = error
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         except exceptions.ResourceNotFound as err_nf:
             result.result = False
             result.message = f"Error while start binary '{binary}' from '{package}': {err_nf}"
@@ -715,7 +716,6 @@ class LaunchServicer:
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         finally:
             nmd.launcher.server.screen_servicer.system_change()
-            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
     def start_node(self, request_json: LaunchNode, return_as_json: bool = True) -> LaunchNodeReply:
         Log.info(f"{self.__class__.__name__}: Request to [ros.launch.start_node]")
@@ -847,11 +847,13 @@ class LaunchServicer:
         request = request_json
         try:
             Log.info(
-                f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{request.path}], args: {', '.join(f'{a.name}: {a.value}' for a in request.args)}"
+                f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: \
+                    Path [{request.path}], args: {', '.join(f'{a.name}: {a.value}' for a in request.args)}"
             )
         except Exception:
             Log.info(
-                f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: Path [{request.path}], args: {request.args}"
+                f"{self.__class__.__name__}: Request to [ros.launch.get_included_files]: \
+                    Path [{request.path}], args: {request.args}"
             )
 
         result = []
@@ -921,7 +923,7 @@ class LaunchServicer:
         return json.dumps(result, cls=SelfEncoder) if result_as_json else result
 
     def interpret_path(self, request_json: LaunchInterpretPathRequest) -> list[LaunchInterpretPathReply]:
-        # Covert input dictionary into a proper python object
+        # Convert input dictionary into a proper python object
         request = request_json
         text = request.text
         Log.debug(f"{self.__class__.__name__}: Request to [ros.launch.interpret_path]: {text}")

@@ -12,12 +12,12 @@ from urllib.parse import urlparse
 
 def equal_uri(url1: str, url2: str) -> bool:
     """
-    Removes to string after remove last slash character.
+    Removes the string after removing the last slash character.
     """
     return url1.rstrip(os.path.sep) == url2.rstrip(os.path.sep)
 
 
-def get_port(url: str) -> int | None:
+def get_port(url: str | None) -> int | None:
     """
     Extracts the port from given url.
 
@@ -26,10 +26,8 @@ def get_port(url: str) -> int | None:
     :rtype: int
     :see: http://docs.python.org/library/urlparse.html
     """
-    if url is None:
+    if url is None or not url:
         return None
-    if not url:
-        return url
     result = None
     try:
         o = urlparse(url)
@@ -38,11 +36,12 @@ def get_port(url: str) -> int | None:
             res = url.split(":")
             if len(res) == 2:
                 result = int(res[1])
-    finally:
         return result
+    finally:
+        pass
 
 
-def split_uri(uri: str) -> tuple[str, str, int] | None:
+def split_uri(uri: str | None) -> tuple[str, str, int] | None:
     """
     Splits URI or address into scheme, address and port and returns them as tuple.
     Scheme or tuple are empty if no provided.
@@ -50,10 +49,8 @@ def split_uri(uri: str) -> tuple[str, str, int] | None:
     :rtype: (str, str, int)
     """
     (scheme, hostname, port) = ("", "", -1)
-    if uri is None:
+    if uri is None or not uri:
         return None
-    if not uri:
-        return uri
     try:
         o = urlparse(uri)
         scheme = o.scheme
