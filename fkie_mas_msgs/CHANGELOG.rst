@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.2.1 (17.11.2026)
+------------------
+* fix: removed cmake_policy from CMakeLists.txt
+
 3.2.0 (01.03.2025)
 ------------------
 * Added new Participants message

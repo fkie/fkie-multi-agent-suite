@@ -2,6 +2,11 @@
 Changelog for package fkie_mas_pylib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.9.1 (17.11.2026)
+------------------
+* fix: removed cmake_policy from CMakeLists.txt
+* fix(SyntaxWarning): 'return' in a 'finally' block
+
 5.9.0 (15.09.2026)
 ------------------
 * feat(websocket): add handler to retrieve subscription count for an URL

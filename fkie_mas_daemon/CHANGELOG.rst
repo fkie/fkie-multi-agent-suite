@@ -2,6 +2,12 @@
 Changelog for package fkie_mas_daemon
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.11.1 (17.11.2026)
+-------------------
+* fix: removed cmake_policy from CMakeLists.txt
+* fix(SyntaxWarning): 'return' in a 'finally' block
+* fix: logging warning messages in lyrical
+
 5.11.0 (16.11.2026)
 -------------------
 * fix: defaults referring to other launch arguments

@@ -1,11 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
 <package format="3">
   <name>fkie_mas_meta</name>
-  <!-- <replace>multimaster_fkie</replace> -->
+
   <description>
     The metapackage to combine the nodes required to establish and manage a multimaster network.
     This requires no or minimal configuration. The changes are automatically detected and synchronized.
   </description>
-  <version>3.0.0</version>
+  <version>3.0.1</version>
   <license>MIT</license>
   <author>Alexander Tiderko</author>
   <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
@@ -21,7 +22,7 @@
   <exec_depend condition="$ROS_VERSION == 1">fkie_mas_sync</exec_depend>
 
   <export>
-    <!-- <metapackage condition="$ROS_VERSION == 1"></metapackage> -->
+
     <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>
   </export>
 

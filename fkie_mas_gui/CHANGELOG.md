@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.12.1 - 17.11.2026
+
+- [fkie_mas_daemon, fkie_mas_discovery, fkie_mas_meta, fkie_mas_msgs, fkie_mas_pylib, fkie_mas_sync] fix: removed cmake_policy from CMakeLists.txt
+- [fkie_mas_daemon, fkie_mas_pylib] fix(SyntaxWarning): 'return' in a 'finally' block
+- feat: changed view of unassigned host entry
+- [fkie_mas_daemon] fix: logging warning messages in lyrical
+
 ## 5.12.0 - 16.11.2026
 
 - fix(updater): fetch available versions

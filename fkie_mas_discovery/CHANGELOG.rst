@@ -2,6 +2,10 @@
 Changelog for package fkie_mas_discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+5.3.1 (17.11.2026)
+------------------
+* fix: removed cmake_policy from CMakeLists.txt
+
 5.3.0 (26.05.2026)
 ------------------
 * Fixed code warnings
