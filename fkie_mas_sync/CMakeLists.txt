@@ -1,13 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 project(fkie_mas_sync)
 
-
-# Update the policy setting to avoid an error when loading the ament_cmake package
-# at the current cmake version level
-if(POLICY CMP0057)
-    cmake_policy(SET CMP0057 NEW)
-endif()
-
 find_package(ament_cmake QUIET)
 
 if ( ament_cmake_FOUND )

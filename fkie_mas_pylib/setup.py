@@ -67,6 +67,4 @@ else:
         description="Python helpers required by multi agent suite packages.",
         license="MIT",
         url="https://github.com/fkie/multimaster_fkie",
-        tests_require=["pytest"],
-        test_suite="tests",
     )

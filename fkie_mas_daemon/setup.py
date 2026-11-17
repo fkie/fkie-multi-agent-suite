@@ -80,8 +80,6 @@ else:
         description="A daemon node to manage ROS launch files and launch nodes from loaded files.",
         license="MIT",
         url="https://github.com/fkie/ros_node_manager",
-        tests_require=["pytest"],
-        test_suite="tests",
         entry_points={
             "console_scripts": [
                 "mas-daemon = fkie_mas_daemon:main",
