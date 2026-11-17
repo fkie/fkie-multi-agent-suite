@@ -61,7 +61,7 @@ class Server:
         self._settings = Settings(version=self._version)
         self.ros_domain_id = default_domain_id
         if self.ros_domain_id > 0:
-            ros_node.get_logger().warn("default ROS_DOMAIN_ID=%d overwritten to %d" % (0, self.ros_domain_id))
+            Log.warn(f"default ROS_DOMAIN_ID={0} overwritten to {self.ros_domain_id}")
         self.name = get_host_name()
         self.host_name = get_host_name()
         self.uri = f"ws://{self.name}:{self.ws_port}"
@@ -179,16 +179,6 @@ class Server:
 
     async def _rosservice_start_launch(self, request, response):
         Log.info(f"call service to load and start {request.path}")
-        params = {
-            "ros_package": "",
-            "launch": "",
-            "path": xml.interpret_path(request.path),
-            "args": [],
-            "force_first_file": False,
-            "request_args": [],
-            "masteruri": "",
-            "host": "",
-        }
         result = self.launch_servicer.load_launch(
             LaunchLoadRequest(path=request.path), requester="ROS service call", return_as_json=False
         )
@@ -200,17 +190,6 @@ class Server:
 
     async def _rosservice_load_launch(self, request, response):
         Log.info(f"call service to load {request.path}")
-        params = {
-            "ros_package": "",
-            "launch": "",
-            "path": xml.interpret_path(request.path),
-            "args": [],
-            "force_first_file": False,
-            "request_args": [],
-            "masteruri": "",
-            "host": "",
-        }
-
         result = self.launch_servicer.load_launch(
             LaunchLoadRequest(path=request.path), requester="ROS service call", return_as_json=False
         )
@@ -223,16 +202,6 @@ class Server:
         Callback for the ROS service to start a node.
         """
         Log.info(f"call service to start node {request.node}")
-        params = {
-            "name": request.node,
-            "opt_binary": "",
-            "opt_launch": "",
-            "loglevel": "",
-            "logformat": "",
-            "masteruri": "",
-            "reload_global_param": False,
-            "cmd_prefix": "",
-        }
         result = self.launch_servicer.start_node(LaunchNode(name=request.node), return_as_json=False)
         if result.status.code != "OK":
             Log.warn(f"start node failed: {result.status.msg}")

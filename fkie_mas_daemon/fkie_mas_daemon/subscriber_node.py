@@ -58,7 +58,7 @@ class RosSubscriberLauncher:
         if parsed_args.help:
             return None
         self.namespace, self.name = ros2_subscriber_nodename_tuple(parsed_args.topic)
-        print("\33]0;%s\a" % (self.name), end="", flush=True)
+        print(f"\33]0;{self.name}\a", end="", flush=True)
         self._port = parsed_args.ws_port
         if os.environ.get("ROS_DISTRO") != "galactic":
             signal.signal(signal.SIGTERM, self.exit_gracefully)
@@ -265,7 +265,7 @@ class RosSubscriberLauncher:
         except Exception:
             # on load error the process will be killed to notify user
             # in node_manager about error
-            self.ros_node.get_logger().warning("Start failed: %s" % traceback.format_exc())
+            Log.warn(f"Start failed: {traceback.format_exc()}")
             sys.stdout.write(traceback.format_exc())
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
@@ -370,7 +370,6 @@ class RosSubscriberLauncher:
             help="use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1).",
         )
         self.add_qos_arguments(parser, "subscribe", "sensor_data")
-        # parser.add_argument('--use_sim_time', type=str2bool, nargs='?', const=True, default=False, help='Enable ROS simulation time (Only ROS2).')
         parser.set_defaults(no_data=False)
         parser.set_defaults(no_arr=False)
         parser.set_defaults(no_str=False)

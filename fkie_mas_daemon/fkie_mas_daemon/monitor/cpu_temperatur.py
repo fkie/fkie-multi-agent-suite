@@ -10,8 +10,7 @@ import time
 
 import psutil
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
-
-import fkie_mas_daemon as nmd
+from fkie_mas_pylib.logging.logging import Log
 
 from .process_load import format_process_load
 from .sensor_interface import SensorInterface
@@ -20,6 +19,10 @@ from .sensor_interface import SensorInterface
 class CpuTemperatur(SensorInterface):
     # sensor names which are known to report cpu package or core temperatures
     CPU_SENSOR_NAMES = ("coretemp", "k10temp", "zenpower", "cpu_thermal", "cpu-thermal", "soc_thermal", "acpitz")
+
+    _interval: float = 5.0
+    _cpu_temp_warn: float = 85.0
+    _ts_last: float = 0.0
 
     def __init__(
         self,
@@ -32,8 +35,8 @@ class CpuTemperatur(SensorInterface):
         self._cpu_temp_warn = warn_level
         # the warn level may be replaced by the value reported by the hardware
         # ('high'), but only as long as no parameter was configured
-        self._warn_level_configured = False
-        self._count_processes = count_processes
+        self._warn_level_configured: bool = False
+        self._count_processes: int = count_processes
         SensorInterface.__init__(self, hostname, sensorname="CPU Temperature", interval=interval, window=window)
 
     def reload_parameter(self, settings):
@@ -63,10 +66,10 @@ class CpuTemperatur(SensorInterface):
             sensor_temps = psutil.sensors_temperatures()
         except Exception as error:
             # sensors_temperatures() is not available on all platforms
-            nmd.ros_node.get_logger().warn("Sensor temperatures are not checked because of error: %s" % error)
+            Log.warn(f"Sensor temperatures are not checked because of error: {error}")
             self._disable("no temperature sensors available")
             return
-        max_temp = None
+        max_temp: None | float = None
         max_label = ""
         temp_high = None
         temp_critical = None
@@ -86,7 +89,7 @@ class CpuTemperatur(SensorInterface):
                     temp_critical = getattr(entry, "critical", None)
         if max_temp is None:
             # no cpu sensor found, do not report a fake temperature of 0
-            nmd.ros_node.get_logger().info("CpuTemperatur: no CPU temperature sensor found, sensor disabled")
+            Log.info("CpuTemperatur: no CPU temperature sensor found, sensor disabled")
             self._disable("no CPU temperature sensor found")
             return
         now = time.time()
@@ -95,7 +98,7 @@ class CpuTemperatur(SensorInterface):
             self._cpu_temp_warn = temp_high
         diag_level = DiagnosticStatus.OK
         diag_vals = []
-        diag_msg = "warn at >%.2f&deg;C (avg over %.0fs)" % (self._cpu_temp_warn, self.window)
+        diag_msg = f"warn at >{self._cpu_temp_warn:.2f}&deg;C (avg over {self.window:.0f}s)"
         # relax the threshold while a warning is already active
         warn_level = self.hysteresis(self._cpu_temp_warn, factor=0.9)
         # add current measurement to the sliding window
@@ -104,21 +107,18 @@ class CpuTemperatur(SensorInterface):
         temp_avg = stats["temperature"]["avg"]
         temp_max = stats["temperature"]["max"]
         window_span = self.window_span()
-        diag_vals.append(KeyValue(key="Max [degree]", value="%.2f" % temp_avg))
-        diag_vals.append(KeyValue(key="Peak [degree]", value="%.2f" % temp_max))
+        diag_vals.append(KeyValue(key="Max [degree]", value=f"{temp_avg:.2f}"))
+        diag_vals.append(KeyValue(key="Peak [degree]", value=f"{temp_max:.2f}"))
         diag_vals.append(KeyValue(key="Sensor", value=max_label))
-        diag_vals.append(KeyValue(key="Window [s]", value="%.1f" % window_span))
+        diag_vals.append(KeyValue(key="Window [s]", value=f"{window_span:.1f}"))
         if temp_critical is not None and temp_avg >= temp_critical:
             # above the critical value reported by the hardware
             diag_level = DiagnosticStatus.ERROR
-            diag_msg = "CPU Temperature: %.2f degree (critical >=%.2f)" % (temp_avg, temp_critical)
+            diag_msg = f"CPU Temperature: {temp_avg:.2f} degree (critical >={temp_critical:.2f})"
         elif temp_avg > warn_level:
             diag_level = DiagnosticStatus.WARN
-            diag_msg = "CPU Temperature: %.2f degree (warn level >%.2f, avg over %.0fs)" % (
-                temp_avg,
-                self._cpu_temp_warn,
-                window_span,
-            )
+            diag_msg = f"CPU Temperature: {temp_avg:.2f} degree \
+                (warn level >{self._cpu_temp_warn:.2f}, avg over {window_span:.0f}s)"
         if diag_level != DiagnosticStatus.OK:
             # report the processes which most likely cause the temperature,
             # the values are shared with the CPU load sensor

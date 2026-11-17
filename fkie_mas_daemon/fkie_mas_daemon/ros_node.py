@@ -46,7 +46,7 @@ class RosNodeLauncher:
         self.parser = self._init_arg_parser()
         self.name = NM_DAEMON_NAME
         # change terminal name
-        print("\33]0;%s\a" % (self.name), end="", flush=True)
+        print(f"\33]0;{self.name}\a", end="", flush=True)
         parsed_args, remaining_args = self.parser.parse_known_args()
         self._displayed_name = parsed_args.name
         self._port = parsed_args.port
@@ -74,7 +74,6 @@ class RosNodeLauncher:
 
         # test for screen after ros_node log module is available.
         self._run_tests()
-        # nmd.ros_node.declare_parameter('force_insecure', value=False, descriptor=ParameterDescriptor(description='Ignore security options and use insecure channel'), ignore_override = False)
         self.server = Server(self.ros_node, default_domain_id=self.ros_domain_id)
         self.success_start = False
 
@@ -131,7 +130,7 @@ class RosNodeLauncher:
 
             # on load error the process will be killed to notify user
             # in node_manager about error
-            self.ros_node.get_logger().warning("Start server failed: %s" % traceback.format_exc())
+            Log.warn(f"Start server failed: {traceback.format_exc()}")
             sys.stdout.write(traceback.format_exc())
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
@@ -151,7 +150,7 @@ class RosNodeLauncher:
             import traceback
 
             print(traceback.format_exc())
-            self.ros_node.get_logger().error("No SCREEN available! You cannot launch nodes.")
+            Log.error("No SCREEN available! You cannot launch nodes.")
 
     def _init_arg_parser(self):
         parser = argparse.ArgumentParser()

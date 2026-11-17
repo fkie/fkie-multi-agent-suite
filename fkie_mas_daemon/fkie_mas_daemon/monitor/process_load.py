@@ -10,16 +10,15 @@ import threading
 import time
 
 import psutil
-
-import fkie_mas_daemon as nmd
+from fkie_mas_pylib.logging.logging import Log
 
 # psutil reuses its Process objects, so cpu_percent() always reports the load
 # since the previous call. To allow more than one sensor to use these values
 # without splitting the measurement interval, the result is cached and shared
 # between all callers.
-_lock = threading.RLock()
-_cache = []  # type: List[Tuple[float, str, int]]
-_cache_ts = 0.0
+_lock: threading.RLock = threading.RLock()
+_cache: list[tuple[float, str, int]] = []
+_cache_ts: float = 0.0
 
 # number of logical cores, used to normalize the per process load
 CPU_COUNT = psutil.cpu_count() or 1
@@ -39,6 +38,7 @@ def process_load(max_age: float = 1.0, normalized: bool = False) -> list[tuple[f
     """
     global _cache, _cache_ts
     now = time.monotonic()
+    result: list[tuple[float, str, int]] = []
     with _lock:
         if _cache_ts > 0 and (now - _cache_ts) < max_age:
             # a recent measurement is available, reuse it
@@ -56,7 +56,7 @@ def process_load(max_age: float = 1.0, normalized: bool = False) -> list[tuple[f
                 _cache = result
                 _cache_ts = now
             except Exception as err:
-                nmd.ros_node.get_logger().debug("can not determine process load: %s" % err)
+                Log.debug(f"can not determine process load: {err}")
                 # fall back to the last known values
                 result = list(_cache)
     if normalized:
@@ -76,12 +76,12 @@ def format_process_load(
     :param float max_age: see process_load()
     :rtype: list of str
     """
-    result = []
+    result: list[str] = []
     for percent, name, pid in process_load(max_age=max_age, normalized=normalized):
         # the list is sorted descending, so we can stop at the first miss
         if percent < min_percent:
             break
-        result.append("%.2f%% %s [%d]" % (percent, name, pid))
+        result.append(f"{percent:.2f}%% {name} [{pid}]")
         if len(result) >= count:
             break
     return result

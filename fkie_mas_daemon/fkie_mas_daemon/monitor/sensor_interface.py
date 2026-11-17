@@ -15,9 +15,9 @@ from collections.abc import Callable
 
 import rclpy
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
+from fkie_mas_pylib.logging.logging import Log
 from fkie_mas_pylib.settings import Settings
 
-import fkie_mas_daemon as nmd
 from fkie_mas_pylib import formats
 
 _TRUE_VALUES = {"1", "true", "yes", "y", "on"}
@@ -57,7 +57,7 @@ class SensorInterface:
         :param float window: length of the sliding window in seconds used to
                              average the measured values before reporting
         """
-        nmd.ros_node.get_logger().info("Loading monitor service: %s" % type(self).__name__)
+        Log.info(f"Loading monitor service: {type(self).__name__}")
         self.hostname = hostname
         self.mutex = threading.RLock()
         self._interval = interval
@@ -68,7 +68,7 @@ class SensorInterface:
         self._timer = None
         self._stopped = False
         self._stat_msg = DiagnosticStatus()
-        self._stat_msg.name = "%s" % sensorname
+        self._stat_msg.name = f"{sensorname}"
         self._stat_msg.level = DiagnosticStatus.STALE
         self._stat_msg.hardware_id = hostname
         self._stat_msg.message = "No Data"
@@ -213,7 +213,7 @@ class SensorInterface:
             self.check_sensor()
         except Exception as err:
             # an exception must not break the timer chain
-            nmd.ros_node.get_logger().debug("%s: error while check_sensor(): %s" % (type(self).__name__, err))
+            Log.debug(f"{type(self).__name__}: error while check_sensor(): {err}")
         if self.is_active() and self._interval > 0:
             # compensate the duration of the measurement to avoid drift
             elapsed = time.monotonic() - ts_start
