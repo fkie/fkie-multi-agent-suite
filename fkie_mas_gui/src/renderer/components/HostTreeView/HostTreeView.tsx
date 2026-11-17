@@ -118,6 +118,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       .join("|");
 
     return {
+      // biome-ignore lint/complexity/noUselessStringRaw: the content of spamNodesCleared is user-defined and may contain regex special characters, so we need to use String.raw to avoid escaping them
       spamNodesRegExp: spamNodesCleared ? new RegExp(String.raw`${spamNodesCleared}`, "g") : undefined,
     };
   }, [spamNodes]);
@@ -390,7 +391,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
         };
       });
     },
-    [expanded, providerNodeTree]
+    [expanded, providerNodeTree, isFiltered]
   );
 
   /**
@@ -427,7 +428,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    * Callback when items on the tree are double clicked
    */
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the dependencies are correct
   const handleDoubleClickOnNode = useCallback(
     (event: React.MouseEvent, id: string): void => {
       const nodeIds = getNodeIdsFromTreeIds([id]);
@@ -475,6 +476,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
             }
           }
         }
+        return nodeId;
       });
     },
     [rosCtx.nodeMap, keyNodeList, openScreenByDefault, navCtx.openTerminal]
@@ -484,7 +486,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    * Callback when items on the tree are middle clicked
    */
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyNodeList should be updated
   const handleMiddleClickOnNode = useCallback(
     (event: React.MouseEvent, id: string): void => {
       const nodeIds = getNodeIdsFromTreeIds([id]);
@@ -500,9 +502,10 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
             insideDomainLayout: true,
           });
         }
+        return nodeId;
       });
     },
-    [rosCtx.nodeMap, keyNodeList, navCtx.openTerminal]
+    [rosCtx.nodeMap, keyNodeList, navCtx.openTerminal, getNodeIdsFromTreeIds]
   );
 
   const handleClickOnLoggers = useCallback(
@@ -687,12 +690,12 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     if (!node) return { isValidNode: false, provider: "", node_name: "" };
     // the namespace begins with /
     // we split to get the provider id
-    const splitted = prefix.split("/");
-    const provider = splitted[0];
-    splitted.shift();
+    const splittedPrefix = prefix.split("/");
+    const provider = splittedPrefix[0];
+    splittedPrefix.shift();
     // the rest of the array is namespace
     // remove groups e.g. {SYSTEM} from namespace
-    const namespace: string[] = splitted.filter((item) => !(item.startsWith("{") && item.endsWith("}")));
+    const namespace: string[] = splittedPrefix.filter((item) => !(item.startsWith("{") && item.endsWith("}")));
     // add empty at the beginning to create "/" while join
     namespace.unshift("");
     // add node name
@@ -704,6 +707,8 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
    * synchronize selected items and available nodes (important in ROS2)
    * since the running node has an DDS id at the end of the node name separated by '-'
    */
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keyToNodeName is not a callback and does not need to be in the dependency array
   const updateSelectedNodeIds = useCallback((): void => {
     let newSelection: string[] = [];
     setSelectedItems((prevItems) => {
@@ -738,22 +743,29 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     if (navCtx.selection.triggerId === triggerId) {
       notifyNavCtxSelection(newSelection);
     }
-  }, [keyNodeList, getParentAndChildrenIds, notifyNavCtxSelection]);
+  }, [keyNodeList, getParentAndChildrenIds, notifyNavCtxSelection, triggerId, navCtx.selection.triggerId]);
+
+  const updateSelectItems = useCallback(
+    (selectedItems: string[]): void => {
+      // Filter nodes that actually exist in this tree
+      const providerIds = getProvidersFromIds(selectedItems);
+      const nodeIds = getNodeIdsFromTreeIds(selectedItems);
+      setSelectedProviderItems(providerIds);
+      setSelectedNodeItems(nodeIds);
+    },
+    [getProvidersFromIds, getNodeIdsFromTreeIds, setSelectedNodeItems, setSelectedProviderItems]
+  );
 
   /** Inform host panel with actions about new selection */
   useEffect(() => {
-    // Filter nodes that actually exist in this tree
-    const providerIds = getProvidersFromIds(selectedItems);
-    const nodeIds = getNodeIdsFromTreeIds(selectedItems);
-    setSelectedProviderItems(providerIds);
-    setSelectedNodeItems(nodeIds);
-  }, [selectedItems, setSelectedNodeItems]);
+    updateSelectItems(selectedItems);
+  }, [selectedItems, updateSelectItems]);
 
   /**
    * synchronize selected items and available nodes (important in ROS2)
    * since the running node has an DDS id at the end of the node name separated by '-'
    */
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  // biome-ignore lint/correctness/useExhaustiveDependencies: update only if keyNodeList was changed
   useEffect(() => {
     updateSelectedNodeIds();
   }, [
@@ -790,7 +802,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
     // }
 
     // setSelectedItems([]);
-  }, [navCtx.selection, providerIdsInTree, triggerId]);
+  }, [navCtx.selection, providerIdsInTree, handleSelect]);
 
   /**
    * Callback when the event of removing a launch file is triggered
@@ -798,7 +810,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
   const onRemoveLaunch = useCallback(
     async (providerId: string, path: string, masteruri: string): Promise<void> => {
       const provider: Provider | undefined = rosCtx.getProviderById(providerId, true);
-      if (!provider || !provider.launchUnloadFile) return;
+      if (!provider?.launchUnloadFile) return;
 
       const request = new LaunchFile(path, masteruri, provider.host());
       const resultLaunchUnloadFile = await provider.launchUnloadFile(request);
@@ -875,7 +887,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
       setSelectedItems(newSelectedItems);
       notifyNavCtxSelection(newSelectedItems);
     },
-    [keyNodeList, rosCtx.mapProviderRosNodes, getParentAndChildrenIds]
+    [keyNodeList, rosCtx.mapProviderRosNodes, getParentAndChildrenIds, notifyNavCtxSelection]
   );
 
   /**
@@ -1023,7 +1035,7 @@ export default function HostTreeView(props: HostTreeViewProps): JSX.Element {
               p = rosCtx.createProvider(item.providerId, rosCtx.rosInfo?.version || "2");
               p.id = item.providerId;
             } else {
-              return <></>;
+              return null; // skip this item, it has no providerId
             }
           }
           // loop through available hosts

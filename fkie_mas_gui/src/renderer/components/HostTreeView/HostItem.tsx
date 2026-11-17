@@ -1,6 +1,7 @@
 import ChangeCircleOutlinedIcon from "@mui/icons-material/ChangeCircleOutlined";
 import ComputerIcon from "@mui/icons-material/Computer";
 import DeveloperBoardIcon from "@mui/icons-material/DeveloperBoard";
+import HelpIcon from "@mui/icons-material/Help";
 import LinkIcon from "@mui/icons-material/Link";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import MemoryIcon from "@mui/icons-material/Memory";
@@ -22,7 +23,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { green, grey, orange, red } from "@mui/material/colors";
+import { blue, green, grey, orange, red } from "@mui/material/colors";
 import {
   TreeItemSlotProps,
   treeItemClasses,
@@ -147,6 +148,7 @@ interface HostItemProps {
   nodeCount: number;
   nodeRunningCount: number;
   children: React.ReactNode;
+  unassigned?: boolean;
 }
 
 export default function HostItem(props: HostItemProps): JSX.Element {
@@ -156,6 +158,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
     onDoubleClick = (): void => {},
     nodeCount,
     nodeRunningCount,
+    unassigned = provider.name() === "unassigned",
     ...children
   } = props;
   const navCtx = useNavigationContext();
@@ -321,15 +324,15 @@ export default function HostItem(props: HostItemProps): JSX.Element {
     return green[600];
   }, []);
 
-  const generateDiagnosticsView = useCallback((): JSX.Element => {
-    if (!provider.isAvailable() || systemDiagnostics.length === 0) return <></>;
+  const generateDiagnosticsView = useCallback((): JSX.Element | null => {
+    if (!provider.isAvailable() || systemDiagnostics.length === 0) return null;
     const now = Date.now();
     // show only values not older than 15s and with a real measurement or a non-OK state
     const visible = systemDiagnostics
       .filter((entry) => now - entry.receivedAt <= DIAG_MAX_AGE_MS)
       .map((entry) => entry.status)
       .filter((status) => hasDiagValues(status) || status.level > 0);
-    if (visible.length === 0) return <></>;
+    if (visible.length === 0) return null;
     return (
       <Stack direction="row" alignItems="center" spacing="0.2em" sx={{ marginLeft: "0.3em", fontSize: "1rem" }}>
         {visible.map((status) => {
@@ -370,7 +373,7 @@ export default function HostItem(props: HostItemProps): JSX.Element {
         })}
       </Stack>
     );
-  }, [provider, systemDiagnostics]);
+  }, [provider, systemDiagnostics, getDiagnosticColor]);
 
   const getHostStyle = useCallback(
     function getHostStyle(provider: Provider): object {
@@ -494,7 +497,15 @@ export default function HostItem(props: HostItemProps): JSX.Element {
               </Box>
             </Tooltip>
           )}
-          {provider.currentDelay > 3 ? (
+          {unassigned ? (
+            <Tooltip
+              title="All nodes that could not be assigned to a host because no matching screen, launch file, or process name was found are listed here."
+              placement="bottom-start"
+              disableInteractive
+            >
+              <HelpIcon sx={{ mr: 0.5, width: 20, color: blue[500] }} />
+            </Tooltip>
+          ) : provider.currentDelay > 3 ? (
             <LinkIcon sx={{ mr: 0.5, width: 20, color: red[700] }} />
           ) : provider.isAvailable() ? (
             <ComputerIcon sx={{ mr: 0.5, width: 20, color: grey[700] }} />
@@ -503,22 +514,24 @@ export default function HostItem(props: HostItemProps): JSX.Element {
           )}
 
           {/* three dots button: provides the time options always, also if the time is in sync */}
-          <Tooltip title="Host options" placement="bottom-start" disableInteractive>
-            <IconButton
-              size="small"
-              aria-label="Host options"
-              sx={{ mr: 0.5, padding: "2px" }}
-              onClick={(event) => {
-                setOptionsAnchorEl(optionsAnchorEl ? null : event.currentTarget);
-                event.stopPropagation();
-              }}
-              onDoubleClick={(event) => {
-                event.stopPropagation();
-              }}
-            >
-              <MoreVertIcon sx={{ fontSize: "1rem", color: grey[700] }} />
-            </IconButton>
-          </Tooltip>
+          {!unassigned && (
+            <Tooltip title="Host options" placement="bottom-start" disableInteractive>
+              <IconButton
+                size="small"
+                aria-label="Host options"
+                sx={{ mr: 0.5, padding: "2px" }}
+                onClick={(event) => {
+                  setOptionsAnchorEl(optionsAnchorEl ? null : event.currentTarget);
+                  event.stopPropagation();
+                }}
+                onDoubleClick={(event) => {
+                  event.stopPropagation();
+                }}
+              >
+                <MoreVertIcon sx={{ fontSize: "1rem", color: grey[700] }} />
+              </IconButton>
+            </Tooltip>
+          )}
           <Menu
             id="host-item-options-menu"
             open={Boolean(optionsAnchorEl)}
@@ -563,35 +576,36 @@ export default function HostItem(props: HostItemProps): JSX.Element {
                 </Typography>
               </Tooltip>
             )}
-            {getProviderTags(provider).map((tag: TTag) => (
-              <Tooltip
-                key={tag.id}
-                sx={{ marginLeft: "0.1em" }}
-                title={`${tag.tooltip}`}
-                placement="left"
-                disableInteractive
-              >
-                <Box>
-                  {typeof tag.data === "string" ? (
-                    <Tag
-                      text={tag.data}
-                      color={tag.color}
-                      onClick={(event) => {
-                        if (tag.onClick) {
-                          tag.onClick(event);
-                        }
-                        event.stopPropagation();
-                      }}
-                      onDoubleClick={(event) => {
-                        event.stopPropagation();
-                      }}
-                    />
-                  ) : (
-                    tag.data && <tag.data style={{ fontSize: "inherit", color: tag.color }} />
-                  )}
-                </Box>
-              </Tooltip>
-            ))}
+            {!unassigned &&
+              getProviderTags(provider).map((tag: TTag) => (
+                <Tooltip
+                  key={tag.id}
+                  sx={{ marginLeft: "0.1em" }}
+                  title={`${tag.tooltip}`}
+                  placement="left"
+                  disableInteractive
+                >
+                  <Box>
+                    {typeof tag.data === "string" ? (
+                      <Tag
+                        text={tag.data}
+                        color={tag.color}
+                        onClick={(event) => {
+                          if (tag.onClick) {
+                            tag.onClick(event);
+                          }
+                          event.stopPropagation();
+                        }}
+                        onDoubleClick={(event) => {
+                          event.stopPropagation();
+                        }}
+                      />
+                    ) : (
+                      tag.data && <tag.data style={{ fontSize: "inherit", color: tag.color }} />
+                    )}
+                  </Box>
+                </Tooltip>
+              ))}
           </Stack>
 
           <SetNTPDateDialog
